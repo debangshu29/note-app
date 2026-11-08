@@ -9,8 +9,8 @@ The app doesn't even ask for internet permission, so it has no way to send your 
 | Feature | How it works |
 |---|---|
 | **All notes in one place** | Home screen lists every note (pinned ones first). Search box looks through notes and reminders. |
-| **Auto math** | Type `1+1=` and `2` appears by itself. Type `450+120+80` (no `=`) and a **"= 650 · tap to add"** bar shows above the keyboard. Works with `+ - * / x × ÷ ^ % ( ) √`, decimals and `1,000`. |
-| **Automatic reminders** | Write a line with a day or time in it, for example `call mom tomorrow at 5pm`, `submit form on 15 Nov`, `gym on monday 6:30 am`, `pay rent 01/12`, `drink water in 2 hours`. The app sets an alarm notification (with **Done** / **Snooze 10 min**) and adds an event to your phone's calendar. A 🔔 chip under the note shows what it found; tap it to turn that one off. |
+| **Auto math** | Type `1+1=` and `2` appears by itself. Type `450+120+80` (no `=`) and ` = 650` appears in faded grey right after it, like Gmail suggestions — tap it or swipe it right to keep it. The grey is a light shade of your text colour. Works with `+ - * / x × ÷ ^ % ( ) √`, decimals and `1,000`. |
+| **Reminders that fit the note** | ⏰ `wake me up at 10 am tomorrow` → a real alarm (Stop / Snooze, full screen), **not** added to the calendar. 📅 `call mom at 5 pm on 12 Nov`, `exam on 5 Jan` → phone calendar entry + **one** notification (the calendar entry itself stays silent). 🔔 `drink water in 2 hours`, `buy milk at 8 pm` → just one notification. Tap the chip under the note to change the type or turn it off. A reminder keeps the time it was written for ("tomorrow" stays that day). |
 | **Reminders tab** | Everything coming up, grouped by Today / Tomorrow / date, plus Missed and Done. Tick to finish. |
 | **Checklists and lists** | Type `[]` + space for a ☐ checkbox, tap the box to tick it ☑. `- `, `• ` and `1. ` lists continue when you press Enter. Toolbar buttons for checklist, bullet, and a date/time picker. |
 | **Share into Note** | Share text from any app (WhatsApp, Chrome...) and choose Note: it becomes a new note. |
@@ -57,6 +57,11 @@ You need **Android Studio** installed once (free): https://developer.android.com
 3. Open **Note**. When you write your first reminder it asks to allow **Notifications** and **Calendar** — allow both.
 
 Works on Android 7.0 and newer.
+
+## Updating the app
+
+From version 1.1 every APK from GitHub is signed with the same key (kept in GitHub Secrets, backup in `D:\note\signing`),
+so a new `Note.apk` installs on top of the old one and your notes stay. Version 1.0 has to be uninstalled once.
 
 ## Deleting your data
 
