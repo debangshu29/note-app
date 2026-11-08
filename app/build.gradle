@@ -17,19 +17,14 @@ android {
     // One fixed key for this app, so every new APK installs as an update and keeps your notes.
     // The key is NOT stored in the code: GitHub passes it in from its encrypted Secrets.
     def ksFile = System.getenv('NOTE_KEYSTORE_FILE')
+    def hasKey = ksFile != null && file(ksFile).exists()
     signingConfigs {
         release {
-            if (ksFile != null && file(ksFile).exists()) {
+            if (hasKey) {
                 storeFile file(ksFile)
                 storePassword System.getenv('NOTE_KEYSTORE_PASSWORD')
                 keyAlias 'note'
                 keyPassword System.getenv('NOTE_KEYSTORE_PASSWORD')
-            } else {
-                // building on your own PC without the key: fall back to the debug key
-                storeFile signingConfigs.debug.storeFile
-                storePassword 'android'
-                keyAlias 'androiddebugkey'
-                keyPassword 'android'
             }
         }
     }
@@ -37,7 +32,8 @@ android {
     buildTypes {
         release {
             minifyEnabled false
-            signingConfig signingConfigs.release
+            // without the key (e.g. building on your own PC) the debug key is used instead
+            signingConfig hasKey ? signingConfigs.release : signingConfigs.debug
         }
     }
 
