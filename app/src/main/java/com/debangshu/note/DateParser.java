@@ -23,6 +23,8 @@ public final class DateParser {
     public static final class Result {
         public long timeMillis;
         public boolean hasTime;
+        /** true for "in 20 minutes" / "in 2 hours" style times */
+        public boolean relative;
         public String title;
 
         @Override public String toString() {
@@ -274,6 +276,7 @@ public final class DateParser {
         Result r = new Result();
         r.timeMillis = when.getTimeInMillis();
         r.hasTime = hasTime;
+        r.relative = exact != null;
         r.title = cleanTitle(orig, removed);
         return r;
     }

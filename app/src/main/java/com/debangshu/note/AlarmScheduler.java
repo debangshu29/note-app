@@ -6,7 +6,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 
-/** Sets a phone alarm that fires {@link AlarmReceiver} at the reminder time. */
+/**
+ * Sets the phone alarm that fires {@link AlarmReceiver} at the reminder time.
+ * "Alarm" type reminders use setAlarmClock(): exact, wakes the phone, and shows
+ * the little alarm-clock icon in the status bar like a normal alarm.
+ */
 public final class AlarmScheduler {
 
     private AlarmScheduler() {}
@@ -25,6 +29,14 @@ public final class AlarmScheduler {
         if (am == null) return;
         PendingIntent pi = intentFor(ctx, r);
         try {
+            if (r.kind == ReminderKind.ALARM) {
+                Intent open = new Intent(ctx, EditorActivity.class);
+                open.putExtra(EditorActivity.EXTRA_NOTE_ID, r.noteId);
+                PendingIntent show = PendingIntent.getActivity(ctx, r.requestCode() + 7, open,
+                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+                am.setAlarmClock(new AlarmManager.AlarmClockInfo(r.time, show), pi);
+                return;
+            }
             boolean exact = Build.VERSION.SDK_INT < 31 || am.canScheduleExactAlarms();
             if (exact) am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, r.time, pi);
             else am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, r.time, pi);

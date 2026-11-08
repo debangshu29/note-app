@@ -48,7 +48,7 @@
             <Switch
                 android:id="@+id/sw_math_suggest"
                 style="@style/SettingsSwitch"
-                android:text="Show “= answer” bar while typing math" />
+                android:text="Show the answer in grey while typing math\n(tap it or swipe it right to add)" />
 
             <Switch
                 android:id="@+id/sw_smart_lists"
@@ -60,12 +60,12 @@
             <Switch
                 android:id="@+id/sw_auto_reminders"
                 style="@style/SettingsSwitch"
-                android:text="Find dates in notes and remind me" />
+                android:text="Find dates in notes and remind me\n(wake-up lines become alarms)" />
 
             <Switch
                 android:id="@+id/sw_calendar"
                 style="@style/SettingsSwitch"
-                android:text="Also add them to my phone calendar" />
+                android:text="Add planned things to my phone calendar\n(the calendar never alerts twice)" />
 
             <LinearLayout android:id="@+id/row_default_time" style="@style/SettingsRow">
                 <TextView style="@style/SettingsTitle" android:text="Default reminder time" />
@@ -75,6 +75,12 @@
             <LinearLayout android:id="@+id/row_permissions" style="@style/SettingsRow">
                 <TextView style="@style/SettingsTitle" android:text="Permissions" />
                 <TextView android:id="@+id/txt_permissions" style="@style/SettingsSub" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/row_fullscreen" style="@style/SettingsRow" android:visibility="gone">
+                <TextView style="@style/SettingsTitle" android:text="Allow full-screen alarms" />
+                <TextView style="@style/SettingsSub"
+                    android:text="So “wake me up at 6 am” shows a big Stop / Snooze screen over the lock screen. Tap to allow." />
             </LinearLayout>
 
             <LinearLayout android:id="@+id/row_exact" style="@style/SettingsRow" android:visibility="gone">

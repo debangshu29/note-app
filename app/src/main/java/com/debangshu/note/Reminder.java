@@ -18,6 +18,10 @@ public class Reminder {
     public boolean ignored;
     /** Event id in the phone calendar, or -1. */
     public long calendarEventId = -1;
+    /** ReminderKind.NOTIFY / EVENT / ALARM */
+    public int kind = ReminderKind.EVENT;
+    /** true once the user picked the type by hand: then the text no longer changes it */
+    public boolean kindLocked;
 
     public JSONObject toJson() throws JSONException {
         JSONObject o = new JSONObject();
@@ -31,6 +35,8 @@ public class Reminder {
         o.put("done", done);
         o.put("ignored", ignored);
         o.put("calendarEventId", calendarEventId);
+        o.put("kind", kind);
+        o.put("kindLocked", kindLocked);
         return o;
     }
 
@@ -46,6 +52,8 @@ public class Reminder {
         r.done = o.optBoolean("done");
         r.ignored = o.optBoolean("ignored");
         r.calendarEventId = o.optLong("calendarEventId", -1);
+        r.kind = o.optInt("kind", ReminderKind.EVENT);
+        r.kindLocked = o.optBoolean("kindLocked");
         return r;
     }
 

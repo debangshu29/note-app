@@ -11,6 +11,7 @@ public class AlarmReceiver extends BroadcastReceiver {
         long id = intent.getLongExtra("reminderId", -1);
         Reminder r = Store.get(ctx).reminder(id);
         if (r == null || r.done || r.ignored) return;
-        Notifier.show(ctx, r);
+        if (r.kind == ReminderKind.ALARM) Notifier.showAlarm(ctx, r);
+        else Notifier.show(ctx, r);
     }
 }

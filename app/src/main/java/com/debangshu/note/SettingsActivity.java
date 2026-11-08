@@ -52,6 +52,15 @@ public class SettingsActivity extends Activity {
 
         findViewById(R.id.row_permissions).setOnClickListener(v -> askPermissions());
         findViewById(R.id.row_exact).setOnClickListener(v -> openExactAlarmSettings());
+        findViewById(R.id.row_fullscreen).setOnClickListener(v -> {
+            if (Build.VERSION.SDK_INT < 34) return;
+            try {
+                startActivity(new Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
+                        Uri.parse("package:" + getPackageName())));
+            } catch (Exception e) {
+                Toast.makeText(this, "Not available on this phone", Toast.LENGTH_SHORT).show();
+            }
+        });
         findViewById(R.id.row_export).setOnClickListener(v -> startExport());
         findViewById(R.id.row_import).setOnClickListener(v -> startImport());
         findViewById(R.id.row_help).setOnClickListener(v -> HelpDialog.show(this));
@@ -95,6 +104,8 @@ public class SettingsActivity extends Activity {
             exactOk = am == null || am.canScheduleExactAlarms();
         }
         findViewById(R.id.row_exact).setVisibility(exactOk ? android.view.View.GONE : android.view.View.VISIBLE);
+        findViewById(R.id.row_fullscreen).setVisibility(
+                Notifier.canFullScreen(this) ? android.view.View.GONE : android.view.View.VISIBLE);
 
         int notes = store.notes().size();
         int rem = store.reminders().size();

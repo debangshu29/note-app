@@ -14,9 +14,9 @@ import java.util.concurrent.Executors;
 
 /**
  * Reads every line of a note, finds dates/times, and keeps the reminders
- * (phone alarm + phone calendar event) in step with the text.
+ * in step with the text.
  *
- *   - new line with a date      -> new reminder, alarm, calendar event
+ *   - new line with a date      -> new reminder (alarm, calendar+notification, or notification: see ReminderKind)
  *   - date of a line changed    -> same reminder moved to the new time
  *   - line deleted              -> reminder, alarm and calendar event removed
  */
@@ -31,7 +31,10 @@ public final class ReminderSync {
     public static final class Found {
         public final String line;
         public final DateParser.Result result;
-        Found(String line, DateParser.Result result) { this.line = line; this.result = result; }
+        public final int kind;
+        Found(String line, DateParser.Result result, int kind) {
+            this.line = line; this.result = result; this.kind = kind;
+        }
     }
 
     /** Finds all reminders in a note's text (fast, no saving). */
@@ -51,7 +54,7 @@ public final class ReminderSync {
             String k = r.title.toLowerCase();
             if (seen.containsKey(k)) continue;
             seen.put(k, true);
-            out.add(new Found(line, r));
+            out.add(new Found(line, r, ReminderKind.classify(line, r, now.getTimeInMillis())));
         }
         return out;
     }
@@ -102,17 +105,22 @@ public final class ReminderSync {
                 r.sourceLine = f.line;
                 r.time = f.result.timeMillis;
                 r.hasTime = f.result.hasTime;
+                r.kind = f.kind;
                 s.saveReminder(r);
                 activate(ctx, r);
             } else if (r.ignored) {
                 r.sourceLine = f.line;
                 s.saveReminder(r);
-            } else if (r.time != f.result.timeMillis || !f.line.equals(r.sourceLine)) {
+            } else if (!f.line.equals(r.sourceLine)) {
+                // only re-read the time when the line itself was edited: "tomorrow" written
+                // yesterday must keep meaning the day it was written for
                 boolean moved = r.time != f.result.timeMillis;
+                boolean kindChanged = !r.kindLocked && r.kind != f.kind;
                 r.sourceLine = f.line;
                 r.title = f.result.title;
                 r.time = f.result.timeMillis;
                 r.hasTime = f.result.hasTime;
+                if (kindChanged) r.kind = f.kind;
                 if (moved) r.done = false;
                 s.saveReminder(r);
                 if (!r.done) activate(ctx, r);
@@ -136,14 +144,38 @@ public final class ReminderSync {
         }
     }
 
-    /** Schedules the alarm and (if allowed) adds/updates the phone calendar event. */
+    /**
+     * Arms the reminder the way its type says:
+     *   ALARM  -> alarm-clock alarm, no calendar event
+     *   EVENT  -> exact alarm for one notification + phone calendar event (event has no alert of its own)
+     *   NOTIFY -> exact alarm for one notification, no calendar event
+     */
     static void activate(Context ctx, Reminder r) {
         Store s = Store.get(ctx);
+        AlarmScheduler.cancel(ctx, r);
         AlarmScheduler.schedule(ctx, r);
-        if (s.setting(Store.S_ADD_TO_CALENDAR) && CalendarHelper.hasPermission(ctx)) {
+        boolean wantCalendar = r.kind == ReminderKind.EVENT && s.setting(Store.S_ADD_TO_CALENDAR);
+        if (wantCalendar && CalendarHelper.hasPermission(ctx)) {
             if (r.calendarEventId > 0 && CalendarHelper.update(ctx, r)) return;
             long ev = CalendarHelper.insert(ctx, r);
             if (ev > 0) { r.calendarEventId = ev; s.saveReminder(r); }
+        } else if (!wantCalendar && r.calendarEventId > 0) {
+            CalendarHelper.delete(ctx, r.calendarEventId);
+            r.calendarEventId = -1;
+            s.saveReminder(r);
+        }
+    }
+
+    /** User picked a type from the chip menu. */
+    public static void setKind(Context ctx, Reminder r, int kind) {
+        r.kind = kind;
+        r.kindLocked = true;
+        Store.get(ctx).saveReminder(r);
+        if (!r.done && !r.ignored && r.time > System.currentTimeMillis()) activate(ctx, r);
+        else if (kind != ReminderKind.EVENT && r.calendarEventId > 0) {
+            CalendarHelper.delete(ctx, r.calendarEventId);
+            r.calendarEventId = -1;
+            Store.get(ctx).saveReminder(r);
         }
     }
 
@@ -184,13 +216,13 @@ public final class ReminderSync {
         }
     }
 
-    /** Adds calendar events for reminders that don't have one yet (after the user allows calendar access). */
+    /** Adds calendar events for "calendar" reminders that don't have one yet (after calendar access is allowed). */
     public static void addMissingCalendarEvents(Context ctx) {
         Store s = Store.get(ctx);
         if (!s.setting(Store.S_ADD_TO_CALENDAR) || !CalendarHelper.hasPermission(ctx)) return;
         long now = System.currentTimeMillis();
         for (Reminder r : s.reminders()) {
-            if (r.calendarEventId > 0 || r.ignored || r.time <= now) continue;
+            if (r.kind != ReminderKind.EVENT || r.calendarEventId > 0 || r.ignored || r.time <= now) continue;
             long ev = CalendarHelper.insert(ctx, r);
             if (ev > 0) { r.calendarEventId = ev; s.saveReminder(r); }
         }

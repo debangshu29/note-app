@@ -250,7 +250,7 @@ public class MainActivity extends Activity {
             TextView title = v.findViewById(R.id.rem_title);
             TextView sub = v.findViewById(R.id.rem_sub);
             CheckBox cb = v.findViewById(R.id.rem_check);
-            title.setText(r.title);
+            title.setText(ReminderKind.emoji(r.kind) + "  " + r.title);
             Note n = store.note(r.noteId);
             String when = r.hasTime ? DateUtils.formatDateTime(MainActivity.this, r.time, DateUtils.FORMAT_SHOW_TIME) : "Any time";
             if (r.time < System.currentTimeMillis() || r.done) when = Notifier.formatWhen(MainActivity.this, r);

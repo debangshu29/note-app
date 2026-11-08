@@ -44,15 +44,14 @@ public class EditorActivity extends Activity {
 
     private EditText titleEt;
     private SmartEditText bodyEt;
-    private TextView metaTv, suggestTv;
-    private View suggestBar, chipsScroll;
+    private TextView metaTv;
+    private View chipsScroll;
     private LinearLayout chipsRow;
     private ImageButton pinBtn;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private boolean selfEdit = false;
     private boolean askedPermissions = false;
-    private String suggestion = null;
 
     private final Runnable saveTask = this::saveNow;
     private final Runnable chipsTask = this::refreshChips;
@@ -71,8 +70,6 @@ public class EditorActivity extends Activity {
         titleEt = findViewById(R.id.title);
         bodyEt = findViewById(R.id.body);
         metaTv = findViewById(R.id.meta);
-        suggestBar = findViewById(R.id.suggest_bar);
-        suggestTv = findViewById(R.id.suggest_text);
         chipsScroll = findViewById(R.id.chips_scroll);
         chipsRow = findViewById(R.id.chips_row);
         pinBtn = findViewById(R.id.btn_pin);
@@ -102,7 +99,7 @@ public class EditorActivity extends Activity {
         findViewById(R.id.tool_check).setOnClickListener(v -> insertLinePrefix("☐ "));
         findViewById(R.id.tool_bullet).setOnClickListener(v -> insertLinePrefix("• "));
         findViewById(R.id.tool_time).setOnClickListener(v -> pickDateTime());
-        suggestBar.setOnClickListener(v -> acceptSuggestion());
+        bodyEt.setOnGhostAccepted(this::acceptGhost);
 
         titleEt.addTextChangedListener(new SimpleWatcher() {
             @Override public void afterTextChanged(Editable e) { if (!selfEdit) onEdited(); }
@@ -249,8 +246,9 @@ public class EditorActivity extends Activity {
 
     // ------------------------------------------------------------------ math suggestion bar
 
+    /** Shows the answer in faded text right after the cursor, like Gmail's suggestions. */
     private void updateSuggestion() {
-        suggestion = null;
+        String ghost = null;
         if (store.setting(Store.S_MATH_SUGGEST) && bodyEt.hasFocus()) {
             int cur = bodyEt.getSelectionStart();
             Editable e = bodyEt.getText();
@@ -259,30 +257,26 @@ public class EditorActivity extends Activity {
                 String trimmed = before.replaceAll("[ \\t]+$", "");
                 char last = trimmed.isEmpty() ? 0 : trimmed.charAt(trimmed.length() - 1);
                 if (last != 0 && last != '=' && "+-*/x×÷^(".indexOf(last) < 0) {
-                    suggestion = MathEval.answerFor(before);
+                    String answer = MathEval.answerFor(before);
+                    if (answer != null) {
+                        boolean space = before.endsWith(" ") || before.endsWith("\t");
+                        ghost = (space ? "= " : " = ") + answer;
+                    }
                 }
             }
         }
-        if (suggestion == null) {
-            suggestBar.setVisibility(View.GONE);
-        } else {
-            suggestTv.setText("= " + suggestion);
-            suggestBar.setVisibility(View.VISIBLE);
-        }
+        bodyEt.setGhost(ghost);
     }
 
-    private void acceptSuggestion() {
-        if (suggestion == null) return;
+    /** The faded answer was tapped or dragged: write it into the note for real. */
+    private void acceptGhost(String ghost) {
         int cur = bodyEt.getSelectionStart();
-        Editable e = bodyEt.getText();
-        boolean space = cur > 0 && e.charAt(cur - 1) == ' ';
-        String ins = (space ? "= " : " = ") + suggestion;
+        if (cur < 0) return;
         selfEdit = true;
-        e.insert(cur, ins);
+        bodyEt.getText().insert(cur, ghost);
         selfEdit = false;
-        bodyEt.setSelection(cur + ins.length());
+        bodyEt.setSelection(cur + ghost.length());
         onEdited();
-        updateSuggestion();
     }
 
     // ------------------------------------------------------------------ toolbar helpers
@@ -416,10 +410,15 @@ public class EditorActivity extends Activity {
         long noteId = note == null ? -1 : note.id;
         for (ReminderSync.Found f : found) {
             Reminder r = stored.get(Reminder.makeKey(noteId, f.result.title));
+            // an unchanged line keeps the time it was saved with
+            boolean same = r != null && f.line.equals(r.sourceLine);
+            long time = same ? r.time : f.result.timeMillis;
+            boolean hasTime = same ? r.hasTime : f.result.hasTime;
+            int kind = r != null && (same || r.kindLocked) ? r.kind : f.kind;
+
             View chip = inf.inflate(R.layout.item_chip, chipsRow, false);
             TextView tv = chip.findViewById(R.id.chip_text);
-            String when = friendlyWhen(f.result.timeMillis, f.result.hasTime);
-            tv.setText("🔔 " + f.result.title + " · " + when);
+            tv.setText(ReminderKind.emoji(kind) + " " + f.result.title + " · " + friendlyWhen(time, hasTime));
             boolean off = r != null && r.ignored;
             boolean done = r != null && r.done;
             if (off || done) {
@@ -448,20 +447,31 @@ public class EditorActivity extends Activity {
             saveNow();
             handler.removeCallbacks(syncTask);
             if (note != null) ReminderSync.syncAsync(this, note.id, this::refreshChips);
-            Toast.makeText(this, "Reminder set for " + friendlyWhen(f.result.timeMillis, f.result.hasTime),
-                    Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, ReminderKind.label(f.kind) + " set for "
+                    + friendlyWhen(f.result.timeMillis, f.result.hasTime), Toast.LENGTH_SHORT).show();
             return;
         }
-        List<String> items = new ArrayList<>();
         final String OFF = "Don't remind me", ON = "Turn reminder back on",
                 DONE = "Mark as done", UNDONE = "Mark as not done", CAL = "Open in phone calendar";
+        final String[] KIND_ITEMS = {
+                "⏰  Alarm (rings, no calendar)",
+                "📅  Calendar + one notification",
+                "🔔  Just one notification"};
+        final int[] KINDS = {ReminderKind.ALARM, ReminderKind.EVENT, ReminderKind.NOTIFY};
+
+        List<String> items = new ArrayList<>();
+        if (!r.ignored && !r.done) {
+            for (int i = 0; i < KINDS.length; i++) {
+                if (KINDS[i] == ReminderKind.ALARM && !r.hasTime) continue;
+                items.add((r.kind == KINDS[i] ? "✓ " : "    ") + KIND_ITEMS[i]);
+            }
+        }
         items.add(r.ignored ? ON : OFF);
         if (!r.ignored) items.add(r.done ? UNDONE : DONE);
         if (r.calendarEventId > 0) items.add(CAL);
+
         new AlertDialog.Builder(this)
-                .setTitle(r.title)
-                .setMessage(Notifier.formatWhen(this, r)
-                        + (r.calendarEventId > 0 ? "\nAdded to your phone calendar" : ""))
+                .setTitle(ReminderKind.emoji(r.kind) + " " + r.title + "\n" + Notifier.formatWhen(this, r))
                 .setItems(items.toArray(new String[0]), (d, which) -> {
                     String pick = items.get(which);
                     if (pick.equals(CAL)) {
@@ -470,8 +480,16 @@ public class EditorActivity extends Activity {
                         catch (Exception e) { Toast.makeText(this, "No calendar app found", Toast.LENGTH_SHORT).show(); }
                         return;
                     }
+                    int newKind = -1;
+                    for (int i = 0; i < KINDS.length; i++) if (pick.endsWith(KIND_ITEMS[i])) newKind = KINDS[i];
+                    final int chosenKind = newKind;
+                    if (chosenKind == ReminderKind.EVENT && !CalendarHelper.hasPermission(this)) {
+                        requestPermissions(new String[]{Manifest.permission.READ_CALENDAR,
+                                Manifest.permission.WRITE_CALENDAR}, REQ_PERMS);
+                    }
                     ReminderSync.runInBackground(() -> {
-                        if (pick.equals(OFF)) ReminderSync.ignore(this, r);
+                        if (chosenKind >= 0) ReminderSync.setKind(this, r, chosenKind);
+                        else if (pick.equals(OFF)) ReminderSync.ignore(this, r);
                         else if (pick.equals(ON)) ReminderSync.unignore(this, r);
                         else if (pick.equals(DONE)) ReminderSync.setDone(this, r, true);
                         else if (pick.equals(UNDONE)) ReminderSync.setDone(this, r, false);

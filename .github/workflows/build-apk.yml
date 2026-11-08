@@ -20,7 +20,20 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Load the app's signing key (from encrypted repo Secrets)
+        env:
+          KS_B64: ${{ secrets.NOTE_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/note.jks"
+            echo "NOTE_KEYSTORE_FILE=$RUNNER_TEMP/note.jks" >> "$GITHUB_ENV"
+          else
+            echo "::warning::No signing key secret found, using a temporary debug key"
+          fi
+
       - name: Build
+        env:
+          NOTE_KEYSTORE_PASSWORD: ${{ secrets.NOTE_KEYSTORE_PASSWORD }}
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
