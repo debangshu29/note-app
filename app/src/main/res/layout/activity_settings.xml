@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="6dp">
+
+        <ImageButton
+            android:id="@+id/btn_back"
+            style="@style/IconButton"
+            android:contentDescription="Back"
+            android:src="@drawable/ic_back" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:fontFamily="sans-serif-medium"
+            android:text="Settings"
+            android:textColor="@color/text"
+            android:textSize="20sp" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="40dp">
+
+            <TextView style="@style/SettingsHeader" android:text="SMART WRITING" />
+
+            <Switch
+                android:id="@+id/sw_auto_math"
+                style="@style/SettingsSwitch"
+                android:text="Auto answer after =\n(1+1= becomes 1+1=2)" />
+
+            <Switch
+                android:id="@+id/sw_math_suggest"
+                style="@style/SettingsSwitch"
+                android:text="Show “= answer” bar while typing math" />
+
+            <Switch
+                android:id="@+id/sw_smart_lists"
+                style="@style/SettingsSwitch"
+                android:text="Smart lists and checkboxes" />
+
+            <TextView style="@style/SettingsHeader" android:text="REMINDERS" />
+
+            <Switch
+                android:id="@+id/sw_auto_reminders"
+                style="@style/SettingsSwitch"
+                android:text="Find dates in notes and remind me" />
+
+            <Switch
+                android:id="@+id/sw_calendar"
+                style="@style/SettingsSwitch"
+                android:text="Also add them to my phone calendar" />
+
+            <LinearLayout android:id="@+id/row_default_time" style="@style/SettingsRow">
+                <TextView style="@style/SettingsTitle" android:text="Default reminder time" />
+                <TextView android:id="@+id/txt_default_time" style="@style/SettingsSub" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/row_permissions" style="@style/SettingsRow">
+                <TextView style="@style/SettingsTitle" android:text="Permissions" />
+                <TextView android:id="@+id/txt_permissions" style="@style/SettingsSub" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/row_exact" style="@style/SettingsRow" android:visibility="gone">
+                <TextView style="@style/SettingsTitle" android:text="Allow on-time alarms" />
+                <TextView style="@style/SettingsSub"
+                    android:text="Your phone may deliver reminders a few minutes late. Tap to allow exact alarms." />
+            </LinearLayout>
+
+            <TextView style="@style/SettingsHeader" android:text="YOUR DATA" />
+
+            <LinearLayout style="@style/SettingsRow" android:clickable="false">
+                <TextView style="@style/SettingsTitle" android:text="Storage" />
+                <TextView android:id="@+id/txt_storage" style="@style/SettingsSub" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/row_export" style="@style/SettingsRow">
+                <TextView style="@style/SettingsTitle" android:text="Export backup" />
+                <TextView style="@style/SettingsSub"
+                    android:text="Save all notes to a file (Downloads, Drive…). Good before changing phones." />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/row_import" style="@style/SettingsRow">
+                <TextView style="@style/SettingsTitle" android:text="Restore from backup" />
+                <TextView style="@style/SettingsSub" android:text="Bring notes back from a backup file." />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/row_delete_all" style="@style/SettingsRow">
+                <TextView style="@style/SettingsTitle" android:text="Delete all data" android:textColor="@color/danger" />
+                <TextView style="@style/SettingsSub"
+                    android:text="Erase every note, reminder and setting from this phone." />
+            </LinearLayout>
+
+            <TextView style="@style/SettingsHeader" android:text="ABOUT" />
+
+            <LinearLayout android:id="@+id/row_help" style="@style/SettingsRow">
+                <TextView style="@style/SettingsTitle" android:text="How to use" />
+                <TextView android:id="@+id/txt_version" style="@style/SettingsSub" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

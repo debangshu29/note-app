@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg">#121215</color>
+    <color name="surface">#1D1D22</color>
+    <color name="text">#ECEBF0</color>
+    <color name="text2">#A3A1AB</color>
+    <color name="hint">#6D6B74</color>
+    <color name="divider">#2C2C33</color>
+    <color name="accent">#8F8AFF</color>
+    <color name="accent_soft">#2A2952</color>
+    <color name="on_accent">#121215</color>
+    <color name="danger">#FF7A7A</color>
+    <color name="suggest_bg">#ECEBF0</color>
+    <color name="suggest_text">#121215</color>
+</resources>
