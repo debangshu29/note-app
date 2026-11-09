@@ -60,9 +60,10 @@ Works on Android 7.0 and newer.
 
 ## Updating the app
 
-**In-app updates (from version 1.2):** the app checks this repo's latest release about twice a day.
-When a newer version is ready you get a notification / popup → **Update** → Android asks "Update this app?" → done.
-Notes, reminders and settings stay. The first time, Android asks you to allow "Install unknown apps" for Note.
+**In-app updates:** the app checks this repo's latest release about twice a day.
+When a newer version is ready you get one notification / a popup → **Update** → the new APK downloads in your
+browser → tap it → Android asks "Update this app?" → done. Notes, reminders and settings stay.
+The app never installs anything by itself (that's what made Play Protect suspicious in 1.2).
 Turn it off or check manually in Settings → App updates.
 
 To publish an update: raise `versionCode` / `versionName` in `app/build.gradle`, write the changes in

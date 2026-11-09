@@ -11,23 +11,14 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageInstaller;
 import android.net.Uri;
 import android.os.Build;
-import android.provider.Settings;
-import android.widget.LinearLayout;
-import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
@@ -36,8 +27,8 @@ import java.net.URL;
  *
  *  - checks github.com/debangshu29/note-app for a newer version (in the background about twice a day,
  *    and when the app is opened)
- *  - shows a popup "Update available", downloads the new APK and hands it to Android's installer
- *  - the app is updated in place: notes, reminders and settings stay
+ *  - shows a popup "Update available"; "Update" opens the new APK in the browser,
+ *    you tap the download and Android updates the app in place: notes, reminders and settings stay
  *
  * The ONLY internet use of the app is downloading these two files. Notes are never sent anywhere.
  */
@@ -238,103 +229,20 @@ public final class Updater {
 
     // ------------------------------------------------------------------ download + install
 
+    /**
+     * Opens the new APK in the phone's browser. The browser downloads it, you tap it,
+     * and Android shows "Update this app?" — the app is replaced in place and your notes stay.
+     * (The app itself never installs anything: that kind of self-installing behaviour is what
+     * makes Play Protect suspicious of an app.)
+     */
     public static void startUpdate(Activity a) {
-        // Android asks once: "Allow Note to install apps?" (needed to update itself)
-        if (Build.VERSION.SDK_INT >= 26 && !a.getPackageManager().canRequestPackageInstalls()) {
-            new AlertDialog.Builder(a)
-                    .setTitle("One-time permission")
-                    .setMessage("To update itself, Note needs “Install unknown apps”.\n\n"
-                            + "On the next screen switch on “Allow from this source”, then come back and tap Update again.")
-                    .setPositiveButton("Open settings", (d, w) -> {
-                        try {
-                            a.startActivity(new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
-                                    Uri.parse("package:" + a.getPackageName())));
-                        } catch (Exception e) {
-                            Toast.makeText(a, "Please allow it in phone Settings → Apps → Note", Toast.LENGTH_LONG).show();
-                        }
-                    })
-                    .setNegativeButton("Cancel", null)
-                    .show();
-            return;
-        }
-
-        int pad = (int) (24 * a.getResources().getDisplayMetrics().density);
-        LinearLayout box = new LinearLayout(a);
-        box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding(pad, pad / 2, pad, 0);
-        ProgressBar bar = new ProgressBar(a, null, android.R.attr.progressBarStyleHorizontal);
-        bar.setMax(100);
-        TextView label = new TextView(a);
-        label.setText("Starting download…");
-        box.addView(bar);
-        box.addView(label);
-        AlertDialog dlg = new AlertDialog.Builder(a)
-                .setTitle("Downloading update")
-                .setView(box)
-                .setCancelable(false)
-                .show();
-
-        new Thread(() -> {
-            File apk = new File(a.getCacheDir(), "update.apk");
-            String error = null;
-            HttpURLConnection c = null;
-            try {
-                c = (HttpURLConnection) new URL(APK_URL + "?t=" + System.currentTimeMillis()).openConnection();
-                c.setConnectTimeout(15000);
-                c.setReadTimeout(30000);
-                c.setInstanceFollowRedirects(true);
-                if (c.getResponseCode() != 200) throw new Exception("server said " + c.getResponseCode());
-                int total = c.getContentLength();
-                try (InputStream in = c.getInputStream(); OutputStream out = new FileOutputStream(apk)) {
-                    byte[] b = new byte[16384];
-                    int n;
-                    long done = 0;
-                    while ((n = in.read(b)) > 0) {
-                        out.write(b, 0, n);
-                        done += n;
-                        final int pct = total > 0 ? (int) (done * 100 / total) : 0;
-                        final long kb = done / 1024;
-                        a.runOnUiThread(() -> { bar.setProgress(pct); label.setText(kb + " KB"); });
-                    }
-                }
-                install(a, apk);
-            } catch (Exception e) {
-                error = e.getMessage();
-            } finally {
-                if (c != null) c.disconnect();
-            }
-            final String err = error;
-            a.runOnUiThread(() -> {
-                try { dlg.dismiss(); } catch (Exception ignored) { }
-                if (err != null) Toast.makeText(a, "Update failed: " + err, Toast.LENGTH_LONG).show();
-            });
-        }).start();
-    }
-
-    /** Hands the APK to Android's installer (it shows its own "Update this app?" screen). */
-    private static void install(Context ctx, File apk) throws Exception {
-        PackageInstaller installer = ctx.getPackageManager().getPackageInstaller();
-        PackageInstaller.SessionParams params =
-                new PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL);
-        params.setAppPackageName(ctx.getPackageName());
-        if (Build.VERSION.SDK_INT >= 31) {
-            // after the first in-app update, Android 12+ can update silently without asking again
-            params.setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED);
-        }
-        int id = installer.createSession(params);
-        try (PackageInstaller.Session session = installer.openSession(id)) {
-            try (OutputStream out = session.openWrite("note.apk", 0, apk.length());
-                 InputStream in = new FileInputStream(apk)) {
-                byte[] b = new byte[65536];
-                int n;
-                while ((n = in.read(b)) > 0) out.write(b, 0, n);
-                session.fsync(out);
-            }
-            Intent done = new Intent(ctx, InstallReceiver.class);
-            int flags = PendingIntent.FLAG_UPDATE_CURRENT
-                    | (Build.VERSION.SDK_INT >= 31 ? PendingIntent.FLAG_MUTABLE : 0);
-            PendingIntent pi = PendingIntent.getBroadcast(ctx, id, done, flags);
-            session.commit(pi.getIntentSender());
+        try {
+            Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(APK_URL));
+            i.addCategory(Intent.CATEGORY_BROWSABLE);
+            a.startActivity(i);
+            Toast.makeText(a, "When the download finishes, tap it and choose Update", Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
+            Toast.makeText(a, "No browser found to download the update", Toast.LENGTH_LONG).show();
         }
     }
 
