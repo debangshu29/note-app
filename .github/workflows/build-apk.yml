@@ -23,9 +23,13 @@ jobs:
       - name: Load the app's signing key (from encrypted repo Secrets)
         env:
           KS_B64: ${{ secrets.NOTE_KEYSTORE_B64 }}
+          NOTE_KEYSTORE_PASSWORD: ${{ secrets.NOTE_KEYSTORE_PASSWORD }}
         run: |
           if [ -n "$KS_B64" ]; then
-            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/note.jks"
+            # ignore spaces / line breaks that sneak in when copy-pasting
+            printf '%s' "$KS_B64" | tr -d ' \r\n\t' | base64 -d > "$RUNNER_TEMP/note.jks"
+            echo "Key file size: $(wc -c < "$RUNNER_TEMP/note.jks") bytes (expected 2628)"
+            keytool -list -keystore "$RUNNER_TEMP/note.jks" -storepass "$NOTE_KEYSTORE_PASSWORD" | grep -i "SHA-256" || true
             echo "NOTE_KEYSTORE_FILE=$RUNNER_TEMP/note.jks" >> "$GITHUB_ENV"
           else
             echo "::warning::No signing key secret found, using a temporary debug key"
