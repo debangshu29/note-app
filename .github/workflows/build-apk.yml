@@ -25,6 +25,10 @@ jobs:
           KS_B64: ${{ secrets.NOTE_KEYSTORE_B64 }}
           NOTE_KEYSTORE_PASSWORD: ${{ secrets.NOTE_KEYSTORE_PASSWORD }}
         run: |
+          # diagnostics without revealing the secrets: only lengths
+          CLEAN=$(printf '%s' "$KS_B64" | tr -d ' \r\n\t')
+          echo "Key secret length: ${#CLEAN} (expected 3504), password length: ${#NOTE_KEYSTORE_PASSWORD} (expected 24)"
+          case "$CLEAN" in MII*) echo "Key secret looks like a key file";; *) echo "Key secret does NOT look like the key file text";; esac
           if [ -n "$KS_B64" ]; then
             # ignore spaces / line breaks that sneak in when copy-pasting
             printf '%s' "$KS_B64" | tr -d ' \r\n\t' | base64 -d > "$RUNNER_TEMP/note.jks"
