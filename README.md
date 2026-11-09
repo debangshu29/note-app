@@ -61,7 +61,11 @@ Works on Android 7.0 and newer.
 
 ## Updating the app
 
-**In-app updates:** the app checks this repo's latest release about twice a day.
+**In-app updates:** the app checks for a new version about twice a day (from the `updates` branch of this repo,
+with the latest release as a backup).
+
+Direct download of the newest app: https://raw.githubusercontent.com/debangshu29/note-app/updates/Note.apk
+
 When a newer version is ready you get one notification / a popup → **Update** → the app downloads ONE file
 (`Note-update.apk`) into its own private folder → tap the "Note update" notification → Android asks
 "Update this app?" → done. Notes, reminders and settings stay, and the downloaded file is deleted
