@@ -9,5 +9,7 @@ public class BootReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context ctx, Intent intent) {
         ReminderSync.rescheduleAll(ctx);
+        // right after an update: delete the downloaded installer file
+        if (Intent.ACTION_MY_PACKAGE_REPLACED.equals(intent.getAction())) Updater.cleanUpAfterUpdate(ctx);
     }
 }

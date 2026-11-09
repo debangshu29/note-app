@@ -1,3 +1,2 @@
-• Price lists add up by themselves: write "apple 50 rs", "banana 20"… and the total appears in grey under the list — tap it to keep it
-• Type "total =" under a list and it fills in; a Total line stays correct when you change a price
-• Shopping checklists show what's bought ☑ and what's left ☐
+• Updates no longer pile up files in your Downloads: the app downloads ONE update file into its own folder and deletes it by itself after updating
+• Tip: you can delete the old Note.apk files that Chrome saved in Downloads earlier

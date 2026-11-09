@@ -39,6 +39,7 @@ public class MainActivity extends Activity {
         Notifier.ensureChannel(this);
         ReminderSync.runInBackground(() -> ReminderSync.rescheduleAll(this), null);
         Updater.scheduleBackgroundChecks(this);
+        Updater.cleanUpAfterUpdate(this);
 
         list = findViewById(R.id.list);
         emptyTv = findViewById(R.id.empty);
