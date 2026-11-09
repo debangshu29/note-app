@@ -46,17 +46,33 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
           cp app/build/outputs/apk/release/app-release.apk Note.apk
+          # version.json lets the app on the phone know an update is ready
+          python3 - <<'PY'
+          import json, re
+          g = open('app/build.gradle').read()
+          code = int(re.search(r'versionCode\s+(\d+)', g).group(1))
+          name = re.search(r"versionName\s+'([^']+)'", g).group(1)
+          try:
+              notes = open('whats-new.txt', encoding='utf-8').read().strip()
+          except FileNotFoundError:
+              notes = ''
+          json.dump({'versionCode': code, 'versionName': name, 'notes': notes},
+                    open('version.json', 'w', encoding='utf-8'), ensure_ascii=False)
+          print('version.json:', code, name)
+          PY
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Note-apk
-          path: Note.apk
+          path: |
+            Note.apk
+            version.json
 
       - name: Publish as "latest" release (easy download on phone)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest Note.apk --title "Note app (latest build)" \
+          gh release create latest Note.apk version.json --title "Note app (latest build)" \
             --notes "Built from commit ${GITHUB_SHA::7}. Download Note.apk below and tap it on your phone to install."

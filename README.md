@@ -1,8 +1,8 @@
 # Note — smart notes app for Android
 
 All your notes in one place, with three smart features built in.
-Everything is stored **only on your phone** — no account, no internet, no server, no database.
-The app doesn't even ask for internet permission, so it has no way to send your notes anywhere.
+Everything is stored **only on your phone** — no account, no server, no database. Your notes are never uploaded.
+The only thing the app downloads from the internet is its own updates (from this repo's Releases).
 
 ## What it does (Phase 1)
 
@@ -59,6 +59,14 @@ You need **Android Studio** installed once (free): https://developer.android.com
 Works on Android 7.0 and newer.
 
 ## Updating the app
+
+**In-app updates (from version 1.2):** the app checks this repo's latest release about twice a day.
+When a newer version is ready you get a notification / popup → **Update** → Android asks "Update this app?" → done.
+Notes, reminders and settings stay. The first time, Android asks you to allow "Install unknown apps" for Note.
+Turn it off or check manually in Settings → App updates.
+
+To publish an update: raise `versionCode` / `versionName` in `app/build.gradle`, write the changes in
+`whats-new.txt`, and push. GitHub builds it and the phones see it.
 
 From version 1.1 every APK from GitHub is signed with the same key (kept in GitHub Secrets, backup in `D:\note\signing`),
 so a new `Note.apk` installs on top of the old one and your notes stay. Version 1.0 has to be uninstalled once.

@@ -9,7 +9,8 @@ public final class HelpDialog {
 
     public static void show(Context ctx) {
         String msg =
-                "Everything you write stays on this phone. No account, no internet, no server.\n\n"
+                "Everything you write stays on this phone. No account, no server — your notes are never uploaded. "
+                + "(The app only goes online to download its own updates.)\n\n"
                 + "🧮  Auto math\n"
                 + "Type 1+1= and the answer appears by itself: 1+1=2\n"
                 + "Or just type 450+120+80 — the answer shows in grey after it. "
@@ -26,7 +27,9 @@ public final class HelpDialog {
                 + "Lists continue when you press Enter.\n\n"
                 + "🗑  Your data\n"
                 + "Settings → Delete all data wipes everything from the phone. "
-                + "You can also export a backup file first.";
+                + "You can also export a backup file first.\n\n"
+                + "⬆  Updates\n"
+                + "When a new version is ready, a popup offers to update. Your notes stay.";
         new AlertDialog.Builder(ctx)
                 .setTitle("Welcome to Note")
                 .setMessage(msg)

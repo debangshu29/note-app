@@ -43,6 +43,8 @@ public class SettingsActivity extends Activity {
         bindSwitch(R.id.sw_smart_lists, Store.S_SMART_LISTS);
         bindSwitch(R.id.sw_auto_reminders, Store.S_AUTO_REMINDERS);
         bindSwitch(R.id.sw_calendar, Store.S_ADD_TO_CALENDAR);
+        bindSwitch(R.id.sw_auto_update, Store.S_AUTO_UPDATE);
+        findViewById(R.id.row_check_update).setOnClickListener(v -> Updater.maybePrompt(this, true));
 
         findViewById(R.id.row_default_time).setOnClickListener(v ->
                 new TimePickerDialog(this, (tp, h, m) -> {
@@ -78,6 +80,7 @@ public class SettingsActivity extends Activity {
         sw.setChecked(store.setting(key));
         sw.setOnCheckedChangeListener((b, on) -> {
             store.prefs().edit().putBoolean(key, on).apply();
+            if (key.equals(Store.S_AUTO_UPDATE)) Updater.scheduleBackgroundChecks(this);
             if (key.equals(Store.S_ADD_TO_CALENDAR) && on) {
                 if (!CalendarHelper.hasPermission(this)) askPermissions();
                 else ReminderSync.runInBackground(() -> ReminderSync.addMissingCalendarEvents(this), null);
@@ -116,7 +119,8 @@ public class SettingsActivity extends Activity {
 
         String version = "";
         try { version = getPackageManager().getPackageInfo(getPackageName(), 0).versionName; } catch (Exception ignored) { }
-        ((TextView) findViewById(R.id.txt_version)).setText("Note " + version + " · works fully offline");
+        ((TextView) findViewById(R.id.txt_version)).setText("Note " + version + " · your notes never leave this phone");
+        ((TextView) findViewById(R.id.txt_update)).setText("You have version " + version + ". Tap to look for a newer one.");
     }
 
     // ------------------------------------------------------------------ permissions

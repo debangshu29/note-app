@@ -44,6 +44,7 @@ public final class Store {
     public static final String S_ADD_TO_CALENDAR = "add_to_calendar";
     public static final String S_DEFAULT_HOUR = "default_hour";
     public static final String S_SMART_LISTS = "smart_lists";
+    public static final String S_AUTO_UPDATE = "auto_update";
 
     private Store(Context app) {
         this.app = app;

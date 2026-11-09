@@ -38,6 +38,7 @@ public class MainActivity extends Activity {
         store = Store.get(this);
         Notifier.ensureChannel(this);
         ReminderSync.runInBackground(() -> ReminderSync.rescheduleAll(this), null);
+        Updater.scheduleBackgroundChecks(this);
 
         list = findViewById(R.id.list);
         emptyTv = findViewById(R.id.empty);
@@ -60,7 +61,16 @@ public class MainActivity extends Activity {
         if (!store.prefs().getBoolean("welcomed", false)) {
             store.prefs().edit().putBoolean("welcomed", true).apply();
             HelpDialog.show(this);
+        } else {
+            Updater.showWhatsNewOnce(this);
         }
+        Updater.maybePrompt(this, getIntent().getBooleanExtra("showUpdate", false));
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        if (intent.getBooleanExtra("showUpdate", false)) Updater.maybePrompt(this, true);
     }
 
     @Override

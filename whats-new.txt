@@ -1,0 +1,3 @@
+• Updates now come inside the app — no more reinstalling
+• Grey math answers (tap or swipe to keep)
+• Alarms for "wake me up…", calendar for planned things, one gentle notification for the rest
