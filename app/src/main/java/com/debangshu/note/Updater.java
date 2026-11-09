@@ -41,9 +41,11 @@ public final class Updater {
 
     private Updater() {}
 
-    private static final String BASE = "https://github.com/debangshu29/note-app/releases/download/latest/";
-    private static final String VERSION_URL = BASE + "version.json";
-    private static final String APK_URL = BASE + "Note.apk";
+    // fast file server first; the GitHub release page is the backup (it can be slow / time out with 504)
+    private static final String[] BASES = {
+            "https://raw.githubusercontent.com/debangshu29/note-app/updates/",
+            "https://github.com/debangshu29/note-app/releases/download/latest/"};
+    private static final String APK_URL = BASES[0] + "Note.apk";
 
     private static final String CHANNEL = "updates";
     private static final int NOTIF_ID = 777001;
@@ -77,9 +79,21 @@ public final class Updater {
 
     /** Network call: returns the newest published version, or null if offline / not found. Run off the UI thread. */
     public static Info fetchLatest() {
+        // each address is tried twice; a temporary GitHub error (504 etc.) doesn't stop the check
+        for (int attempt = 0; attempt < 2; attempt++) {
+            for (String base : BASES) {
+                Info i = fetchFrom(base + "version.json?t=" + System.currentTimeMillis());
+                if (i != null) return i;
+            }
+            try { Thread.sleep(2000); } catch (InterruptedException e) { return null; }
+        }
+        return null;
+    }
+
+    private static Info fetchFrom(String url) {
         HttpURLConnection c = null;
         try {
-            c = (HttpURLConnection) new URL(VERSION_URL + "?t=" + System.currentTimeMillis()).openConnection();
+            c = (HttpURLConnection) new URL(url).openConnection();
             c.setConnectTimeout(10000);
             c.setReadTimeout(15000);
             c.setInstanceFollowRedirects(true);
@@ -275,7 +289,8 @@ public final class Updater {
 
         try {
             String name = latest == null ? "" : " " + latest.versionName;
-            DownloadManager.Request r = new DownloadManager.Request(Uri.parse(APK_URL))
+            // "?v=" makes sure the newest file is fetched, not an older cached copy
+            DownloadManager.Request r = new DownloadManager.Request(Uri.parse(APK_URL + "?v=" + target))
                     .setTitle("Note" + name + " update")
                     .setDescription("Tap when finished, then choose Update")
                     .setMimeType("application/vnd.android.package-archive")

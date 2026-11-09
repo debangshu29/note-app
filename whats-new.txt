@@ -1,2 +1,2 @@
-• Updates no longer pile up files in your Downloads: the app downloads ONE update file into its own folder and deletes it by itself after updating
-• Tip: you can delete the old Note.apk files that Chrome saved in Downloads earlier
+• Faster, more reliable updates: no more "504 gateway" errors when checking or downloading
+• Update files are still deleted by themselves after updating
