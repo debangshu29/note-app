@@ -41,6 +41,7 @@ public class SettingsActivity extends Activity {
         bindSwitch(R.id.sw_auto_math, Store.S_AUTO_MATH);
         bindSwitch(R.id.sw_math_suggest, Store.S_MATH_SUGGEST);
         bindSwitch(R.id.sw_smart_lists, Store.S_SMART_LISTS);
+        bindSwitch(R.id.sw_list_totals, Store.S_LIST_TOTALS);
         bindSwitch(R.id.sw_auto_reminders, Store.S_AUTO_REMINDERS);
         bindSwitch(R.id.sw_calendar, Store.S_ADD_TO_CALENDAR);
         bindSwitch(R.id.sw_auto_update, Store.S_AUTO_UPDATE);

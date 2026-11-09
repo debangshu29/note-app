@@ -45,6 +45,7 @@ public final class Store {
     public static final String S_DEFAULT_HOUR = "default_hour";
     public static final String S_SMART_LISTS = "smart_lists";
     public static final String S_AUTO_UPDATE = "auto_update";
+    public static final String S_LIST_TOTALS = "list_totals";
 
     private Store(Context app) {
         this.app = app;

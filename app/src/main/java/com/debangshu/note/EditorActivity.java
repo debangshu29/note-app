@@ -51,6 +51,10 @@ public class EditorActivity extends Activity {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private boolean selfEdit = false;
+
+    // what the grey suggestion will do when accepted
+    private static final int G_MATH = 0, G_TOTAL_BELOW = 1, G_TOTAL_HERE = 2;
+    private int ghostKind = G_MATH;
     private boolean askedPermissions = false;
 
     private final Runnable saveTask = this::saveNow;
@@ -150,15 +154,51 @@ public class EditorActivity extends Activity {
                 int end = start + count;              // just after what was typed
                 if (end <= e.length()) {
                     char last = e.charAt(end - 1);
-                    if (last == '=' && store.setting(Store.S_AUTO_MATH)) autoAnswer(e, end);
+                    boolean totals = store.setting(Store.S_LIST_TOTALS);
+                    if ((last == '=' || last == ':') && totals && fillTotalLine(e, end)) { /* "total =" filled */ }
+                    else if (last == '=' && store.setting(Store.S_AUTO_MATH)) autoAnswer(e, end);
                     else if (last == '\n' && store.setting(Store.S_SMART_LISTS)) continueList(e, end);
                     else if (last == ' ' && store.setting(Store.S_SMART_LISTS)) checkboxShortcut(e, end);
                 }
+            }
+            // keep every "Total = ..." line correct (except the one being typed in)
+            if (store.setting(Store.S_LIST_TOTALS)) {
+                int cur = bodyEt.getSelectionStart();
+                applyTotalEdits(e, -1, cur < 0 ? -1 : lineIndex(e, cur));
             }
             onEdited();
             updateSuggestion();
         }
     };
+
+    private static int lineIndex(CharSequence s, int pos) {
+        int n = 0;
+        for (int i = 0; i < Math.min(pos, s.length()); i++) if (s.charAt(i) == '\n') n++;
+        return n;
+    }
+
+    /** "total =" / "total:" was just typed: fill in the sum of the list above. */
+    private boolean fillTotalLine(Editable e, int end) {
+        int ls = lastNewline(e, end - 1) + 1;
+        int le = end;
+        while (le < e.length() && e.charAt(le) != '\n') le++;
+        if (!ListTotals.isEmptyTotalLine(e.subSequence(ls, le).toString())) return false;
+        int li = lineIndex(e, end - 1);
+        if (!applyTotalEdits(e, li, -1)) return false;
+        int newEnd = ls;
+        while (newEnd < e.length() && e.charAt(newEnd) != '\n') newEnd++;
+        bodyEt.setSelection(newEnd);
+        return true;
+    }
+
+    private boolean applyTotalEdits(Editable e, int fillLine, int skipLine) {
+        List<ListTotals.Edit> edits = ListTotals.totalLineEdits(e.toString(), fillLine, skipLine);
+        if (edits.isEmpty()) return false;
+        selfEdit = true;
+        for (ListTotals.Edit ed : edits) e.replace(ed.start, ed.end, ed.text);
+        selfEdit = false;
+        return true;
+    }
 
     /** "1+1=" -> "1+1=2" */
     private void autoAnswer(Editable e, int end) {
@@ -249,7 +289,30 @@ public class EditorActivity extends Activity {
     /** Shows the answer in faded text right after the cursor, like Gmail's suggestions. */
     private void updateSuggestion() {
         String ghost = null;
-        if (store.setting(Store.S_MATH_SUGGEST) && bodyEt.hasFocus()) {
+        ghostKind = G_MATH;
+        boolean below = false;
+        if (store.setting(Store.S_LIST_TOTALS) && bodyEt.hasFocus()) {
+            int cur = bodyEt.getSelectionStart();
+            Editable e = bodyEt.getText();
+            if (cur >= 0 && cur == bodyEt.getSelectionEnd() && (cur == e.length() || e.charAt(cur) == '\n')) {
+                String[] lines = e.toString().split("\n", -1);
+                int li = lineIndex(e, cur);
+                String line = lines[li];
+                String bare = line.trim();
+                boolean onlyMarker = bare.isEmpty() || bare.matches("[-*•☐☑]|\\d{1,3}[.)]");
+                boolean nextFree = li + 1 >= lines.length || lines[li + 1].trim().isEmpty();
+                if (onlyMarker && li > 0 && nextFree) {
+                    // empty line right after a price list: offer the total here
+                    ListTotals.Block b = ListTotals.blockEndingAt(lines, li - 1);
+                    if (b != null) { ghost = "Total = " + ListTotals.summary(b); ghostKind = G_TOTAL_HERE; }
+                } else if (nextFree && ListTotals.price(line) != null) {
+                    // end of the last item: offer the total on the line below
+                    ListTotals.Block b = ListTotals.blockEndingAt(lines, li);
+                    if (b != null) { ghost = "Total = " + ListTotals.summary(b); ghostKind = G_TOTAL_BELOW; below = true; }
+                }
+            }
+        }
+        if (ghost == null && store.setting(Store.S_MATH_SUGGEST) && bodyEt.hasFocus()) {
             int cur = bodyEt.getSelectionStart();
             Editable e = bodyEt.getText();
             if (cur >= 0 && cur == bodyEt.getSelectionEnd() && (cur == e.length() || e.charAt(cur) == '\n')) {
@@ -265,17 +328,28 @@ public class EditorActivity extends Activity {
                 }
             }
         }
-        bodyEt.setGhost(ghost);
+        bodyEt.setGhost(ghost, below);
     }
 
     /** The faded answer was tapped or dragged: write it into the note for real. */
     private void acceptGhost(String ghost) {
         int cur = bodyEt.getSelectionStart();
         if (cur < 0) return;
+        Editable e = bodyEt.getText();
         selfEdit = true;
-        bodyEt.getText().insert(cur, ghost);
+        if (ghostKind == G_TOTAL_BELOW) {
+            e.insert(cur, "\n" + ghost);
+            cur += 1 + ghost.length();
+        } else if (ghostKind == G_TOTAL_HERE) {
+            int ls = lastNewline(e, cur - 1) + 1;
+            e.replace(ls, cur, ghost);       // replaces a leftover "☐ " / "- " on that line
+            cur = ls + ghost.length();
+        } else {
+            e.insert(cur, ghost);
+            cur += ghost.length();
+        }
         selfEdit = false;
-        bodyEt.setSelection(cur + ghost.length());
+        bodyEt.setSelection(Math.min(cur, e.length()));
         onEdited();
     }
 

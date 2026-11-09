@@ -26,6 +26,7 @@ public class SmartEditText extends EditText {
     private OnGhostAccepted acceptListener;
 
     private String ghost;
+    private boolean ghostBelow;   // draw on the line under the cursor (list totals)
     private final Paint ghostPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF ghostRect = new RectF();
     private boolean tracking;
@@ -39,8 +40,11 @@ public class SmartEditText extends EditText {
     public void setOnGhostAccepted(OnGhostAccepted l) { acceptListener = l; }
 
     /** Shows (or hides with null) the faded suggestion after the cursor. */
-    public void setGhost(String g) {
+    public void setGhost(String g) { setGhost(g, false); }
+
+    public void setGhost(String g, boolean below) {
         ghost = (g == null || g.isEmpty()) ? null : g;
+        ghostBelow = below;
         if (ghost == null) ghostRect.setEmpty();
         invalidate();
     }
@@ -91,7 +95,7 @@ public class SmartEditText extends EditText {
 
         float width = ghostPaint.measureText(ghost);
         float maxRight = getWidth() - getTotalPaddingRight();
-        if (x + width > maxRight && cur == length()) {
+        if (ghostBelow || (x + width > maxRight && cur == length())) {
             // no room on this line: show it at the start of the next line
             float h = lineBottom - lineTop;
             x = left;

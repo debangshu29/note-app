@@ -51,6 +51,11 @@
                 android:text="Show the answer in grey while typing math\n(tap it or swipe it right to add)" />
 
             <Switch
+                android:id="@+id/sw_list_totals"
+                style="@style/SettingsSwitch"
+                android:text="Add up price lists automatically\n(apple 50 rs, banana 20 rs… → Total = ₹70)" />
+
+            <Switch
                 android:id="@+id/sw_smart_lists"
                 style="@style/SettingsSwitch"
                 android:text="Smart lists and checkboxes" />

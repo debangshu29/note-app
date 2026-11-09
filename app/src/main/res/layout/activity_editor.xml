@@ -93,6 +93,7 @@
                 android:inputType="textCapSentences|textMultiLine"
                 android:lineSpacingExtra="5dp"
                 android:minHeight="320dp"
+                android:paddingBottom="44dp"
                 android:textColor="@color/text"
                 android:textSize="17sp" />
         </LinearLayout>

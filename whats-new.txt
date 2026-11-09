@@ -1,2 +1,3 @@
-• Fixed the Google Play Protect warning: the app no longer installs anything by itself
-• "Update" now downloads the new version in your browser — tap it and choose Update, your notes stay
+• Price lists add up by themselves: write "apple 50 rs", "banana 20"… and the total appears in grey under the list — tap it to keep it
+• Type "total =" under a list and it fills in; a Total line stays correct when you change a price
+• Shopping checklists show what's bought ☑ and what's left ☐
