@@ -28,6 +28,12 @@
                 android:textSize="30sp" />
 
             <ImageButton
+                android:id="@+id/btn_import"
+                style="@style/IconButton"
+                android:contentDescription="Make a note from a photo, PDF or file"
+                android:src="@drawable/ic_import" />
+
+            <ImageButton
                 android:id="@+id/btn_settings"
                 style="@style/IconButton"
                 android:contentDescription="Settings"

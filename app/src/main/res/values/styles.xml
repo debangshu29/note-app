@@ -12,6 +12,8 @@
         <item name="android:textColorSecondary">@color/text2</item>
         <item name="android:textColorHint">@color/hint</item>
         <item name="android:alertDialogTheme">@style/DialogTheme</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:actionModeBackground">@color/surface</item>
     </style>
     <style name="DialogTheme" parent="android:Theme.Material.Light.Dialog.Alert">
         <item name="android:colorAccent">@color/accent</item>

@@ -14,7 +14,9 @@ The only thing the app downloads from the internet is its own updates (from this
 | **Reminders that fit the note** | ⏰ `wake me up at 10 am tomorrow` → a real alarm (Stop / Snooze, full screen), **not** added to the calendar. 📅 `call mom at 5 pm on 12 Nov`, `exam on 5 Jan` → phone calendar entry + **one** notification (the calendar entry itself stays silent). 🔔 `drink water in 2 hours`, `buy milk at 8 pm` → just one notification. Tap the chip under the note to change the type or turn it off. A reminder keeps the time it was written for ("tomorrow" stays that day). |
 | **Reminders tab** | Everything coming up, grouped by Today / Tomorrow / date, plus Missed and Done. Tick to finish. |
 | **Checklists and lists** | Type `[]` + space for a ☐ checkbox, tap the box to tick it ☑. `- `, `• ` and `1. ` lists continue when you press Enter. Toolbar buttons for checklist, bullet, and a date/time picker. |
-| **Share into Note** | Share text from any app (WhatsApp, Chrome...) and choose Note: it becomes a new note. |
+| **Sharing** | Share a note (🔗 in the note, or long-press on the home screen) as **text, image or PDF**. For shopping lists choose **all items, only left to buy ☐, or only bought ☑** — the total is recalculated for what you share. |
+| **Select several notes** | Long-press a note, tap more, then **Share / Pin / Delete / Select all**. Several notes share as one message, several images, or one PDF. |
+| **Anything → note** | Share text, a **photo, screenshot, PDF or text file** to Note (or tap the 📄+ button on the home screen) and its text becomes a new note. Photos/PDFs are read **on the phone** by Google's ML Kit — nothing is uploaded. A photo of a bill becomes a price list that adds itself up. |
 | **Your data** | Settings → **Delete all data** erases every note, reminder and setting (and, if you tick the box, the calendar events the app added). **Export backup** / **Restore** saves your notes to a file and brings them back. |
 | **Dark mode** | Follows your phone's light / dark setting. |
 

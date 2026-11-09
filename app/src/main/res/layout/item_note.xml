@@ -9,6 +9,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@drawable/bg_card"
+        android:duplicateParentState="true"
         android:orientation="vertical"
         android:padding="16dp">
 

@@ -37,6 +37,7 @@ import java.util.regex.Pattern;
 public class EditorActivity extends Activity {
 
     public static final String EXTRA_NOTE_ID = "noteId";
+    public static final String EXTRA_TITLE = "noteTitle";
     private static final int REQ_PERMS = 41;
 
     private Store store;
@@ -88,6 +89,8 @@ public class EditorActivity extends Activity {
         } else {
             String shared = getIntent().getStringExtra(Intent.EXTRA_TEXT);
             if (shared != null) bodyEt.setText(shared);
+            String sharedTitle = getIntent().getStringExtra(EXTRA_TITLE);
+            if (sharedTitle != null) titleEt.setText(sharedTitle);
             getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
                     | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
             bodyEt.requestFocus();
@@ -112,7 +115,7 @@ public class EditorActivity extends Activity {
         bodyEt.setOnCursorMoved(this::updateSuggestion);
         bodyEt.setOnTouchListener(checkboxTapper);
 
-        if (Intent.ACTION_SEND.equals(getIntent().getAction()) && bodyEt.length() > 0) onEdited();
+        if (note == null && getIntent().getStringExtra(Intent.EXTRA_TEXT) != null && bodyEt.length() > 0) onEdited();
         refreshChips();
     }
 
@@ -441,12 +444,17 @@ public class EditorActivity extends Activity {
     }
 
     private void share() {
-        String text = (titleEt.getText() + "\n\n" + bodyEt.getText()).trim();
-        if (text.isEmpty()) return;
-        Intent i = new Intent(Intent.ACTION_SEND);
-        i.setType("text/plain");
-        i.putExtra(Intent.EXTRA_TEXT, text);
-        startActivity(Intent.createChooser(i, "Share note"));
+        saveNow();
+        Note n = note;
+        if (n == null) {
+            n = new Note();
+            n.title = titleEt.getText().toString();
+            n.body = bodyEt.getText().toString();
+        }
+        if (n.isEmpty()) { Toast.makeText(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
+        java.util.List<Note> one = new java.util.ArrayList<>();
+        one.add(n);
+        ShareHelper.show(this, one);
     }
 
     private void confirmDelete() {

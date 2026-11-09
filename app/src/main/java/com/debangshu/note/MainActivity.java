@@ -16,6 +16,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -30,6 +31,8 @@ public class MainActivity extends Activity {
     private TextView emptyTv, tabNotes, tabReminders;
     private EditText search;
     private boolean remindersTab = false;
+    private android.view.ActionMode actionMode;     // non-null while notes are being selected
+    private List<Note> shownNotes = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle b) {
@@ -49,6 +52,7 @@ public class MainActivity extends Activity {
 
         findViewById(R.id.fab).setOnClickListener(v -> startActivity(new Intent(this, EditorActivity.class)));
         findViewById(R.id.btn_settings).setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
+        findViewById(R.id.btn_import).setOnClickListener(v -> pickImport());
         tabNotes.setOnClickListener(v -> { remindersTab = false; refresh(); });
         tabReminders.setOnClickListener(v -> { remindersTab = true; refresh(); });
         search.addTextChangedListener(new TextWatcher() {
@@ -83,6 +87,7 @@ public class MainActivity extends Activity {
     }
 
     private void refresh() {
+        if (actionMode != null) return;               // don't lose the selection
         tabNotes.setSelected(!remindersTab);
         tabReminders.setSelected(remindersTab);
         String q = search.getText().toString().trim().toLowerCase(Locale.ROOT);
@@ -97,13 +102,47 @@ public class MainActivity extends Activity {
         for (Note n : all) {
             if (q.isEmpty() || (n.title + "\n" + n.body).toLowerCase(Locale.ROOT).contains(q)) shown.add(n);
         }
+        shownNotes = shown;
+        list.setOnItemLongClickListener(null);
+        list.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);   // long-press = select notes
+        list.setMultiChoiceModeListener(selection);
         list.setAdapter(new NotesAdapter(shown));
         list.setOnItemClickListener((p, v, pos, id) -> open(shown.get(pos).id));
-        list.setOnItemLongClickListener((p, v, pos, id) -> { noteMenu(shown.get(pos)); return true; });
         emptyTv.setText(all.isEmpty()
                 ? "No notes yet.\nTap + to write your first note."
                 : "Nothing matches \"" + q + "\"");
         emptyTv.setVisibility(shown.isEmpty() ? View.VISIBLE : View.GONE);
+    }
+
+    // ------------------------------------------------------------------ make a note from a file
+
+    private static final int REQ_IMPORT = 51;
+
+    private void pickImport() {
+        String[] items = {"📷  Photo or screenshot", "📄  PDF", "📝  Text file"};
+        String[] types = {"image/*", "application/pdf", "text/*"};
+        new AlertDialog.Builder(this)
+                .setTitle("Make a note from…")
+                .setItems(items, (d, which) -> {
+                    Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                    i.addCategory(Intent.CATEGORY_OPENABLE);
+                    i.setType(types[which]);
+                    try { startActivityForResult(i, REQ_IMPORT); }
+                    catch (Exception e) { Toast.makeText(this, "No file picker found", Toast.LENGTH_SHORT).show(); }
+                })
+                .show();
+    }
+
+    @Override
+    protected void onActivityResult(int req, int res, Intent data) {
+        super.onActivityResult(req, res, data);
+        if (req != REQ_IMPORT || res != RESULT_OK || data == null || data.getData() == null) return;
+        Intent i = new Intent(this, ImportActivity.class);
+        i.setAction(Intent.ACTION_SEND);
+        i.setType(getContentResolver().getType(data.getData()));
+        i.putExtra(Intent.EXTRA_STREAM, data.getData());
+        i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        startActivity(i);
     }
 
     private void open(long noteId) {
@@ -112,30 +151,92 @@ public class MainActivity extends Activity {
         startActivity(i);
     }
 
-    private void noteMenu(Note n) {
-        String[] items = {n.pinned ? "Unpin" : "Pin to top", "Share", "Delete"};
-        new AlertDialog.Builder(this)
-                .setTitle(n.displayTitle())
-                .setItems(items, (d, which) -> {
-                    if (which == 0) { n.pinned = !n.pinned; store.saveNote(n); refresh(); }
-                    else if (which == 1) {
-                        Intent i = new Intent(Intent.ACTION_SEND);
-                        i.setType("text/plain");
-                        i.putExtra(Intent.EXTRA_TEXT, (n.title + "\n\n" + n.body).trim());
-                        startActivity(Intent.createChooser(i, "Share note"));
-                    } else confirmDelete(n);
-                })
-                .show();
+    // ------------------------------------------------------------------ selecting several notes
+
+    private List<Note> selectedNotes() {
+        List<Note> out = new ArrayList<>();
+        android.util.SparseBooleanArray checked = list.getCheckedItemPositions();
+        if (checked == null) return out;
+        for (int i = 0; i < checked.size(); i++) {
+            int pos = checked.keyAt(i);
+            if (checked.valueAt(i) && pos < shownNotes.size()) out.add(shownNotes.get(pos));
+        }
+        return out;
     }
 
-    private void confirmDelete(Note n) {
+    private static final int M_SHARE = 1, M_PIN = 2, M_DELETE = 3, M_ALL = 4;
+
+    private final android.widget.AbsListView.MultiChoiceModeListener selection =
+            new android.widget.AbsListView.MultiChoiceModeListener() {
+        @Override
+        public boolean onCreateActionMode(android.view.ActionMode mode, android.view.Menu menu) {
+            actionMode = mode;
+            menu.add(0, M_SHARE, 0, "Share").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_ALWAYS);
+            menu.add(0, M_PIN, 1, "Pin").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_IF_ROOM);
+            menu.add(0, M_DELETE, 2, "Delete").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_IF_ROOM);
+            menu.add(0, M_ALL, 3, "Select all").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
+            return true;
+        }
+
+        @Override
+        public boolean onPrepareActionMode(android.view.ActionMode mode, android.view.Menu menu) { return false; }
+
+        @Override
+        public void onItemCheckedStateChanged(android.view.ActionMode mode, int position, long id, boolean checked) {
+            List<Note> sel = selectedNotes();
+            mode.setTitle(sel.size() + " selected");
+            boolean allPinned = !sel.isEmpty();
+            for (Note n : sel) if (!n.pinned) allPinned = false;
+            android.view.MenuItem pin = mode.getMenu().findItem(M_PIN);
+            if (pin != null) pin.setTitle(allPinned ? "Unpin" : "Pin");
+        }
+
+        @Override
+        public boolean onActionItemClicked(android.view.ActionMode mode, android.view.MenuItem item) {
+            List<Note> sel = selectedNotes();
+            switch (item.getItemId()) {
+                case M_SHARE:
+                    mode.finish();
+                    ShareHelper.show(MainActivity.this, sel);
+                    return true;
+                case M_PIN: {
+                    boolean allPinned = true;
+                    for (Note n : sel) if (!n.pinned) allPinned = false;
+                    for (Note n : sel) { n.pinned = !allPinned; store.saveNote(n); }
+                    mode.finish();
+                    return true;
+                }
+                case M_DELETE:
+                    confirmDelete(sel, mode);
+                    return true;
+                case M_ALL:
+                    for (int i = 0; i < list.getCount(); i++) list.setItemChecked(i, true);
+                    return true;
+            }
+            return false;
+        }
+
+        @Override
+        public void onDestroyActionMode(android.view.ActionMode mode) {
+            actionMode = null;
+            list.post(MainActivity.this::refresh);
+        }
+    };
+
+    private void confirmDelete(List<Note> notes, android.view.ActionMode mode) {
+        if (notes.isEmpty()) return;
+        String what = notes.size() == 1 ? "\"" + notes.get(0).displayTitle() + "\"" : notes.size() + " notes";
         new AlertDialog.Builder(this)
-                .setTitle("Delete this note?")
-                .setMessage("\"" + n.displayTitle() + "\" and its reminders will be removed from this phone.")
+                .setTitle(notes.size() == 1 ? "Delete this note?" : "Delete " + notes.size() + " notes?")
+                .setMessage(what + " and their reminders will be removed from this phone.")
                 .setPositiveButton("Delete", (d, w) -> {
-                    store.removeNote(n.id);
-                    ReminderSync.syncAsync(this, n.id, this::refresh);
-                    refresh();
+                    for (Note n : notes) {
+                        store.removeNote(n.id);
+                        ReminderSync.syncAsync(this, n.id, null);
+                    }
+                    if (mode != null) mode.finish();
+                    Toast.makeText(this, notes.size() == 1 ? "Note deleted" : notes.size() + " notes deleted",
+                            Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
@@ -180,6 +281,7 @@ public class MainActivity extends Activity {
     // ------------------------------------------------------------------ reminders tab
 
     private void showReminders(String q) {
+        list.setChoiceMode(ListView.CHOICE_MODE_NONE);
         long now = System.currentTimeMillis();
         List<Object> rows = new ArrayList<>();
         List<Reminder> overdue = new ArrayList<>(), done = new ArrayList<>(), upcoming = new ArrayList<>();

@@ -10,8 +10,8 @@ android {
         applicationId 'com.debangshu.note'
         minSdk 24          // Android 7.0 and newer
         targetSdk 34
-        versionCode 7
-        versionName '1.6'
+        versionCode 8
+        versionName '1.7'
     }
 
     // One fixed key for this app, so every new APK installs as an update and keeps your notes.
@@ -49,6 +49,7 @@ android {
     }
 }
 
-// No libraries: the app only uses what is built into Android.
 dependencies {
+    // Google's on-device text reader (photos / PDFs -> note). Runs on the phone, nothing is uploaded.
+    implementation 'com.google.android.gms:play-services-mlkit-text-recognition:19.0.0'
 }
