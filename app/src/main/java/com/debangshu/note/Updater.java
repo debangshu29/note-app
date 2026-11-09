@@ -16,6 +16,9 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.json.JSONObject;
@@ -31,8 +34,8 @@ import java.net.URL;
  *
  *  - checks github.com/debangshu29/note-app for a newer version (in the background about twice a day,
  *    and when the app is opened)
- *  - shows a popup "Update available"; "Update" downloads ONE file into the app's private folder,
- *    you tap "tap to install" and Android updates the app in place: notes, reminders and settings stay
+ *  - shows a popup "Update available"; "Update" downloads ONE file into Downloads with a progress bar,
+ *    then "Update ready → Install" and Android updates the app in place: notes, reminders and settings stay
  *  - the downloaded file is deleted automatically after the update
  *
  * The ONLY internet use of the app is downloading these two files. Notes are never sent anywhere.
@@ -201,6 +204,7 @@ public final class Updater {
     public static void maybePrompt(Activity a, boolean force) {
         Store s = Store.get(a);
         if (!force && !s.setting(Store.S_AUTO_UPDATE)) return;
+        if (updateWaiting(a)) { showReady(a); return; }
         Info known = remembered(a);
         if (known != null && known.versionCode > currentVersionCode(a)) {
             showPopup(a, known, force);
@@ -250,21 +254,22 @@ public final class Updater {
 
     private static final String UPDATE_FILE = "Note-update.apk";
 
-    /** The app's private download folder (Android/data/com.debangshu.note/files/Download). */
+    /** Older Androids (9 and below): the app's own folder is still visible in file managers. */
     private static File updateDir(Context ctx) {
         return ctx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
     }
 
     /**
-     * Downloads the new version with Android's download manager into the app's own private folder,
-     * always as ONE file ("Note-update.apk"). When it finishes, the notification says
-     * "tap to install" → Android asks "Update this app?" → the app is replaced in place.
-     * The downloaded file is deleted automatically once the update is installed.
-     * (The app never installs anything by itself — that would make Play Protect suspicious.)
+     * Tap "Update":
+     *   1. the new version downloads into your normal Downloads folder as ONE file (Note-update.apk),
+     *      with a progress bar in the app
+     *   2. "Update ready" → Install → tap the file → Android asks "Update this app?" → Update
+     *   3. the file is deleted by itself once the new version is installed
+     * The app never installs anything by itself (that's what made Play Protect suspicious).
      */
     public static void startUpdate(Activity a) {
         DownloadManager dm = (DownloadManager) a.getSystemService(Context.DOWNLOAD_SERVICE);
-        if (dm == null || updateDir(a) == null) { openInBrowser(a); return; }
+        if (dm == null) { openInBrowser(a); return; }
         SharedPreferences p = prefs(a);
         Info latest = remembered(a);
         int target = latest == null ? currentVersionCode(a) + 1 : latest.versionCode;
@@ -273,48 +278,127 @@ public final class Updater {
         if (old != -1) {
             int status = downloadStatus(dm, old);
             boolean sameVersion = p.getInt("dlFor", 0) == target;
+            if (sameVersion && status == DownloadManager.STATUS_SUCCESSFUL) { showReady(a); return; }
             if (sameVersion && (status == DownloadManager.STATUS_RUNNING || status == DownloadManager.STATUS_PENDING
-                    || status == DownloadManager.STATUS_PAUSED)) {
-                Toast.makeText(a, "Already downloading — see the notification", Toast.LENGTH_LONG).show();
-                return;
-            }
-            if (sameVersion && status == DownloadManager.STATUS_SUCCESSFUL) {
-                // already downloaded: open the Downloads list so it can be tapped
-                showDownloaded(a);
-                return;
-            }
-            dm.remove(old);                       // an older / failed download: delete it
+                    || status == DownloadManager.STATUS_PAUSED)) { showProgress(a, dm, old); return; }
+            try { dm.remove(old); } catch (Exception ignored) { }   // older or failed download: delete it
         }
-        deleteUpdateFiles(a);                     // never keep more than one file
+        deleteUpdateFiles(a);
 
         try {
             String name = latest == null ? "" : " " + latest.versionName;
-            // "?v=" makes sure the newest file is fetched, not an older cached copy
             DownloadManager.Request r = new DownloadManager.Request(Uri.parse(APK_URL + "?v=" + target))
                     .setTitle("Note" + name + " update")
-                    .setDescription("Tap when finished, then choose Update")
+                    .setDescription("Tap to install")
                     .setMimeType("application/vnd.android.package-archive")
-                    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                    .setDestinationInExternalFilesDir(a, Environment.DIRECTORY_DOWNLOADS, UPDATE_FILE);
+                    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            if (Build.VERSION.SDK_INT >= 29) {
+                r.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, UPDATE_FILE);
+            } else {
+                r.setDestinationInExternalFilesDir(a, Environment.DIRECTORY_DOWNLOADS, UPDATE_FILE);
+            }
             long id = dm.enqueue(r);
             p.edit().putLong("dlId", id).putInt("dlFor", target).apply();
-            new AlertDialog.Builder(a)
-                    .setTitle("Downloading the update")
-                    .setMessage("When the download finishes, tap the notification “Note" + name
-                            + " update” and choose Update.\n\nYour notes stay, and the downloaded file is "
-                            + "deleted by itself after the update.")
-                    .setPositiveButton("OK", null)
-                    .show();
+            showProgress(a, dm, id);
         } catch (Exception e) {
             openInBrowser(a);
         }
     }
 
-    private static void showDownloaded(Activity a) {
-        Toast.makeText(a, "Update already downloaded — tap “Note update” to install", Toast.LENGTH_LONG).show();
+    /** Progress bar while downloading; turns into "Update ready" when done. */
+    private static void showProgress(Activity a, DownloadManager dm, long id) {
+        float dp = a.getResources().getDisplayMetrics().density;
+        LinearLayout box = new LinearLayout(a);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding((int) (24 * dp), (int) (12 * dp), (int) (24 * dp), 0);
+        ProgressBar bar = new ProgressBar(a, null, android.R.attr.progressBarStyleHorizontal);
+        bar.setMax(100);
+        bar.setIndeterminate(true);
+        TextView label = new TextView(a);
+        label.setText("Starting…");
+        label.setPadding(0, (int) (8 * dp), 0, 0);
+        box.addView(bar);
+        box.addView(label);
+        AlertDialog dlg = new AlertDialog.Builder(a)
+                .setTitle("Downloading update")
+                .setView(box)
+                .setNegativeButton("Hide", null)   // keeps downloading; the notification shows when it's done
+                .show();
+
+        android.os.Handler h = new android.os.Handler(android.os.Looper.getMainLooper());
+        Runnable poll = new Runnable() {
+            @Override public void run() {
+                if (!dlg.isShowing() || a.isFinishing()) return;
+                long done = 0, total = -1;
+                int status = -1;
+                try (Cursor c = dm.query(new DownloadManager.Query().setFilterById(id))) {
+                    if (c != null && c.moveToFirst()) {
+                        status = c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
+                        done = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
+                        total = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
+                    }
+                } catch (Exception ignored) { }
+                if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                    dlg.dismiss();
+                    showReady(a);
+                    return;
+                }
+                if (status == DownloadManager.STATUS_FAILED || status == -1) {
+                    dlg.dismiss();
+                    try { dm.remove(id); } catch (Exception ignored) { }
+                    prefs(a).edit().remove("dlId").remove("dlFor").apply();
+                    new AlertDialog.Builder(a)
+                            .setTitle("Download failed")
+                            .setMessage("Check your internet connection and try again.")
+                            .setPositiveButton("Try again", (d, w) -> startUpdate(a))
+                            .setNegativeButton("Later", null)
+                            .show();
+                    return;
+                }
+                if (total > 0) {
+                    bar.setIndeterminate(false);
+                    bar.setProgress((int) (done * 100 / total));
+                    label.setText(String.format(java.util.Locale.ROOT, "%.1f of %.1f MB", done / 1048576.0, total / 1048576.0));
+                } else {
+                    label.setText("Waiting for the connection…");
+                }
+                h.postDelayed(this, 400);
+            }
+        };
+        h.post(poll);
+    }
+
+    /** The update is downloaded: one button opens Downloads, where the file is at the top. */
+    public static void showReady(Activity a) {
+        if (a.isFinishing()) return;
+        Info latest = remembered(a);
+        String name = latest == null ? "" : " " + latest.versionName;
+        new AlertDialog.Builder(a)
+                .setTitle("Update ready")
+                .setMessage("Note" + name + " is downloaded.\n\n"
+                        + "Tap Install, then tap “" + UPDATE_FILE + "” at the top of your Downloads and choose Update.\n\n"
+                        + "Your notes stay, and the file is deleted by itself after the update.")
+                .setPositiveButton("Install", (d, w) -> openDownloads(a))
+                .setNegativeButton("Later", null)
+                .show();
+    }
+
+    private static void openDownloads(Activity a) {
         try {
             a.startActivity(new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-        } catch (Exception ignored) { }
+            Toast.makeText(a, "Tap " + UPDATE_FILE + ", then Update", Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
+            Toast.makeText(a, "Open the Files app → Downloads → " + UPDATE_FILE, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    /** True when an update file is downloaded and waiting to be installed. */
+    private static boolean updateWaiting(Context ctx) {
+        SharedPreferences p = prefs(ctx);
+        long id = p.getLong("dlId", -1);
+        if (id == -1 || p.getInt("dlFor", 0) <= currentVersionCode(ctx)) return false;
+        DownloadManager dm = (DownloadManager) ctx.getSystemService(Context.DOWNLOAD_SERVICE);
+        return dm != null && downloadStatus(dm, id) == DownloadManager.STATUS_SUCCESSFUL;
     }
 
     private static int downloadStatus(DownloadManager dm, long id) {
@@ -333,15 +417,13 @@ public final class Updater {
 
     /**
      * Called when the app starts and right after it was updated: once the downloaded version
-     * is installed, its file is no longer needed, so delete it.
+     * is installed, its file is no longer needed, so delete it (also from Downloads).
      */
     public static void cleanUpAfterUpdate(Context ctx) {
         SharedPreferences p = prefs(ctx);
         long id = p.getLong("dlId", -1);
         int forCode = p.getInt("dlFor", 0);
-        if (id == -1 && forCode == 0) {
-            return;
-        }
+        if (id == -1 && forCode == 0) return;
         if (currentVersionCode(ctx) >= forCode) {
             DownloadManager dm = (DownloadManager) ctx.getSystemService(Context.DOWNLOAD_SERVICE);
             if (dm != null && id != -1) {

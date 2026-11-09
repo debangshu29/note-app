@@ -1,3 +1,2 @@
-• Share as text, image or PDF — and for shopping lists: everything, only what's left to buy, or only what's bought (with its own total)
-• Select several notes: long-press a note, tap others, then Share / Pin / Delete
-• Make a note from a photo, screenshot, PDF or text file: share it to Note, or tap the new 📄+ button on the home screen. Text is read on your phone, nothing is uploaded
+• Updating is simpler: tap Update, watch the progress bar, then tap Install on the "Update ready" screen
+• The update file goes to your normal Downloads folder (easy to find) and is deleted by itself after updating

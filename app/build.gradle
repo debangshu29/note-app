@@ -10,8 +10,8 @@ android {
         applicationId 'com.debangshu.note'
         minSdk 24          // Android 7.0 and newer
         targetSdk 34
-        versionCode 8
-        versionName '1.7'
+        versionCode 9
+        versionName '1.8'
     }
 
     // One fixed key for this app, so every new APK installs as an update and keeps your notes.

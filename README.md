@@ -68,10 +68,10 @@ with the latest release as a backup).
 
 Direct download of the newest app: https://raw.githubusercontent.com/debangshu29/note-app/updates/Note.apk
 
-When a newer version is ready you get one notification / a popup → **Update** → the app downloads ONE file
-(`Note-update.apk`) into its own private folder → tap the "Note update" notification → Android asks
-"Update this app?" → done. Notes, reminders and settings stay, and the downloaded file is deleted
-automatically after the update, so nothing piles up in Downloads.
+When a newer version is ready you get one notification / a popup → **Update** → a progress bar while it
+downloads ONE file (`Note-update.apk`) into your Downloads folder → **Update ready → Install** opens Downloads →
+tap the file → Android asks "Update this app?" → **Update**. Notes, reminders and settings stay, and the downloaded
+file is deleted automatically after the update, so nothing piles up.
 The app never installs anything by itself (that's what made Play Protect suspicious in 1.2).
 Turn it off or check manually in Settings → App updates.
 
