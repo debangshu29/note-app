@@ -12,9 +12,13 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.json.JSONObject;
@@ -33,8 +37,9 @@ import java.util.ArrayList;
  *  - checks github.com/debangshu29/note-app for a newer version (in the background about twice a day,
  *    and when the app is opened)
  *  - shows a popup "Update available" with what's new, how to update, and a Help guide
- *  - "Download" opens the direct link in the browser; you tap the file and choose Update (notes stay)
- *  - after updating, Note offers to delete the downloaded file
+ *  - "Update" downloads ONE file (Download/Note-update.apk) with a progress bar; "Install" → tap it → Update
+ *  - after updating, the file is deleted automatically (Android lets Note delete files it downloaded itself)
+ *  - backup: download in the browser (then Note offers a picker to delete that file)
  *
  * The ONLY internet use of the app is downloading these two files. Notes are never sent anywhere.
  */
@@ -204,6 +209,7 @@ public final class Updater {
     public static void maybePrompt(Activity a, boolean force) {
         Store s = Store.get(a);
         if (!force && !s.setting(Store.S_AUTO_UPDATE)) return;
+        if (updateWaiting(a)) { showReady(a); return; }
         Info known = remembered(a);
         if (!force && known != null && known.versionCode > currentVersionCode(a)) {
             showPopup(a, known, false);
@@ -242,14 +248,14 @@ public final class Updater {
         msg.append("Version ").append(i.versionName).append(" is ready (you have ").append(currentVersionName(a)).append(").");
         if (i.notes != null && !i.notes.trim().isEmpty()) msg.append("\n\nWhat's new:\n").append(i.notes.trim());
         msg.append("\n\nHow to update:\n")
-           .append("1. Tap Download — the new Note.apk downloads in your browser.\n")
-           .append("2. When it finishes, tap the file and choose Update. Your notes stay.\n")
-           .append("3. Open Note again — it will offer to delete the downloaded file.\n\n")
-           .append("Trouble downloading? Tap Help.");
+           .append("1. Tap Update — Note downloads it (you'll see a progress bar).\n")
+           .append("2. Tap Install, then tap Note-update.apk at the top of Downloads and choose Update.\n")
+           .append("3. Done. Your notes stay, and the downloaded file is deleted automatically.\n\n")
+           .append("Trouble? Tap Help.");
         new AlertDialog.Builder(a)
                 .setTitle("Update available")
                 .setMessage(msg.toString())
-                .setPositiveButton("Download", (d, w) -> startUpdate(a))
+                .setPositiveButton("Update", (d, w) -> startUpdate(a))
                 .setNegativeButton("Later", (d, w) -> p.edit()
                         .putInt("laterCode", i.versionCode)
                         .putLong("laterUntil", System.currentTimeMillis() + LATER_SNOOZE).apply())
@@ -261,24 +267,25 @@ public final class Updater {
     /** What to do if something goes wrong while downloading or installing. */
     public static void showHelp(Activity a) {
         String msg =
-                "• Download fails, shows “504” or an error page\n"
-                + "   GitHub is busy for a moment. Wait a minute and tap Download again.\n\n"
+                "• Download fails or says “504” / error\n"
+                + "   GitHub is busy for a moment. Wait a minute and tap Update again.\n\n"
                 + "• Can't find the file\n"
-                + "   In Chrome: ⋮ menu → Downloads. Or Files app → Downloads → the newest Note.apk.\n\n"
+                + "   Files app → Downloads → Note-update.apk (newest at the top).\n\n"
                 + "• “Install unknown apps” / install blocked\n"
-                + "   Allow it for Chrome (or Files) when Android asks — it's needed once.\n\n"
+                + "   Allow it for Files (or Downloads) when Android asks — it's needed once.\n\n"
                 + "• Play Protect warning\n"
                 + "   Tap More details → Install anyway.\n\n"
                 + "• “App not installed”\n"
-                + "   You probably opened an older Note.apk. Delete old Note.apk files (Settings → "
-                + "Delete old update files) and download again.\n\n"
+                + "   An older file was opened. Tap Update again: Note replaces the old file.\n\n"
                 + "• Still stuck\n"
-                + "   Copy the link and open it in another browser, or on your computer and send the file to the phone.";
+                + "   Download in the browser instead, or copy the link and open it on your computer.\n"
+                + "   (Files downloaded by the browser can't be deleted by Note automatically — use "
+                + "Settings → Delete old update files.)";
         new AlertDialog.Builder(a)
                 .setTitle("Update help")
                 .setMessage(msg)
-                .setPositiveButton("Download again", (d, w) -> startUpdate(a))
-                .setNeutralButton("Copy link", (d, w) -> copyLink(a))
+                .setPositiveButton("Update again", (d, w) -> startUpdate(a))
+                .setNeutralButton("Use browser", (d, w) -> downloadInBrowser(a))
                 .setNegativeButton("Close", null)
                 .show();
     }
@@ -291,8 +298,8 @@ public final class Updater {
 
     // ------------------------------------------------------------------ download (browser) + clean-up
 
-    /** Opens the direct download link in the browser. Afterwards Note offers to delete the file. */
-    public static void startUpdate(Activity a) {
+    /** Backup way: download in the browser. Then Note can't delete the file by itself, so it offers the picker. */
+    public static void downloadInBrowser(Activity a) {
         Info latest = remembered(a);
         int target = latest == null ? currentVersionCode(a) + 1 : latest.versionCode;
         prefs(a).edit().putInt("cleanupFor", target).apply();
@@ -302,8 +309,173 @@ public final class Updater {
             a.startActivity(i);
             Toast.makeText(a, "When the download finishes, tap Note.apk and choose Update", Toast.LENGTH_LONG).show();
         } catch (Exception e) {
-            Toast.makeText(a, "No browser found — tap Help → Copy link", Toast.LENGTH_LONG).show();
+            Toast.makeText(a, "No browser found — use Copy link", Toast.LENGTH_LONG).show();
         }
+    }
+
+    private static final String UPDATE_FILE = "Note-update.apk";
+
+    /** Older Androids (9 and below): the app's own folder is still visible in file managers. */
+    private static File updateDir(Context ctx) {
+        return ctx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+    }
+
+    /**
+     * Tap "Update":
+     *   1. the new version downloads into your normal Downloads folder as ONE file (Note-update.apk),
+     *      with a progress bar in the app
+     *   2. "Update ready" → Install → tap the file → Android asks "Update this app?" → Update
+     *   3. the file is deleted by itself once the new version is installed
+     * The app never installs anything by itself (that's what made Play Protect suspicious).
+     */
+    public static void startUpdate(Activity a) {
+        prefs(a).edit().remove("cleanupFor").apply();
+        DownloadManager dm = (DownloadManager) a.getSystemService(Context.DOWNLOAD_SERVICE);
+        if (dm == null) { downloadInBrowser(a); return; }
+        SharedPreferences p = prefs(a);
+        Info latest = remembered(a);
+        int target = latest == null ? currentVersionCode(a) + 1 : latest.versionCode;
+
+        long old = p.getLong("dlId", -1);
+        if (old != -1) {
+            int status = downloadStatus(dm, old);
+            boolean sameVersion = p.getInt("dlFor", 0) == target;
+            if (sameVersion && status == DownloadManager.STATUS_SUCCESSFUL) { showReady(a); return; }
+            if (sameVersion && (status == DownloadManager.STATUS_RUNNING || status == DownloadManager.STATUS_PENDING
+                    || status == DownloadManager.STATUS_PAUSED)) { showProgress(a, dm, old); return; }
+            try { dm.remove(old); } catch (Exception ignored) { }   // older or failed download: delete it
+        }
+        deleteUpdateFiles(a);
+
+        try {
+            String name = latest == null ? "" : " " + latest.versionName;
+            DownloadManager.Request r = new DownloadManager.Request(Uri.parse(APK_URL + "?v=" + target))
+                    .setTitle("Note" + name + " update")
+                    .setDescription("Tap to install")
+                    .setMimeType("application/vnd.android.package-archive")
+                    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            if (Build.VERSION.SDK_INT >= 29) {
+                r.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, UPDATE_FILE);
+            } else {
+                r.setDestinationInExternalFilesDir(a, Environment.DIRECTORY_DOWNLOADS, UPDATE_FILE);
+            }
+            long id = dm.enqueue(r);
+            p.edit().putLong("dlId", id).putInt("dlFor", target).apply();
+            showProgress(a, dm, id);
+        } catch (Exception e) {
+            downloadInBrowser(a);
+        }
+    }
+
+    /** Progress bar while downloading; turns into "Update ready" when done. */
+    private static void showProgress(Activity a, DownloadManager dm, long id) {
+        float dp = a.getResources().getDisplayMetrics().density;
+        LinearLayout box = new LinearLayout(a);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding((int) (24 * dp), (int) (12 * dp), (int) (24 * dp), 0);
+        ProgressBar bar = new ProgressBar(a, null, android.R.attr.progressBarStyleHorizontal);
+        bar.setMax(100);
+        bar.setIndeterminate(true);
+        TextView label = new TextView(a);
+        label.setText("Starting…");
+        label.setPadding(0, (int) (8 * dp), 0, 0);
+        box.addView(bar);
+        box.addView(label);
+        AlertDialog dlg = new AlertDialog.Builder(a)
+                .setTitle("Downloading update")
+                .setView(box)
+                .setNegativeButton("Hide", null)   // keeps downloading; the notification shows when it's done
+                .show();
+
+        android.os.Handler h = new android.os.Handler(android.os.Looper.getMainLooper());
+        Runnable poll = new Runnable() {
+            @Override public void run() {
+                if (!dlg.isShowing() || a.isFinishing()) return;
+                long done = 0, total = -1;
+                int status = -1;
+                try (Cursor c = dm.query(new DownloadManager.Query().setFilterById(id))) {
+                    if (c != null && c.moveToFirst()) {
+                        status = c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
+                        done = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
+                        total = c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
+                    }
+                } catch (Exception ignored) { }
+                if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                    dlg.dismiss();
+                    showReady(a);
+                    return;
+                }
+                if (status == DownloadManager.STATUS_FAILED || status == -1) {
+                    dlg.dismiss();
+                    try { dm.remove(id); } catch (Exception ignored) { }
+                    prefs(a).edit().remove("dlId").remove("dlFor").apply();
+                    new AlertDialog.Builder(a)
+                            .setTitle("Download failed")
+                            .setMessage("GitHub may be busy for a moment, or the internet dropped. Try again in a minute.")
+                            .setPositiveButton("Try again", (d, w) -> startUpdate(a))
+                            .setNeutralButton("Help", (d, w) -> showHelp(a))
+                            .setNegativeButton("Later", null)
+                            .show();
+                    return;
+                }
+                if (total > 0) {
+                    bar.setIndeterminate(false);
+                    bar.setProgress((int) (done * 100 / total));
+                    label.setText(String.format(java.util.Locale.ROOT, "%.1f of %.1f MB", done / 1048576.0, total / 1048576.0));
+                } else {
+                    label.setText("Waiting for the connection…");
+                }
+                h.postDelayed(this, 400);
+            }
+        };
+        h.post(poll);
+    }
+
+    /** The update is downloaded: one button opens Downloads, where the file is at the top. */
+    public static void showReady(Activity a) {
+        if (a.isFinishing()) return;
+        Info latest = remembered(a);
+        String name = latest == null ? "" : " " + latest.versionName;
+        new AlertDialog.Builder(a)
+                .setTitle("Update ready")
+                .setMessage("Note" + name + " is downloaded.\n\n"
+                        + "Tap Install, then tap “" + UPDATE_FILE + "” at the top of your Downloads and choose Update.\n\n"
+                        + "Your notes stay, and Note deletes the file by itself after the update.")
+                .setPositiveButton("Install", (d, w) -> openDownloads(a))
+                .setNegativeButton("Later", null)
+                .show();
+    }
+
+    private static void openDownloads(Activity a) {
+        try {
+            a.startActivity(new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            Toast.makeText(a, "Tap " + UPDATE_FILE + ", then Update", Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
+            Toast.makeText(a, "Open the Files app → Downloads → " + UPDATE_FILE, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    /** True when an update file is downloaded and waiting to be installed. */
+    private static boolean updateWaiting(Context ctx) {
+        SharedPreferences p = prefs(ctx);
+        long id = p.getLong("dlId", -1);
+        if (id == -1 || p.getInt("dlFor", 0) <= currentVersionCode(ctx)) return false;
+        DownloadManager dm = (DownloadManager) ctx.getSystemService(Context.DOWNLOAD_SERVICE);
+        return dm != null && downloadStatus(dm, id) == DownloadManager.STATUS_SUCCESSFUL;
+    }
+
+    private static int downloadStatus(DownloadManager dm, long id) {
+        try (Cursor c = dm.query(new DownloadManager.Query().setFilterById(id))) {
+            if (c != null && c.moveToFirst()) return c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
+        } catch (Exception ignored) { }
+        return -1;
+    }
+
+    private static void deleteUpdateFiles(Context ctx) {
+        File dir = updateDir(ctx);
+        File[] files = dir == null ? null : dir.listFiles();
+        if (files == null) return;
+        for (File f : files) if (f.getName().startsWith("Note-update")) f.delete();
     }
 
     /**
@@ -352,20 +524,22 @@ public final class Updater {
         Toast.makeText(a, msg, Toast.LENGTH_LONG).show();
     }
 
-    /** Removes leftovers of the older in-app downloader (1.5 – 1.8), which the app is allowed to delete itself. */
+    /**
+     * Runs right after an update (and whenever Note starts): the file Note downloaded is deleted
+     * automatically, no questions asked. Older leftovers in Note's own folder go too.
+     */
     public static void cleanUpAfterUpdate(Context ctx) {
         SharedPreferences p = prefs(ctx);
         long id = p.getLong("dlId", -1);
-        if (id != -1) {
+        int forCode = p.getInt("dlFor", 0);
+        if (id != -1 && currentVersionCode(ctx) >= forCode) {
             DownloadManager dm = (DownloadManager) ctx.getSystemService(Context.DOWNLOAD_SERVICE);
             if (dm != null) {
-                try { dm.remove(id); } catch (Exception ignored) { }
+                try { dm.remove(id); } catch (Exception ignored) { }   // also deletes Download/Note-update.apk
             }
             p.edit().remove("dlId").remove("dlFor").apply();
         }
-        File dir = ctx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
-        File[] files = dir == null ? null : dir.listFiles();
-        if (files != null) for (File f : files) if (f.getName().startsWith("Note-update")) f.delete();
+        deleteUpdateFiles(ctx);
     }
 
     /** After an update: show what's new, then offer to delete the downloaded file. */

@@ -163,7 +163,7 @@
             <LinearLayout android:id="@+id/row_download_latest" style="@style/SettingsRow">
                 <TextView style="@style/SettingsTitle" android:text="Download latest version" />
                 <TextView style="@style/SettingsSub"
-                    android:text="Opens the download link in your browser. When it finishes, tap Note.apk and choose Update." />
+                    android:text="Note downloads the newest version (with a progress bar). Tap Install, then Update. The file is deleted automatically afterwards." />
             </LinearLayout>
 
             <LinearLayout android:id="@+id/row_copy_link" style="@style/SettingsRow">
@@ -174,7 +174,7 @@
             <LinearLayout android:id="@+id/row_delete_apks" style="@style/SettingsRow">
                 <TextView style="@style/SettingsTitle" android:text="Delete old update files" />
                 <TextView style="@style/SettingsSub"
-                    android:text="Pick the Note.apk files in Downloads and Note deletes them." />
+                    android:text="Only for files your browser downloaded earlier: pick them in Downloads and Note deletes them." />
             </LinearLayout>
 
             <LinearLayout android:id="@+id/row_update_help" style="@style/SettingsRow">
