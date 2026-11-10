@@ -11,6 +11,13 @@ public final class HelpDialog {
         String msg =
                 "Everything you write stays on this phone. No account, no server — your notes are never uploaded. "
                 + "(The app only goes online to download its own updates.)\n\n"
+                + "✍  Formatting & inserts\n"
+                + "The bar above the keyboard has B I U S, size, font, colour, highlighter, alignment, lists, "
+                + "checklists and undo. ＋ adds photos, scans, PDF pages, drawings, sticky notes, tables and new pages. "
+                + "Tap a picture, sticky note (⋯) or table (⋯) for its options.\n\n"
+                + "⋮  In a note\n"
+                + "Find & replace, Page sorter, Note style (colour, lined / grid / dotted paper) and Page settings "
+                + "(page size, landscape, margins — used for PDFs).\n\n"
                 + "🧮  Auto math\n"
                 + "Type 1+1= and the answer appears by itself: 1+1=2\n"
                 + "Or just type 450+120+80 — the answer shows in grey after it. "

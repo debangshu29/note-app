@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/editor_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg"
@@ -38,10 +39,121 @@
             android:src="@drawable/ic_share" />
 
         <ImageButton
-            android:id="@+id/btn_delete"
+            android:id="@+id/btn_more"
             style="@style/IconButton"
-            android:contentDescription="Delete"
-            android:src="@drawable/ic_delete" />
+            android:contentDescription="More: find, note style, page settings, page sorter, delete"
+            android:src="@drawable/ic_more" />
+    </LinearLayout>
+
+    <!-- find & replace bar -->
+    <LinearLayout
+        android:id="@+id/find_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_toolbar"
+        android:orientation="vertical"
+        android:paddingStart="12dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="6dp"
+        android:paddingBottom="6dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <EditText
+                android:id="@+id/find_query"
+                android:layout_width="0dp"
+                android:layout_height="42dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_search"
+                android:hint="Find in note"
+                android:imeOptions="actionSearch|flagNoExtractUi"
+                android:inputType="text"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:textColor="@color/text"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/find_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="52dp"
+                android:gravity="center"
+                android:textColor="@color/text2"
+                android:textSize="13sp" />
+
+            <ImageButton
+                android:id="@+id/find_prev"
+                style="@style/IconButton"
+                android:contentDescription="Previous match"
+                android:src="@drawable/ic_up" />
+
+            <ImageButton
+                android:id="@+id/find_next"
+                style="@style/IconButton"
+                android:contentDescription="Next match"
+                android:src="@drawable/ic_down" />
+
+            <ImageButton
+                android:id="@+id/find_close"
+                style="@style/IconButton"
+                android:contentDescription="Close find"
+                android:src="@drawable/ic_close" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <EditText
+                android:id="@+id/find_replace"
+                android:layout_width="0dp"
+                android:layout_height="42dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_search"
+                android:hint="Replace with"
+                android:imeOptions="flagNoExtractUi"
+                android:inputType="text"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:textColor="@color/text"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/find_replace_one"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_tab"
+                android:gravity="center"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:text="Replace"
+                android:textColor="@color/text"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/find_replace_all"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:layout_marginStart="6dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_tab"
+                android:gravity="center"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:text="All"
+                android:textColor="@color/text"
+                android:textSize="13sp" />
+        </LinearLayout>
     </LinearLayout>
 
     <ScrollView
@@ -52,6 +164,7 @@
         android:fillViewport="true">
 
         <LinearLayout
+            android:id="@+id/page"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
@@ -59,6 +172,7 @@
             android:paddingEnd="20dp"
             android:paddingBottom="24dp">
 
+            <!-- title section -->
             <EditText
                 android:id="@+id/title"
                 android:layout_width="match_parent"
@@ -68,84 +182,69 @@
                 android:hint="Title"
                 android:imeOptions="flagNoExtractUi"
                 android:inputType="textCapSentences|textMultiLine"
-                android:paddingTop="4dp"
-                android:paddingBottom="4dp"
+                android:paddingTop="6dp"
+                android:paddingBottom="2dp"
                 android:textColor="@color/text"
-                android:textSize="24sp" />
+                android:textSize="26sp" />
 
             <TextView
                 android:id="@+id/meta"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:layout_marginBottom="10dp"
                 android:textColor="@color/hint"
                 android:textSize="12sp" />
 
-            <com.debangshu.note.SmartEditText
-                android:id="@+id/body"
+            <HorizontalScrollView
+                android:id="@+id/chips_scroll"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@null"
-                android:gravity="top|start"
-                android:hint="Start writing…\n\nTry: 120+80=\nor: call mom tomorrow at 5pm\nor type [] and a space for a checkbox"
-                android:imeOptions="flagNoExtractUi"
-                android:inputType="textCapSentences|textMultiLine"
-                android:lineSpacingExtra="5dp"
-                android:minHeight="320dp"
-                android:paddingBottom="44dp"
-                android:textColor="@color/text"
-                android:textSize="17sp" />
+                android:layout_marginTop="8dp"
+                android:scrollbars="none"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:id="@+id/chips_row"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="10dp"
+                android:background="@color/divider" />
+
+            <!-- the note: text, pictures, sticky notes, tables, page breaks -->
+            <LinearLayout
+                android:id="@+id/blocks"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <View
+                android:id="@+id/tap_end"
+                android:layout_width="match_parent"
+                android:layout_height="160dp" />
         </LinearLayout>
     </ScrollView>
 
-    <!-- reminders found in this note -->
+    <!-- formatting bar (sits just above the keyboard) -->
     <HorizontalScrollView
-        android:id="@+id/chips_scroll"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:clipToPadding="false"
-        android:paddingStart="16dp"
-        android:paddingTop="6dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="6dp"
-        android:scrollbars="none"
-        android:visibility="gone">
-
-        <LinearLayout
-            android:id="@+id/chips_row"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal" />
-    </HorizontalScrollView>
-
-    <!-- tools + math answer bar (sits just above the keyboard) -->
-    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="52dp"
         android:background="@drawable/bg_toolbar"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="8dp"
-        android:paddingEnd="10dp">
+        android:scrollbars="none">
 
-        <ImageButton
-            android:id="@+id/tool_check"
-            style="@style/IconButton"
-            android:contentDescription="Checklist"
-            android:src="@drawable/ic_checklist" />
-
-        <ImageButton
-            android:id="@+id/tool_bullet"
-            style="@style/IconButton"
-            android:contentDescription="Bullet list"
-            android:src="@drawable/ic_bullet" />
-
-        <ImageButton
-            android:id="@+id/tool_time"
-            style="@style/IconButton"
-            android:contentDescription="Add a date and time"
-            android:src="@drawable/ic_event" />
-
-    </LinearLayout>
+        <LinearLayout
+            android:id="@+id/format_bar"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp" />
+    </HorizontalScrollView>
 </LinearLayout>

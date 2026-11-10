@@ -43,6 +43,7 @@ public class MainActivity extends Activity {
         ReminderSync.runInBackground(() -> ReminderSync.rescheduleAll(this), null);
         Updater.scheduleBackgroundChecks(this);
         Updater.cleanUpAfterUpdate(this);
+        ReminderSync.runInBackground(() -> Media.deleteUnused(this, store.usedMedia()), null);
 
         list = findViewById(R.id.list);
         emptyTv = findViewById(R.id.empty);
@@ -274,6 +275,21 @@ public class MainActivity extends Activity {
             String meta = DateUtils.getRelativeTimeSpanString(n.updated, System.currentTimeMillis(),
                     DateUtils.MINUTE_IN_MILLIS).toString();
             if (rc > 0) meta += "   🔔 " + rc;
+            int pics = n.count(Block.IMAGE), tables = n.count(Block.TABLE), pages = n.count(Block.PAGE) + 1;
+            if (pics > 0) meta += "   🖼 " + pics;
+            if (tables > 0) meta += "   ▦ " + tables;
+            if (pages > 1) meta += "   📑 " + pages;
+            // note colour: the card looks like a sticky note
+            View card = v.findViewById(R.id.note_card);
+            int col = NoteStyle.noteColor(MainActivity.this, n.color);
+            if (col != 0) {
+                android.graphics.drawable.GradientDrawable g = new android.graphics.drawable.GradientDrawable();
+                g.setColor(col);
+                g.setCornerRadius(16 * getResources().getDisplayMetrics().density);
+                card.setBackground(g);
+            } else {
+                card.setBackgroundResource(R.drawable.bg_card);
+            }
             ((TextView) v.findViewById(R.id.note_meta)).setText(meta);
             v.findViewById(R.id.note_pin).setVisibility(n.pinned ? View.VISIBLE : View.GONE);
             return v;

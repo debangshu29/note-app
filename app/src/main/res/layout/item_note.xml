@@ -8,7 +8,9 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:id="@+id/note_card"
         android:background="@drawable/bg_card"
+        android:foreground="@drawable/fg_card_select"
         android:duplicateParentState="true"
         android:orientation="vertical"
         android:padding="16dp">

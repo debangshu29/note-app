@@ -38,7 +38,24 @@ public class ShareProvider extends ContentProvider {
         return new Uri.Builder().scheme("content").authority(AUTHORITY).appendPath(f.getName()).build();
     }
 
+    /** Where the camera app may write the photo it takes (cache/capture). */
+    public static Uri captureUri(File f) {
+        return new Uri.Builder().scheme("content").authority(AUTHORITY).appendPath("capture").appendPath(f.getName()).build();
+    }
+
+    private boolean isCapture(Uri uri) {
+        java.util.List<String> seg = uri.getPathSegments();
+        return seg != null && seg.size() == 2 && "capture".equals(seg.get(0));
+    }
+
     private File fileFor(Uri uri) throws FileNotFoundException {
+        if (isCapture(uri)) {
+            String name = uri.getLastPathSegment();
+            if (name == null || name.contains("/") || name.contains("..")) throw new FileNotFoundException();
+            File d = new File(getContext().getCacheDir(), "capture");
+            if (!d.exists()) d.mkdirs();
+            return new File(d, name);
+        }
         String name = uri.getLastPathSegment();
         if (name == null || name.contains("/") || name.contains("..")) throw new FileNotFoundException();
         File f = new File(dir(getContext()), name);
@@ -55,6 +72,10 @@ public class ShareProvider extends ContentProvider {
 
     @Override
     public ParcelFileDescriptor openFile(Uri uri, String mode) throws FileNotFoundException {
+        if (isCapture(uri) && mode != null && mode.contains("w")) {
+            return ParcelFileDescriptor.open(fileFor(uri), ParcelFileDescriptor.MODE_READ_WRITE
+                    | ParcelFileDescriptor.MODE_CREATE | ParcelFileDescriptor.MODE_TRUNCATE);
+        }
         return ParcelFileDescriptor.open(fileFor(uri), ParcelFileDescriptor.MODE_READ_ONLY);
     }
 
@@ -62,6 +83,7 @@ public class ShareProvider extends ContentProvider {
     public String getType(Uri uri) {
         String n = uri.getLastPathSegment() == null ? "" : uri.getLastPathSegment().toLowerCase();
         if (n.endsWith(".png")) return "image/png";
+        if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
         if (n.endsWith(".pdf")) return "application/pdf";
         if (n.endsWith(".txt")) return "text/plain";
         return "application/octet-stream";

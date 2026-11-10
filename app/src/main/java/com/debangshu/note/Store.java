@@ -99,8 +99,20 @@ public final class Store {
     }
 
     public synchronized void removeNote(long id) {
-        for (int i = notes.size() - 1; i >= 0; i--) if (notes.get(i).id == id) notes.remove(i);
+        for (int i = notes.size() - 1; i >= 0; i--) {
+            Note n = notes.get(i);
+            if (n.id != id) continue;
+            for (String f : Media.filesOf(n.blocks)) Media.file(app, f).delete();   // its pictures too
+            notes.remove(i);
+        }
         saveNotes();
+    }
+
+    /** Picture files used by any note. */
+    public synchronized java.util.Set<String> usedMedia() {
+        java.util.Set<String> used = new java.util.HashSet<>();
+        for (Note n : notes) used.addAll(Media.filesOf(n.blocks));
+        return used;
     }
 
     // ------------------------------------------------------------ reminders
@@ -145,6 +157,7 @@ public final class Store {
         new File(notesFile.getPath() + ".tmp").delete();
         new File(remindersFile.getPath() + ".tmp").delete();
         prefs().edit().clear().apply();
+        Media.deleteAll(app);
     }
 
     public synchronized String exportJson() throws Exception {
@@ -159,6 +172,60 @@ public final class Store {
         for (Reminder x : reminders) r.put(x.toJson());
         root.put("reminders", r);
         return root.toString(2);
+    }
+
+    /** Backup file: a zip with notes.json and the pictures (media/…). */
+    public void exportZip(java.io.OutputStream os) throws Exception {
+        String json;
+        java.util.Set<String> files;
+        synchronized (this) {
+            json = exportJson();
+            files = usedMedia();
+        }
+        java.util.zip.ZipOutputStream zip = new java.util.zip.ZipOutputStream(os);
+        zip.putNextEntry(new java.util.zip.ZipEntry("notes.json"));
+        zip.write(json.getBytes(StandardCharsets.UTF_8));
+        zip.closeEntry();
+        byte[] buf = new byte[16384];
+        for (String f : files) {
+            File src = Media.file(app, f);
+            if (!src.exists()) continue;
+            zip.putNextEntry(new java.util.zip.ZipEntry("media/" + f));
+            try (FileInputStream in = new FileInputStream(src)) {
+                int n;
+                while ((n = in.read(buf)) > 0) zip.write(buf, 0, n);
+            }
+            zip.closeEntry();
+        }
+        zip.finish();
+    }
+
+    /** Restores a backup: the new .zip (with pictures) or an older .json. Returns notes added. */
+    public int importBackup(byte[] data) throws Exception {
+        if (data.length > 2 && data[0] == 'P' && data[1] == 'K') {
+            String json = null;
+            try (java.util.zip.ZipInputStream zip = new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(data))) {
+                java.util.zip.ZipEntry e;
+                byte[] buf = new byte[16384];
+                while ((e = zip.getNextEntry()) != null) {
+                    String name = e.getName();
+                    java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+                    int n;
+                    while ((n = zip.read(buf)) > 0) out.write(buf, 0, n);
+                    if ("notes.json".equals(name)) {
+                        json = new String(out.toByteArray(), StandardCharsets.UTF_8);
+                    } else if (name.startsWith("media/")) {
+                        String f = name.substring(6);
+                        if (f.isEmpty() || f.contains("/") || f.contains("..")) continue;
+                        File dst = Media.file(app, f);
+                        if (!dst.exists()) try (FileOutputStream fo = new FileOutputStream(dst)) { fo.write(out.toByteArray()); }
+                    }
+                }
+            }
+            if (json == null) throw new Exception("not a Note backup");
+            return importJson(json);
+        }
+        return importJson(new String(data, StandardCharsets.UTF_8));
     }
 
     /** Adds notes from a backup. Notes that already exist (same id) are kept as they are. Returns count added. */

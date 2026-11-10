@@ -43,7 +43,8 @@ public final class ShareHelper {
         box.setPadding((int) (24 * dp), (int) (8 * dp), (int) (24 * dp), 0);
 
         box.addView(label(a, "Share as"));
-        RadioGroup format = group(a, new String[]{"Text message", "Image (neat, can't be edited)", "PDF document"},
+        RadioGroup format = group(a, new String[]{"Text message (words only)",
+                        "Image (as it looks, with pictures)", "PDF (pages, formatting, pictures)"},
                 p.getInt("format", TEXT));
         box.addView(format);
 
@@ -125,6 +126,18 @@ public final class ShareHelper {
         }
 
         Toast.makeText(a, format == PDF ? "Making PDF…" : "Making image…", Toast.LENGTH_SHORT).show();
+        // "All items": the notes as they look (formatting, pictures, tables, pages).
+        // "Only left / only bought": the filtered list as plain text.
+        final List<Note> rich = new ArrayList<>();
+        if (mode == NoteFilter.ALL) rich.addAll(notes);
+        else for (NoteRenderer.Page pg : pages) {
+            Note n = new Note();
+            n.title = pg.title;
+            List<Block> l = new ArrayList<>();
+            l.add(Block.text(pg.body));
+            n.setBlocks(l);
+            rich.add(n);
+        }
         new Thread(() -> {
             try {
                 ShareProvider.clear(a);
@@ -135,23 +148,23 @@ public final class ShareHelper {
                 if (format == IMAGE) {
                     mime = "image/png";
                     int k = 1;
-                    for (NoteRenderer.Page pg : pages) {
-                        File f = new File(ShareProvider.dir(a), fileName(pg.title, stamp, pages.size() > 1 ? k++ : 0) + ".png");
-                        if (NoteRenderer.toImage(pg, f)) uris.add(ShareProvider.uriFor(f));
+                    for (Note n : rich) {
+                        File f = new File(ShareProvider.dir(a), fileName(n.title, stamp, rich.size() > 1 ? k++ : 0) + ".png");
+                        if (NoteRenderer.toImage(a, n, f)) uris.add(ShareProvider.uriFor(f));
                         else tooLong = true;
                     }
                     if (tooLong) {           // a very long note: send everything as one PDF instead
                         uris.clear();
                         ShareProvider.clear(a);
                         mime = "application/pdf";
-                        File f = new File(ShareProvider.dir(a), fileName(pages.get(0).title, stamp, 0) + ".pdf");
-                        NoteRenderer.toPdf(pages, f);
+                        File f = new File(ShareProvider.dir(a), fileName(rich.get(0).title, stamp, 0) + ".pdf");
+                        NoteRenderer.toPdf(a, rich, f);
                         uris.add(ShareProvider.uriFor(f));
                     }
                 } else {
                     mime = "application/pdf";
-                    File f = new File(ShareProvider.dir(a), fileName(pages.size() == 1 ? pages.get(0).title : "Notes", stamp, 0) + ".pdf");
-                    NoteRenderer.toPdf(pages, f);
+                    File f = new File(ShareProvider.dir(a), fileName(rich.size() == 1 ? rich.get(0).title : "Notes", stamp, 0) + ".pdf");
+                    NoteRenderer.toPdf(a, rich, f);
                     uris.add(ShareProvider.uriFor(f));
                 }
                 // keep a copy in Documents/Note/Exports

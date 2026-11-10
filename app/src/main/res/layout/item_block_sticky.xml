@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/sticky_box"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="8dp"
+    android:layout_marginBottom="8dp"
+    android:background="@drawable/bg_sticky"
+    android:elevation="2dp">
+
+    <EditText
+        android:id="@+id/sticky_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@null"
+        android:gravity="top|start"
+        android:hint="Sticky note…"
+        android:imeOptions="flagNoExtractUi"
+        android:inputType="textCapSentences|textMultiLine"
+        android:lineSpacingExtra="4dp"
+        android:minHeight="72dp"
+        android:paddingStart="16dp"
+        android:paddingTop="14dp"
+        android:paddingEnd="40dp"
+        android:paddingBottom="14dp"
+        android:textColor="#FF1D1C21"
+        android:textColorHint="#80000000"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/sticky_more"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="top|end"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Sticky note options"
+        android:gravity="center"
+        android:text="⋯"
+        android:textColor="#99000000"
+        android:textSize="20sp" />
+</FrameLayout>

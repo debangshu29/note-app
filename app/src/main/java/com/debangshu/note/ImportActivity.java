@@ -59,6 +59,7 @@ public class ImportActivity extends Activity {
         final String oneType = uris.size() == 1 ? type : null;
         new Thread(() -> {
             StringBuilder all = new StringBuilder();
+            ArrayList<String> pictures = new ArrayList<>();
             String title = subject;
             String error = null;
             String stamp = new java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.ROOT).format(new java.util.Date());
@@ -69,6 +70,11 @@ public class ImportActivity extends Activity {
                     String t2 = getContentResolver().getType(u);
                     AppFolder.saveCopy(this, AppFolder.IMPORTS, stamp + "_" + name,
                             t2 == null ? "application/octet-stream" : t2, u);
+                } catch (Exception ignored) { }
+                // photos / screenshots are also kept as pictures in the note
+                try {
+                    String t3 = oneType != null ? oneType : getContentResolver().getType(u);
+                    if (t3 != null && t3.startsWith("image/")) pictures.add(Media.importImage(this, u));
                 } catch (Exception ignored) { }
                 try {
                     TextImporter.Result r = TextImporter.read(this, u, oneType);
@@ -87,7 +93,9 @@ public class ImportActivity extends Activity {
             final String t = title, text = all.toString(), err = error;
             runOnUiThread(() -> {
                 if (isFinishing()) return;
-                if (text.trim().isEmpty()) {
+                if (text.trim().isEmpty() && !pictures.isEmpty()) {
+                    openEditor(t, "", pictures);       // a photo without text: still becomes a note
+                } else if (text.trim().isEmpty()) {
                     new AlertDialog.Builder(this)
                             .setTitle("No text found")
                             .setMessage(err != null ? err : "Couldn't find any text to put in a note.")
@@ -95,15 +103,20 @@ public class ImportActivity extends Activity {
                             .setOnCancelListener(d -> finish())
                             .show();
                 } else {
-                    openEditor(t, text);
+                    openEditor(t, text, pictures);
                 }
             });
         }).start();
     }
 
     private void openEditor(String title, String text) {
+        openEditor(title, text, null);
+    }
+
+    private void openEditor(String title, String text, ArrayList<String> pictures) {
         Intent e = new Intent(this, EditorActivity.class);
         e.putExtra(Intent.EXTRA_TEXT, text);
+        if (pictures != null && !pictures.isEmpty()) e.putStringArrayListExtra(EditorActivity.EXTRA_IMAGES, pictures);
         if (title != null) e.putExtra(EditorActivity.EXTRA_TITLE, title.trim());
         startActivity(e);
         finish();

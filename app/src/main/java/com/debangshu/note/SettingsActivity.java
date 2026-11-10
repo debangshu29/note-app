@@ -224,9 +224,9 @@ public class SettingsActivity extends Activity {
     private void startExport() {
         Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         i.addCategory(Intent.CATEGORY_OPENABLE);
-        i.setType("application/json");
+        i.setType("application/zip");
         i.putExtra(Intent.EXTRA_TITLE, "note-backup-"
-                + new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(new Date()) + ".json");
+                + new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(new Date()) + ".zip");
         startActivityForResult(i, REQ_EXPORT);
     }
 
@@ -245,7 +245,7 @@ public class SettingsActivity extends Activity {
         Uri uri = data.getData();
         if (req == REQ_EXPORT) {
             try (OutputStream out = getContentResolver().openOutputStream(uri, "wt")) {
-                out.write(store.exportJson().getBytes(StandardCharsets.UTF_8));
+                store.exportZip(out);
                 Toast.makeText(this, "Backup saved", Toast.LENGTH_LONG).show();
             } catch (Exception e) {
                 Toast.makeText(this, "Could not save backup: " + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -256,7 +256,7 @@ public class SettingsActivity extends Activity {
                 byte[] b = new byte[8192];
                 int n;
                 while ((n = in.read(b)) > 0) buf.write(b, 0, n);
-                int added = store.importJson(buf.toString("UTF-8"));
+                int added = store.importBackup(buf.toByteArray());
                 for (Note note : store.notes()) ReminderSync.syncAsync(this, note.id, null);
                 Toast.makeText(this, added + " notes restored", Toast.LENGTH_LONG).show();
                 updateTexts();

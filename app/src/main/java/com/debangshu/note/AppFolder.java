@@ -101,9 +101,9 @@ public final class AppFolder {
         });
     }
 
-    private interface Writer { void write(OutputStream out) throws Exception; }
+    interface Writer { void write(OutputStream out) throws Exception; }
 
-    private static boolean save(Context ctx, String section, String name, String mime, Writer w) {
+    static boolean save(Context ctx, String section, String name, String mime, Writer w) {
         if (!canWrite(ctx)) return false;
         try {
             if (Build.VERSION.SDK_INT >= 29) {
@@ -158,8 +158,9 @@ public final class AppFolder {
         if (!force && System.currentTimeMillis() - last < BACKUP_EVERY) return;
         if (s.notes().isEmpty()) return;
         try {
-            String name = "note-backup-" + new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(new Date()) + ".json";
-            if (save(ctx, BACKUPS, name, "application/json", s.exportJson().getBytes("UTF-8"))) {
+            // a zip with all notes AND their pictures
+            String name = "note-backup-" + new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(new Date()) + ".zip";
+            if (save(ctx, BACKUPS, name, "application/zip", s::exportZip)) {
                 s.prefs().edit().putLong("lastAutoBackup", System.currentTimeMillis()).apply();
                 trimBackups(ctx);
             }
