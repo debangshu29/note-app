@@ -1,2 +1,4 @@
-• Updating is simpler: tap Update, watch the progress bar, then tap Install on the "Update ready" screen
-• The update file goes to your normal Downloads folder (easy to find) and is deleted by itself after updating
+• The update popup now shows up reliably whenever a new version is out
+• Tap Download → Note.apk downloads in your browser → tap it → Update. Help is in the popup if anything goes wrong
+• After updating, Note offers to delete the downloaded file for you
+• New Note folder in Internal storage/Documents/Note with Backups (automatic, daily), Exports and Imports — paths are in Settings

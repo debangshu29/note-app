@@ -97,8 +97,38 @@
             <TextView style="@style/SettingsHeader" android:text="YOUR DATA" />
 
             <LinearLayout style="@style/SettingsRow" android:clickable="false">
-                <TextView style="@style/SettingsTitle" android:text="Storage" />
-                <TextView android:id="@+id/txt_storage" style="@style/SettingsSub" />
+                <TextView style="@style/SettingsTitle" android:text="Your notes" />
+                <TextView android:id="@+id/txt_storage" style="@style/SettingsSub" android:textIsSelectable="true" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/row_folder" style="@style/SettingsRow">
+                <TextView style="@style/SettingsTitle" android:text="Note folder (tap to open)" />
+                <TextView android:id="@+id/txt_folder" style="@style/SettingsSub" android:textIsSelectable="false" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/row_backups" style="@style/SettingsRow">
+                <TextView style="@style/SettingsTitle" android:text="📁 Backups" />
+                <TextView android:id="@+id/txt_backups" style="@style/SettingsSub" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/row_exports" style="@style/SettingsRow">
+                <TextView style="@style/SettingsTitle" android:text="📁 Exports" />
+                <TextView android:id="@+id/txt_exports" style="@style/SettingsSub" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/row_imports" style="@style/SettingsRow">
+                <TextView style="@style/SettingsTitle" android:text="📁 Imports" />
+                <TextView android:id="@+id/txt_imports" style="@style/SettingsSub" />
+            </LinearLayout>
+
+            <Switch
+                android:id="@+id/sw_auto_backup"
+                style="@style/SettingsSwitch"
+                android:text="Automatic daily backup to the Backups folder\n(keeps the last 14 days)" />
+
+            <LinearLayout android:id="@+id/row_backup_now" style="@style/SettingsRow">
+                <TextView style="@style/SettingsTitle" android:text="Back up now" />
+                <TextView style="@style/SettingsSub" android:text="Save a backup to the Backups folder right away." />
             </LinearLayout>
 
             <LinearLayout android:id="@+id/row_export" style="@style/SettingsRow">
@@ -128,6 +158,28 @@
             <LinearLayout android:id="@+id/row_check_update" style="@style/SettingsRow">
                 <TextView style="@style/SettingsTitle" android:text="Check for updates now" />
                 <TextView android:id="@+id/txt_update" style="@style/SettingsSub" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/row_download_latest" style="@style/SettingsRow">
+                <TextView style="@style/SettingsTitle" android:text="Download latest version" />
+                <TextView style="@style/SettingsSub"
+                    android:text="Opens the download link in your browser. When it finishes, tap Note.apk and choose Update." />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/row_copy_link" style="@style/SettingsRow">
+                <TextView style="@style/SettingsTitle" android:text="Copy download link" />
+                <TextView android:id="@+id/txt_link" style="@style/SettingsSub" android:textIsSelectable="false" />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/row_delete_apks" style="@style/SettingsRow">
+                <TextView style="@style/SettingsTitle" android:text="Delete old update files" />
+                <TextView style="@style/SettingsSub"
+                    android:text="Pick the Note.apk files in Downloads and Note deletes them." />
+            </LinearLayout>
+
+            <LinearLayout android:id="@+id/row_update_help" style="@style/SettingsRow">
+                <TextView style="@style/SettingsTitle" android:text="Update help" />
+                <TextView style="@style/SettingsSub" android:text="What to do if downloading or installing doesn't work." />
             </LinearLayout>
 
             <TextView style="@style/SettingsHeader" android:text="ABOUT" />

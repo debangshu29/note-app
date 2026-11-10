@@ -131,6 +131,8 @@ public class EditorActivity extends Activity {
             }
             ReminderSync.syncAsync(this, note.id, null);
         }
+        final android.content.Context app = getApplicationContext();
+        ReminderSync.runInBackground(() -> AppFolder.autoBackup(app, false), null);   // Documents/Note/Backups
     }
 
     // ------------------------------------------------------------------ typing

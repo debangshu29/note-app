@@ -39,8 +39,12 @@ public final class HelpDialog {
                 + "🗑  Your data\n"
                 + "Settings → Delete all data wipes everything from the phone. "
                 + "You can also export a backup file first.\n\n"
+                + "📁  Note folder\n"
+                + "Internal storage/Documents/Note has Backups (automatic daily), Exports (images/PDFs you share) "
+                + "and Imports (files you turned into notes). Paths are in Settings.\n\n"
                 + "⬆  Updates\n"
-                + "When a new version is ready, a popup offers to update. Your notes stay.";
+                + "When a new version is ready, a popup appears. Tap Download, then tap Note.apk and choose Update. "
+                + "Your notes stay, and Note offers to delete the downloaded file afterwards.";
         new AlertDialog.Builder(ctx)
                 .setTitle("Welcome to Note")
                 .setMessage(msg)

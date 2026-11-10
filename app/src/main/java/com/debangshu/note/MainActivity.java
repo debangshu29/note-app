@@ -69,7 +69,7 @@ public class MainActivity extends Activity {
         } else {
             Updater.showWhatsNewOnce(this);
         }
-        Updater.maybePrompt(this, getIntent().getBooleanExtra("showUpdate", false));
+        if (getIntent().getBooleanExtra("showUpdate", false)) Updater.maybePrompt(this, true);
     }
 
     @Override
@@ -82,6 +82,7 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         refresh();
+        Updater.maybePrompt(this, false);       // every time Note is opened (at most every 15 min)
         // the editor saves reminders in the background; refresh again shortly
         list.postDelayed(this::refresh, 700);
     }
@@ -136,6 +137,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int req, int res, Intent data) {
         super.onActivityResult(req, res, data);
+        Updater.onCleanupResult(this, req, res, data);
         if (req != REQ_IMPORT || res != RESULT_OK || data == null || data.getData() == null) return;
         Intent i = new Intent(this, ImportActivity.class);
         i.setAction(Intent.ACTION_SEND);

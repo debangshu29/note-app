@@ -63,23 +63,33 @@ Works on Android 7.0 and newer.
 
 ## Updating the app
 
-**In-app updates:** the app checks for a new version about twice a day (from the `updates` branch of this repo,
-with the latest release as a backup).
+**In-app updates:** every time you open Note (at most every 15 minutes) and about twice a day in the
+background, it checks for a new version. A popup shows what's new and how to update:
+**Download** → the browser downloads `Note.apk` from the direct link → tap it → **Update** (notes stay).
+Next time Note opens it offers **Delete file**: pick the Note.apk files in Downloads and Note deletes them.
+**Help** in the popup explains what to do if the download or install fails.
+Settings → App updates also has *Download latest version*, *Copy download link*, *Delete old update files* and *Update help*.
 
 Direct download of the newest app: https://raw.githubusercontent.com/debangshu29/note-app/updates/Note.apk
-
-When a newer version is ready you get one notification / a popup → **Update** → a progress bar while it
-downloads ONE file (`Note-update.apk`) into your Downloads folder → **Update ready → Install** opens Downloads →
-tap the file → Android asks "Update this app?" → **Update**. Notes, reminders and settings stay, and the downloaded
-file is deleted automatically after the update, so nothing piles up.
-The app never installs anything by itself (that's what made Play Protect suspicious in 1.2).
-Turn it off or check manually in Settings → App updates.
 
 To publish an update: raise `versionCode` / `versionName` in `app/build.gradle`, write the changes in
 `whats-new.txt`, and push. GitHub builds it and the phones see it.
 
 From version 1.1 every APK from GitHub is signed with the same key (kept in GitHub Secrets, backup in `D:\note\signing`),
 so a new `Note.apk` installs on top of the old one and your notes stay. Version 1.0 has to be uninstalled once.
+
+## Where things are saved
+
+| What | Where |
+|---|---|
+| Your notes, reminders, settings | Note's private storage (only Note can open it — shown in Settings → Your data) |
+| Automatic daily backups (last 14 days) | `Internal storage/Documents/Note/Backups` |
+| Copies of images / PDFs you share | `Internal storage/Documents/Note/Exports` |
+| Copies of photos / PDFs / files turned into notes | `Internal storage/Documents/Note/Imports` |
+| Downloaded update file | `Internal storage/Download/Note.apk` (Note offers to delete it after updating) |
+
+The `Documents/Note` folder stays even if you uninstall the app, so your backups survive a reinstall
+(restore them with Settings → Restore from backup).
 
 ## Deleting your data
 

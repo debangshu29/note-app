@@ -46,6 +46,7 @@ public final class Store {
     public static final String S_SMART_LISTS = "smart_lists";
     public static final String S_AUTO_UPDATE = "auto_update";
     public static final String S_LIST_TOTALS = "list_totals";
+    public static final String S_AUTO_BACKUP = "auto_backup";
 
     private Store(Context app) {
         this.app = app;

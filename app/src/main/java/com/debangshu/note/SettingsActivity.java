@@ -28,7 +28,7 @@ import java.util.Locale;
 /** Switches for every smart feature, backup, and "Delete all data". */
 public class SettingsActivity extends Activity {
 
-    private static final int REQ_EXPORT = 11, REQ_IMPORT = 12, REQ_PERMS = 13;
+    private static final int REQ_EXPORT = 11, REQ_IMPORT = 12, REQ_PERMS = 13, REQ_STORAGE = 14;
     private Store store;
 
     @Override
@@ -45,6 +45,22 @@ public class SettingsActivity extends Activity {
         bindSwitch(R.id.sw_auto_reminders, Store.S_AUTO_REMINDERS);
         bindSwitch(R.id.sw_calendar, Store.S_ADD_TO_CALENDAR);
         bindSwitch(R.id.sw_auto_update, Store.S_AUTO_UPDATE);
+        bindSwitch(R.id.sw_auto_backup, Store.S_AUTO_BACKUP);
+        findViewById(R.id.row_download_latest).setOnClickListener(v -> Updater.startUpdate(this));
+        findViewById(R.id.row_copy_link).setOnClickListener(v -> Updater.copyLink(this));
+        findViewById(R.id.row_delete_apks).setOnClickListener(v -> Updater.pickOldFilesToDelete(this));
+        findViewById(R.id.row_update_help).setOnClickListener(v -> Updater.showHelp(this));
+        findViewById(R.id.row_folder).setOnClickListener(v -> openFolder(null));
+        findViewById(R.id.row_backups).setOnClickListener(v -> openFolder(AppFolder.BACKUPS));
+        findViewById(R.id.row_exports).setOnClickListener(v -> openFolder(AppFolder.EXPORTS));
+        findViewById(R.id.row_imports).setOnClickListener(v -> openFolder(AppFolder.IMPORTS));
+        findViewById(R.id.row_backup_now).setOnClickListener(v -> {
+            if (!AppFolder.canWrite(this)) { AppFolder.askPermissionIfNeeded(this, REQ_STORAGE); return; }
+            ReminderSync.runInBackground(() -> AppFolder.autoBackup(this, true), () -> {
+                Toast.makeText(this, "Backup saved in " + AppFolder.displayPath(AppFolder.BACKUPS), Toast.LENGTH_LONG).show();
+                updateTexts();
+            });
+        });
         findViewById(R.id.row_check_update).setOnClickListener(v -> Updater.maybePrompt(this, true));
 
         findViewById(R.id.row_default_time).setOnClickListener(v ->
@@ -116,12 +132,39 @@ public class SettingsActivity extends Activity {
         long bytes = new java.io.File(getFilesDir(), "notes.json").length()
                 + new java.io.File(getFilesDir(), "reminders.json").length();
         ((TextView) findViewById(R.id.txt_storage)).setText(String.format(Locale.ROOT,
-                "%d notes · %d reminders · %.1f KB, stored only on this phone", notes, rem, bytes / 1024.0));
+                "%d notes · %d reminders · %.1f KB\nKept in Note's private storage (only Note can open it):\n%s",
+                notes, rem, bytes / 1024.0, AppFolder.privatePath(this)));
+        ((TextView) findViewById(R.id.txt_folder)).setText(AppFolder.displayPath(null)
+                + (AppFolder.canWrite(this) ? "" : "\nTap to allow Note to use this folder"));
+        ReminderSync.runInBackground(() -> {
+            final String b = folderInfo(AppFolder.BACKUPS, "Automatic and manual backups of all notes");
+            final String e = folderInfo(AppFolder.EXPORTS, "Copies of images and PDFs you share");
+            final String i = folderInfo(AppFolder.IMPORTS, "Copies of photos, PDFs and files you turned into notes");
+            runOnUiThread(() -> {
+                if (isFinishing()) return;
+                ((TextView) findViewById(R.id.txt_backups)).setText(b);
+                ((TextView) findViewById(R.id.txt_exports)).setText(e);
+                ((TextView) findViewById(R.id.txt_imports)).setText(i);
+            });
+        }, null);
+        ((TextView) findViewById(R.id.txt_link)).setText(Updater.APK_URL);
 
         String version = "";
         try { version = getPackageManager().getPackageInfo(getPackageName(), 0).versionName; } catch (Exception ignored) { }
         ((TextView) findViewById(R.id.txt_version)).setText("Note " + version + " · your notes never leave this phone");
         ((TextView) findViewById(R.id.txt_update)).setText("You have version " + version + ". Tap to look for a newer one.");
+    }
+
+    private String folderInfo(String section, String what) {
+        int count = AppFolder.list(this, section).size();
+        long kb = AppFolder.size(this, section) / 1024;
+        return what + "\n" + AppFolder.displayPath(section) + "\n" + count + (count == 1 ? " file · " : " files · ")
+                + (kb >= 1024 ? String.format(Locale.ROOT, "%.1f MB", kb / 1024.0) : kb + " KB");
+    }
+
+    private void openFolder(String section) {
+        if (!AppFolder.canWrite(this)) { AppFolder.askPermissionIfNeeded(this, REQ_STORAGE); return; }
+        AppFolder.open(this, section);
     }
 
     // ------------------------------------------------------------------ permissions
@@ -197,6 +240,7 @@ public class SettingsActivity extends Activity {
     @Override
     protected void onActivityResult(int req, int res, Intent data) {
         super.onActivityResult(req, res, data);
+        Updater.onCleanupResult(this, req, res, data);
         if (res != RESULT_OK || data == null || data.getData() == null) return;
         Uri uri = data.getData();
         if (req == REQ_EXPORT) {
@@ -233,6 +277,10 @@ public class SettingsActivity extends Activity {
         alsoCal.setText("Also remove the events this app added to my phone calendar");
         alsoCal.setChecked(true);
         box.addView(alsoCal);
+        CheckBox alsoFolder = new CheckBox(this);
+        alsoFolder.setText("Also delete the backups, exports and imports in " + AppFolder.displayPath(null));
+        alsoFolder.setChecked(true);
+        box.addView(alsoFolder);
 
         new AlertDialog.Builder(this)
                 .setTitle("Delete all data?")
@@ -240,8 +288,10 @@ public class SettingsActivity extends Activity {
                 .setView(box)
                 .setPositiveButton("Delete everything", (d, w) -> {
                     boolean cal = alsoCal.isChecked();
+                    boolean folder = alsoFolder.isChecked();
                     ReminderSync.runInBackground(() -> {
                         ReminderSync.removeAll(this, cal);
+                        if (folder) AppFolder.clearAll(this);
                         store.wipeEverything();
                         store.prefs().edit().putBoolean("welcomed", true).apply();
                     }, () -> {

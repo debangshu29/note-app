@@ -11,6 +11,8 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
     <!-- add reminders to the phone's own calendar -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <!-- Android 9 and older: needed to write the Documents/Note folder -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.WRITE_CALENDAR" />
     <!-- app updates: internet is used ONLY to download new versions from GitHub. Notes are never sent. -->
     <uses-permission android:name="android.permission.INTERNET" />

@@ -154,6 +154,12 @@ public final class ShareHelper {
                     NoteRenderer.toPdf(pages, f);
                     uris.add(ShareProvider.uriFor(f));
                 }
+                // keep a copy in Documents/Note/Exports
+                File[] made = ShareProvider.dir(a).listFiles();
+                if (made != null) for (File f : made) {
+                    AppFolder.saveCopy(a, AppFolder.EXPORTS, f.getName(),
+                            f.getName().endsWith(".pdf") ? "application/pdf" : "image/png", f);
+                }
                 final String m = mime;
                 final boolean switched = tooLong;
                 a.runOnUiThread(() -> send(a, uris, m, switched));

@@ -131,7 +131,7 @@ public final class TextImporter {
 
     // ------------------------------------------------------------------ helpers
 
-    private static String displayName(Context ctx, Uri uri) {
+    public static String displayName(Context ctx, Uri uri) {
         try (Cursor c = ctx.getContentResolver().query(uri, new String[]{OpenableColumns.DISPLAY_NAME}, null, null, null)) {
             if (c != null && c.moveToFirst()) {
                 String n = c.getString(0);

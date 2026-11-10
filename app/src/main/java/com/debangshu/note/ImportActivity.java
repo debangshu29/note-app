@@ -61,7 +61,15 @@ public class ImportActivity extends Activity {
             StringBuilder all = new StringBuilder();
             String title = subject;
             String error = null;
+            String stamp = new java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.ROOT).format(new java.util.Date());
             for (Uri u : uris) {
+                // keep a copy of the original in Documents/Note/Imports
+                try {
+                    String name = AppFolder.safeName(TextImporter.displayName(this, u));
+                    String t2 = getContentResolver().getType(u);
+                    AppFolder.saveCopy(this, AppFolder.IMPORTS, stamp + "_" + name,
+                            t2 == null ? "application/octet-stream" : t2, u);
+                } catch (Exception ignored) { }
                 try {
                     TextImporter.Result r = TextImporter.read(this, u, oneType);
                     if (title == null || title.trim().isEmpty()) title = r.title;
