@@ -1,10 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <!-- soft shadow -->
+    <path android:fillColor="#26000000"
+        android:pathData="M44,35h22a8,8 0,0 1,8 8v30a8,8 0,0 1,-8 8H44a8,8 0,0 1,-8 -8V43a8,8 0,0 1,8 -8z" />
+    <!-- the page -->
     <path android:fillColor="#FFFFFFFF"
-        android:pathData="M38,30h24l12,12v32a4,4 0,0 1,-4 4H38a4,4 0,0 1,-4 -4V34a4,4 0,0 1,4 -4z" />
-    <path android:fillColor="#FFC7C4F8" android:pathData="M62,30l12,12h-8a4,4 0,0 1,-4 -4z" />
-    <path android:fillColor="#FF4F46E5" android:pathData="M41,48h16v3H41zM41,55h22v3H41z" />
-    <path android:fillColor="#FFFFB020"
-        android:pathData="M45.5,68.5l-4.5,-4.5 2.1,-2.1 2.4,2.4 7.4,-7.4 2.1,2.1z" />
+        android:pathData="M43,31h22a8,8 0,0 1,8 8v30a8,8 0,0 1,-8 8H43a8,8 0,0 1,-8 -8V39a8,8 0,0 1,8 -8z" />
+    <!-- lines -->
+    <path android:fillColor="#FF5B4CF5"
+        android:pathData="M43.5,42h16a2,2 0,0 1,0 4h-16a2,2 0,0 1,0 -4zM43.5,50h21a2,2 0,0 1,0 4h-21a2,2 0,0 1,0 -4zM43.5,58h12a2,2 0,0 1,0 4h-12a2,2 0,0 1,0 -4z" />
+    <!-- badge -->
+    <path android:fillColor="#FFFFC24B" android:pathData="M72,71m-10,0a10,10 0,1 1,20 0a10,10 0,1 1,-20 0" />
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M69.6,76.2l-4.4,-4.4 2,-2 2.4,2.4 6.2,-6.2 2,2z" />
 </vector>

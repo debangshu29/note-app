@@ -1,16 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bg">#F6F5F1</color>
+    <!-- Note 3 design system: soft cool greys, white cards, indigo → violet accent -->
+    <color name="bg">#F4F5F9</color>
     <color name="surface">#FFFFFF</color>
-    <color name="text">#1D1C21</color>
-    <color name="text2">#6E6B75</color>
-    <color name="hint">#A6A3AC</color>
-    <color name="divider">#E7E4DE</color>
-    <color name="accent">#4F46E5</color>
-    <color name="accent_soft">#E9E8FC</color>
+    <color name="surface2">#ECEEF4</color>
+    <color name="card_stroke">#00000000</color>
+    <color name="text">#14151A</color>
+    <color name="text2">#5D6170</color>
+    <color name="hint">#9A9EAD</color>
+    <color name="divider">#E4E6EE</color>
+    <color name="accent">#5B4CF5</color>
+    <color name="accent2">#8B5CF6</color>
+    <color name="accent_soft">#ECEAFE</color>
     <color name="on_accent">#FFFFFF</color>
-    <color name="danger">#C93636</color>
-    <color name="suggest_bg">#1D1C21</color>
+    <color name="danger">#E5484D</color>
+    <color name="danger_soft">#FDECEC</color>
+    <color name="success">#1FA971</color>
+    <color name="warn">#F59E0B</color>
+    <color name="suggest_bg">#14151A</color>
     <color name="suggest_text">#FFFFFF</color>
-    <color name="icon_bg">#4F46E5</color>
+    <color name="icon_bg">#5B4CF5</color>
+    <color name="scrim">#73000000</color>
 </resources>

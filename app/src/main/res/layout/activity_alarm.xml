@@ -2,64 +2,82 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg"
-    android:gravity="center"
+    android:background="@drawable/bg_alarm"
+    android:gravity="center_horizontal"
     android:orientation="vertical"
-    android:padding="32dp">
+    android:paddingStart="28dp"
+    android:paddingEnd="28dp">
+
+    <View
+        android:layout_width="1dp"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
 
     <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="96dp"
+        android:layout_height="96dp"
+        android:background="@drawable/bg_pill_glass"
+        android:gravity="center"
         android:text="⏰"
-        android:textSize="56sp" />
+        android:textSize="44sp" />
 
     <TextView
         android:id="@+id/alarm_time"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:fontFamily="sans-serif-light"
-        android:textColor="@color/text"
-        android:textSize="64sp" />
+        android:layout_marginTop="24dp"
+        android:fontFamily="sans-serif-black"
+        android:letterSpacing="-0.02"
+        android:textColor="#FFFFFFFF"
+        android:textSize="72sp" />
 
     <TextView
         android:id="@+id/alarm_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="4dp"
         android:fontFamily="sans-serif-medium"
         android:gravity="center"
-        android:textColor="@color/text"
+        android:textColor="#FFFFFFFF"
         android:textSize="24sp" />
 
     <TextView
         android:id="@+id/alarm_line"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="8dp"
         android:gravity="center"
+        android:lineSpacingExtra="3dp"
         android:maxLines="3"
-        android:textColor="@color/text2"
+        android:textColor="#CCFFFFFF"
         android:textSize="15sp" />
+
+    <View
+        android:layout_width="1dp"
+        android:layout_height="0dp"
+        android:layout_weight="1.3" />
 
     <TextView
         android:id="@+id/alarm_stop"
         android:layout_width="match_parent"
-        android:layout_height="64dp"
-        android:layout_marginTop="56dp"
+        android:layout_height="68dp"
         android:background="@drawable/bg_fab_rect"
+        android:elevation="6dp"
+        android:fontFamily="sans-serif-medium"
         android:gravity="center"
         android:text="Stop"
-        android:textColor="@color/on_accent"
+        android:textColor="#FF3B2FCB"
         android:textSize="20sp" />
 
     <TextView
         android:id="@+id/alarm_snooze"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="60dp"
         android:layout_marginTop="14dp"
-        android:background="@drawable/bg_tab"
+        android:layout_marginBottom="48dp"
+        android:background="@drawable/bg_pill_glass"
+        android:fontFamily="sans-serif-medium"
         android:gravity="center"
-        android:textColor="@color/text"
+        android:textColor="#FFFFFFFF"
         android:textSize="17sp" />
 </LinearLayout>

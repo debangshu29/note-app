@@ -85,8 +85,9 @@ public final class NoteRenderer {
         TextPaint bp = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         bp.setColor(INK);
         bp.setTextSize(body);
+        bp.setTypeface(NoteStyle.font(ctx, n, false));
         TextPaint hp = new TextPaint(bp);
-        hp.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
+        hp.setTypeface(Typeface.create(NoteStyle.font(ctx, n, false), Typeface.BOLD));
         List<Item> out = new ArrayList<>();
         for (Block b : n.blocksOrText()) {
             Item it = new Item();
@@ -251,6 +252,7 @@ public final class NoteRenderer {
                 // header
                 Canvas c0 = page[0].getCanvas();
                 if (n.title != null && !n.title.trim().isEmpty()) {
+                    tp.setTypeface(NoteStyle.font(ctx, n, true));
                     StaticLayout t = layout(n.title.trim(), tp, CW, 1.1f);
                     c0.save(); c0.translate(M, y[0]); t.draw(c0); c0.restore();
                     y[0] += t.getHeight() + 6;
@@ -360,6 +362,7 @@ public final class NoteRenderer {
         mp.setColor(GREY);
         mp.setTextSize(28);
 
+        tp.setTypeface(NoteStyle.font(ctx, n, true));
         StaticLayout title = n.title == null || n.title.trim().isEmpty() ? null : layout(n.title.trim(), tp, cw, 1.1f);
         StaticLayout meta = layout(today(), mp, cw, 1f);
         List<Item> items = layoutBlocks(ctx, n, cw, body);

@@ -37,6 +37,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        Ui.install(this);
         setContentView(R.layout.activity_main);
         Tips.applyAll(findViewById(android.R.id.content));
         store = Store.get(this);
@@ -93,8 +94,36 @@ public class MainActivity extends Activity {
         if (actionMode != null) return;               // don't lose the selection
         tabNotes.setSelected(!remindersTab);
         tabReminders.setSelected(remindersTab);
+        float d = getResources().getDisplayMetrics().density;
+        tabNotes.setElevation(remindersTab ? 0 : 2 * d);
+        tabReminders.setElevation(remindersTab ? 2 * d : 0);
+        paintHeader();
         String q = search.getText().toString().trim().toLowerCase(Locale.ROOT);
         if (remindersTab) showReminders(q); else showNotes(q);
+    }
+
+    /** Greeting with today's date, and how many notes / upcoming reminders there are on the tabs. */
+    private void paintHeader() {
+        int h = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+        String hello = h < 5 ? "Good night" : h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : h < 21 ? "Good evening" : "Good night";
+        String day = DateUtils.formatDateTime(this, System.currentTimeMillis(),
+                DateUtils.FORMAT_SHOW_WEEKDAY | DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_NO_YEAR | DateUtils.FORMAT_ABBREV_ALL);
+        ((TextView) findViewById(R.id.greeting)).setText(hello + "  ·  " + day);
+        int notes = store.notes().size();
+        int upcoming = 0;
+        long now = System.currentTimeMillis();
+        for (Reminder r : store.reminders()) if (!r.done && !r.ignored && r.time > now) upcoming++;
+        tabNotes.setText(tabLabel("All notes", notes));
+        tabReminders.setText(tabLabel("Reminders", upcoming));
+    }
+
+    private CharSequence tabLabel(String name, int count) {
+        if (count <= 0) return name;
+        android.text.SpannableString s = new android.text.SpannableString(name + "  " + count);
+        int at = name.length() + 2;
+        s.setSpan(new android.text.style.ForegroundColorSpan(getColor(R.color.accent)), at, s.length(), 0);
+        s.setSpan(new android.text.style.RelativeSizeSpan(0.9f), at, s.length(), 0);
+        return s;
     }
 
     // ------------------------------------------------------------------ notes tab
@@ -112,7 +141,7 @@ public class MainActivity extends Activity {
         list.setAdapter(new NotesAdapter(shown));
         list.setOnItemClickListener((p, v, pos, id) -> open(shown.get(pos).id));
         emptyTv.setText(all.isEmpty()
-                ? "No notes yet.\nTap + to write your first note."
+                ? "Nothing here yet\nTap New note to write your first one."
                 : "Nothing matches \"" + q + "\"");
         emptyTv.setVisibility(shown.isEmpty() ? View.VISIBLE : View.GONE);
     }
@@ -124,7 +153,7 @@ public class MainActivity extends Activity {
     private void pickImport() {
         String[] items = {"📷  Photo or screenshot", "📄  PDF", "📝  Text file"};
         String[] types = {"image/*", "application/pdf", "text/*"};
-        new AlertDialog.Builder(this)
+        new Ui.Popup(this)
                 .setTitle("Make a note from…")
                 .setItems(items, (d, which) -> {
                     Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
@@ -230,7 +259,7 @@ public class MainActivity extends Activity {
     private void confirmDelete(List<Note> notes, android.view.ActionMode mode) {
         if (notes.isEmpty()) return;
         String what = notes.size() == 1 ? "\"" + notes.get(0).displayTitle() + "\"" : notes.size() + " notes";
-        new AlertDialog.Builder(this)
+        new Ui.Popup(this)
                 .setTitle(notes.size() == 1 ? "Delete this note?" : "Delete " + notes.size() + " notes?")
                 .setMessage(what + " and their reminders will be removed from this phone.")
                 .setPositiveButton("Delete", (d, w) -> {
@@ -275,21 +304,32 @@ public class MainActivity extends Activity {
             int rc = reminderCount(n.id);
             String meta = DateUtils.getRelativeTimeSpanString(n.updated, System.currentTimeMillis(),
                     DateUtils.MINUTE_IN_MILLIS).toString();
-            if (rc > 0) meta += "   🔔 " + rc;
+            if (rc > 0) meta += "  ·  🔔 " + rc;
             int pics = n.count(Block.IMAGE), tables = n.count(Block.TABLE), pages = n.count(Block.PAGE) + 1;
-            if (pics > 0) meta += "   🖼 " + pics;
-            if (tables > 0) meta += "   ▦ " + tables;
-            if (pages > 1) meta += "   📑 " + pages;
+            if (pics > 0) meta += "  ·  🖼 " + pics;
+            if (tables > 0) meta += "  ·  ▦ " + tables;
+            if (pages > 1) meta += "  ·  📑 " + pages;
             // note colour: the card looks like a sticky note
             View card = v.findViewById(R.id.note_card);
-            int col = NoteStyle.noteColor(MainActivity.this, n.color);
+            int col = NoteStyle.noteColor(MainActivity.this, n);
+            TextView metaTv = v.findViewById(R.id.note_meta);
             if (col != 0) {
+                float d = getResources().getDisplayMetrics().density;
                 android.graphics.drawable.GradientDrawable g = new android.graphics.drawable.GradientDrawable();
                 g.setColor(col);
-                g.setCornerRadius(16 * getResources().getDisplayMetrics().density);
-                card.setBackground(g);
+                g.setCornerRadius(22 * d);
+                card.setBackground(Ui.ripple(g));
+                boolean darkCard = ColorPicker.luminance(col) < 0.45;
+                ((TextView) v.findViewById(R.id.note_title)).setTextColor(darkCard ? 0xFFF4F4F8 : 0xFF14151A);
+                pv.setTextColor(darkCard ? 0xCCF4F4F8 : 0xB314151A);
+                metaTv.setTextColor(darkCard ? 0xCCF4F4F8 : 0xB314151A);
+                metaTv.setBackground(Ui.round(darkCard ? 0x26FFFFFF : 0x14000000, 10 * d));
             } else {
                 card.setBackgroundResource(R.drawable.bg_card);
+                ((TextView) v.findViewById(R.id.note_title)).setTextColor(getColor(R.color.text));
+                pv.setTextColor(getColor(R.color.text2));
+                metaTv.setTextColor(getColor(R.color.text2));
+                metaTv.setBackgroundResource(R.drawable.bg_badge);
             }
             ((TextView) v.findViewById(R.id.note_meta)).setText(meta);
             v.findViewById(R.id.note_pin).setVisibility(n.pinned ? View.VISIBLE : View.GONE);
@@ -349,7 +389,7 @@ public class MainActivity extends Activity {
 
     private void reminderMenu(Reminder r) {
         String[] items = {"Open note", r.done ? "Mark as not done" : "Mark as done", "Delete reminder"};
-        new AlertDialog.Builder(this)
+        new Ui.Popup(this)
                 .setTitle(r.title)
                 .setItems(items, (d, which) -> {
                     if (which == 0) open(r.noteId);
@@ -382,7 +422,8 @@ public class MainActivity extends Activity {
             TextView title = v.findViewById(R.id.rem_title);
             TextView sub = v.findViewById(R.id.rem_sub);
             CheckBox cb = v.findViewById(R.id.rem_check);
-            title.setText(ReminderKind.emoji(r.kind) + "  " + r.title);
+            title.setText(r.title);
+            ((TextView) v.findViewById(R.id.rem_icon)).setText(ReminderKind.emoji(r.kind));
             Note n = store.note(r.noteId);
             String when = r.hasTime ? DateUtils.formatDateTime(MainActivity.this, r.time, DateUtils.FORMAT_SHOW_TIME) : "Any time";
             if (r.time < System.currentTimeMillis() || r.done) when = Notifier.formatWhen(MainActivity.this, r);

@@ -7,187 +7,518 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="64dp"
+        android:clipToPadding="false"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="6dp">
+        android:paddingStart="12dp">
 
         <ImageButton
             android:id="@+id/btn_back"
-            style="@style/IconButton"
+            style="@style/CircleButton"
             android:contentDescription="Back"
+            android:elevation="1dp"
             android:src="@drawable/ic_back" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:fontFamily="sans-serif-medium"
+            android:layout_marginStart="14dp"
+            android:fontFamily="sans-serif-black"
+            android:letterSpacing="-0.01"
             android:text="Settings"
             android:textColor="@color/text"
-            android:textSize="20sp" />
+            android:textSize="24sp" />
     </LinearLayout>
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:clipToPadding="false">
 
         <LinearLayout
+            android:id="@+id/settings_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:animateLayoutChanges="true"
             android:orientation="vertical"
             android:paddingBottom="40dp">
 
-            <TextView style="@style/SettingsHeader" android:text="SMART WRITING" />
+            <!-- privacy card -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginTop="6dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="6dp"
+                android:background="@drawable/bg_hero"
+                android:elevation="3dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="20dp">
 
-            <Switch
-                android:id="@+id/sw_auto_math"
-                style="@style/SettingsSwitch"
-                android:text="Auto answer after =\n(1+1= becomes 1+1=2)" />
+                <ImageView
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    android:background="@drawable/bg_pill_glass"
+                    android:importantForAccessibility="no"
+                    android:padding="13dp"
+                    android:src="@drawable/ic_shield"
+                    android:tint="#FFFFFFFF" />
 
-            <Switch
-                android:id="@+id/sw_math_suggest"
-                style="@style/SettingsSwitch"
-                android:text="Show the answer in grey while typing math\n(tap it or swipe it right to add)" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
-            <Switch
-                android:id="@+id/sw_list_totals"
-                style="@style/SettingsSwitch"
-                android:text="Add up price lists automatically\n(apple 50 rs, banana 20 rs… → Total = ₹70)" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-black"
+                        android:text="Private by design"
+                        android:textColor="#FFFFFFFF"
+                        android:textSize="18sp" />
 
-            <Switch
-                android:id="@+id/sw_smart_lists"
-                style="@style/SettingsSwitch"
-                android:text="Smart lists and checkboxes" />
-
-            <TextView style="@style/SettingsHeader" android:text="REMINDERS" />
-
-            <Switch
-                android:id="@+id/sw_auto_reminders"
-                style="@style/SettingsSwitch"
-                android:text="Find dates in notes and remind me\n(wake-up lines become alarms)" />
-
-            <Switch
-                android:id="@+id/sw_calendar"
-                style="@style/SettingsSwitch"
-                android:text="Add planned things to my phone calendar\n(the calendar never alerts twice)" />
-
-            <LinearLayout android:id="@+id/row_default_time" style="@style/SettingsRow">
-                <TextView style="@style/SettingsTitle" android:text="Default reminder time" />
-                <TextView android:id="@+id/txt_default_time" style="@style/SettingsSub" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:lineSpacingExtra="2dp"
+                        android:text="Your notes stay on this phone. No account, no server, nothing uploaded."
+                        android:textColor="#D9FFFFFF"
+                        android:textSize="13sp" />
+                </LinearLayout>
             </LinearLayout>
 
-            <LinearLayout android:id="@+id/row_permissions" style="@style/SettingsRow">
-                <TextView style="@style/SettingsTitle" android:text="Permissions" />
-                <TextView android:id="@+id/txt_permissions" style="@style/SettingsSub" />
+            <LinearLayout style="@style/SectionCard" android:tag="section">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_row"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:minHeight="76dp"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="12dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="12dp">
+
+                    <ImageView
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_icon_soft"
+                        android:backgroundTint="#247C5CFF"
+                        android:importantForAccessibility="no"
+                        android:padding="11dp"
+                        android:src="@drawable/ic_pen"
+                        android:tint="#FF7C5CFF" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
+                            android:text="Smart writing"
+                            android:textColor="@color/text"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Auto math, price totals, smart lists"
+                            android:textColor="@color/text2"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:importantForAccessibility="no"
+                        android:padding="2dp"
+                        android:src="@drawable/ic_chevron_down"
+                        android:tag="chevron"
+                        android:tint="@color/text2" />
+                </LinearLayout>
+
+                <LinearLayout style="@style/SectionBody">
+                    <Switch android:id="@+id/sw_auto_math" style="@style/SettingsSwitch" android:text="Auto answer after =
+(1+1= becomes 1+1=2)" />
+                    <Switch android:id="@+id/sw_math_suggest" style="@style/SettingsSwitch" android:text="Show the answer in grey while typing math
+(tap it or swipe it right to add)" />
+                    <Switch android:id="@+id/sw_list_totals" style="@style/SettingsSwitch" android:text="Add up price lists automatically
+(apple 50 rs, banana 20 rs… → Total = ₹70)" />
+                    <Switch android:id="@+id/sw_smart_lists" style="@style/SettingsSwitch" android:text="Smart lists and checkboxes
+(•, 1. and ☐ continue when you press Enter)" />
+
+                </LinearLayout>
             </LinearLayout>
 
-            <LinearLayout android:id="@+id/row_fullscreen" style="@style/SettingsRow" android:visibility="gone">
-                <TextView style="@style/SettingsTitle" android:text="Allow full-screen alarms" />
-                <TextView style="@style/SettingsSub"
-                    android:text="So “wake me up at 6 am” shows a big Stop / Snooze screen over the lock screen. Tap to allow." />
+
+            <LinearLayout style="@style/SectionCard" android:tag="section">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_row"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:minHeight="76dp"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="12dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="12dp">
+
+                    <ImageView
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_icon_soft"
+                        android:backgroundTint="#24F97316"
+                        android:importantForAccessibility="no"
+                        android:padding="11dp"
+                        android:src="@drawable/ic_alarm"
+                        android:tint="#FFF97316" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
+                            android:text="Reminders"
+                            android:textColor="@color/text"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Dates, alarms, calendar, permissions"
+                            android:textColor="@color/text2"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:importantForAccessibility="no"
+                        android:padding="2dp"
+                        android:src="@drawable/ic_chevron_down"
+                        android:tag="chevron"
+                        android:tint="@color/text2" />
+                </LinearLayout>
+
+                <LinearLayout style="@style/SectionBody">
+                    <Switch android:id="@+id/sw_auto_reminders" style="@style/SettingsSwitch" android:text="Find dates in notes and remind me
+(wake-up lines become alarms)" />
+                    <Switch android:id="@+id/sw_calendar" style="@style/SettingsSwitch" android:text="Add planned things to my phone calendar
+(the calendar never alerts twice)" />
+                    <LinearLayout android:id="@+id/row_default_time" style="@style/SettingsRow">
+                        <TextView style="@style/SettingsTitle" android:text="Default reminder time" />
+                        <TextView android:id="@+id/txt_default_time" style="@style/SettingsSub" />
+                    </LinearLayout>
+                    <LinearLayout android:id="@+id/row_permissions" style="@style/SettingsRow">
+                        <TextView style="@style/SettingsTitle" android:text="Permissions" />
+                        <TextView android:id="@+id/txt_permissions" style="@style/SettingsSub" />
+                    </LinearLayout>
+                    <LinearLayout android:id="@+id/row_fullscreen" style="@style/SettingsRow" android:visibility="gone">
+                        <TextView style="@style/SettingsTitle" android:text="Allow full-screen alarms" />
+                        <TextView style="@style/SettingsSub" android:text="So “wake me up at 6 am” shows a big Stop / Snooze screen over the lock screen. Tap to allow." />
+                    </LinearLayout>
+                    <LinearLayout android:id="@+id/row_exact" style="@style/SettingsRow" android:visibility="gone">
+                        <TextView style="@style/SettingsTitle" android:text="Allow on-time alarms" />
+                        <TextView style="@style/SettingsSub" android:text="Your phone may deliver reminders a few minutes late. Tap to allow exact alarms." />
+                    </LinearLayout>
+
+                </LinearLayout>
             </LinearLayout>
 
-            <LinearLayout android:id="@+id/row_exact" style="@style/SettingsRow" android:visibility="gone">
-                <TextView style="@style/SettingsTitle" android:text="Allow on-time alarms" />
-                <TextView style="@style/SettingsSub"
-                    android:text="Your phone may deliver reminders a few minutes late. Tap to allow exact alarms." />
+
+            <LinearLayout style="@style/SectionCard" android:tag="section">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_row"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:minHeight="76dp"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="12dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="12dp">
+
+                    <ImageView
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_icon_soft"
+                        android:backgroundTint="#2410B981"
+                        android:importantForAccessibility="no"
+                        android:padding="11dp"
+                        android:src="@drawable/ic_folder"
+                        android:tint="#FF10B981" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
+                            android:text="Your data"
+                            android:textColor="@color/text"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Storage, folders, backup, restore, delete"
+                            android:textColor="@color/text2"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:importantForAccessibility="no"
+                        android:padding="2dp"
+                        android:src="@drawable/ic_chevron_down"
+                        android:tag="chevron"
+                        android:tint="@color/text2" />
+                </LinearLayout>
+
+                <LinearLayout style="@style/SectionBody">
+                    <LinearLayout style="@style/SettingsRow" android:clickable="false">
+                        <TextView style="@style/SettingsTitle" android:text="Your notes" />
+                        <TextView android:id="@+id/txt_storage" style="@style/SettingsSub" android:textIsSelectable="true" />
+                    </LinearLayout>
+                    <LinearLayout android:id="@+id/row_folder" style="@style/SettingsRow">
+                        <TextView style="@style/SettingsTitle" android:text="Note folder (tap to open)" />
+                        <TextView android:id="@+id/txt_folder" style="@style/SettingsSub" android:textIsSelectable="false" />
+                    </LinearLayout>
+                    <LinearLayout android:id="@+id/row_backups" style="@style/SettingsRow">
+                        <TextView style="@style/SettingsTitle" android:text="📁  Backups" />
+                        <TextView android:id="@+id/txt_backups" style="@style/SettingsSub" />
+                    </LinearLayout>
+                    <LinearLayout android:id="@+id/row_exports" style="@style/SettingsRow">
+                        <TextView style="@style/SettingsTitle" android:text="📁  Exports" />
+                        <TextView android:id="@+id/txt_exports" style="@style/SettingsSub" />
+                    </LinearLayout>
+                    <LinearLayout android:id="@+id/row_imports" style="@style/SettingsRow">
+                        <TextView style="@style/SettingsTitle" android:text="📁  Imports" />
+                        <TextView android:id="@+id/txt_imports" style="@style/SettingsSub" />
+                    </LinearLayout>
+                    <Switch android:id="@+id/sw_auto_backup" style="@style/SettingsSwitch" android:text="Automatic daily backup to the Backups folder
+(keeps the last 14 days)" />
+                    <LinearLayout android:id="@+id/row_backup_now" style="@style/SettingsRow">
+                        <TextView style="@style/SettingsTitle" android:text="Back up now" />
+                        <TextView style="@style/SettingsSub" android:text="Save a backup to the Backups folder right away." />
+                    </LinearLayout>
+                    <LinearLayout android:id="@+id/row_export" style="@style/SettingsRow">
+                        <TextView style="@style/SettingsTitle" android:text="Export backup" />
+                        <TextView style="@style/SettingsSub" android:text="Save all notes to a file (Downloads, Drive…). Good before changing phones." />
+                    </LinearLayout>
+                    <LinearLayout android:id="@+id/row_import" style="@style/SettingsRow">
+                        <TextView style="@style/SettingsTitle" android:text="Restore from backup" />
+                        <TextView style="@style/SettingsSub" android:text="Bring notes back from a backup file." />
+                    </LinearLayout>
+                    <LinearLayout android:id="@+id/row_delete_all" style="@style/SettingsRow">
+                        <TextView style="@style/SettingsTitle" android:text="Delete all data" android:textColor="@color/danger" />
+                        <TextView style="@style/SettingsSub" android:text="Erase every note, reminder and setting from this phone." />
+                    </LinearLayout>
+
+                </LinearLayout>
             </LinearLayout>
 
-            <TextView style="@style/SettingsHeader" android:text="YOUR DATA" />
 
-            <LinearLayout style="@style/SettingsRow" android:clickable="false">
-                <TextView style="@style/SettingsTitle" android:text="Your notes" />
-                <TextView android:id="@+id/txt_storage" style="@style/SettingsSub" android:textIsSelectable="true" />
+            <LinearLayout style="@style/SectionCard" android:tag="section">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_row"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:minHeight="76dp"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="12dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="12dp">
+
+                    <ImageView
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_icon_soft"
+                        android:backgroundTint="#243B82F6"
+                        android:importantForAccessibility="no"
+                        android:padding="11dp"
+                        android:src="@drawable/ic_download"
+                        android:tint="#FF3B82F6" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
+                            android:text="App updates"
+                            android:textColor="@color/text"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Check, download, update help"
+                            android:textColor="@color/text2"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:importantForAccessibility="no"
+                        android:padding="2dp"
+                        android:src="@drawable/ic_chevron_down"
+                        android:tag="chevron"
+                        android:tint="@color/text2" />
+                </LinearLayout>
+
+                <LinearLayout style="@style/SectionBody">
+                    <Switch android:id="@+id/sw_auto_update" style="@style/SettingsSwitch" android:text="Check for updates automatically
+(a popup appears when a new version is ready)" />
+                    <LinearLayout android:id="@+id/row_check_update" style="@style/SettingsRow">
+                        <TextView style="@style/SettingsTitle" android:text="Check for updates now" />
+                        <TextView android:id="@+id/txt_update" style="@style/SettingsSub" />
+                    </LinearLayout>
+                    <LinearLayout android:id="@+id/row_download_latest" style="@style/SettingsRow">
+                        <TextView style="@style/SettingsTitle" android:text="Download latest version" />
+                        <TextView style="@style/SettingsSub" android:text="Note downloads the newest version (with a progress bar). Tap Install, then Update. The file is deleted automatically afterwards." />
+                    </LinearLayout>
+                    <LinearLayout android:id="@+id/row_copy_link" style="@style/SettingsRow">
+                        <TextView style="@style/SettingsTitle" android:text="Copy download link" />
+                        <TextView android:id="@+id/txt_link" style="@style/SettingsSub" android:textIsSelectable="false" />
+                    </LinearLayout>
+                    <LinearLayout android:id="@+id/row_delete_apks" style="@style/SettingsRow">
+                        <TextView style="@style/SettingsTitle" android:text="Delete old update files" />
+                        <TextView style="@style/SettingsSub" android:text="Only for files your browser downloaded earlier: pick them in Downloads and Note deletes them." />
+                    </LinearLayout>
+                    <LinearLayout android:id="@+id/row_update_help" style="@style/SettingsRow">
+                        <TextView style="@style/SettingsTitle" android:text="Update help" />
+                        <TextView style="@style/SettingsSub" android:text="What to do if downloading or installing doesn't work." />
+                    </LinearLayout>
+
+                </LinearLayout>
             </LinearLayout>
 
-            <LinearLayout android:id="@+id/row_folder" style="@style/SettingsRow">
-                <TextView style="@style/SettingsTitle" android:text="Note folder (tap to open)" />
-                <TextView android:id="@+id/txt_folder" style="@style/SettingsSub" android:textIsSelectable="false" />
+
+            <LinearLayout style="@style/SectionCard" android:tag="section">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_row"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:minHeight="76dp"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="12dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="12dp">
+
+                    <ImageView
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_icon_soft"
+                        android:backgroundTint="#24EC4899"
+                        android:importantForAccessibility="no"
+                        android:padding="11dp"
+                        android:src="@drawable/ic_info"
+                        android:tint="#FFEC4899" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
+                            android:text="About"
+                            android:textColor="@color/text"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="How to use Note, version"
+                            android:textColor="@color/text2"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:importantForAccessibility="no"
+                        android:padding="2dp"
+                        android:src="@drawable/ic_chevron_down"
+                        android:tag="chevron"
+                        android:tint="@color/text2" />
+                </LinearLayout>
+
+                <LinearLayout style="@style/SectionBody">
+                    <LinearLayout android:id="@+id/row_help" style="@style/SettingsRow">
+                        <TextView style="@style/SettingsTitle" android:text="How to use" />
+                        <TextView android:id="@+id/txt_version" style="@style/SettingsSub" />
+                    </LinearLayout>
+
+                </LinearLayout>
             </LinearLayout>
 
-            <LinearLayout android:id="@+id/row_backups" style="@style/SettingsRow">
-                <TextView style="@style/SettingsTitle" android:text="📁 Backups" />
-                <TextView android:id="@+id/txt_backups" style="@style/SettingsSub" />
-            </LinearLayout>
-
-            <LinearLayout android:id="@+id/row_exports" style="@style/SettingsRow">
-                <TextView style="@style/SettingsTitle" android:text="📁 Exports" />
-                <TextView android:id="@+id/txt_exports" style="@style/SettingsSub" />
-            </LinearLayout>
-
-            <LinearLayout android:id="@+id/row_imports" style="@style/SettingsRow">
-                <TextView style="@style/SettingsTitle" android:text="📁 Imports" />
-                <TextView android:id="@+id/txt_imports" style="@style/SettingsSub" />
-            </LinearLayout>
-
-            <Switch
-                android:id="@+id/sw_auto_backup"
-                style="@style/SettingsSwitch"
-                android:text="Automatic daily backup to the Backups folder\n(keeps the last 14 days)" />
-
-            <LinearLayout android:id="@+id/row_backup_now" style="@style/SettingsRow">
-                <TextView style="@style/SettingsTitle" android:text="Back up now" />
-                <TextView style="@style/SettingsSub" android:text="Save a backup to the Backups folder right away." />
-            </LinearLayout>
-
-            <LinearLayout android:id="@+id/row_export" style="@style/SettingsRow">
-                <TextView style="@style/SettingsTitle" android:text="Export backup" />
-                <TextView style="@style/SettingsSub"
-                    android:text="Save all notes to a file (Downloads, Drive…). Good before changing phones." />
-            </LinearLayout>
-
-            <LinearLayout android:id="@+id/row_import" style="@style/SettingsRow">
-                <TextView style="@style/SettingsTitle" android:text="Restore from backup" />
-                <TextView style="@style/SettingsSub" android:text="Bring notes back from a backup file." />
-            </LinearLayout>
-
-            <LinearLayout android:id="@+id/row_delete_all" style="@style/SettingsRow">
-                <TextView style="@style/SettingsTitle" android:text="Delete all data" android:textColor="@color/danger" />
-                <TextView style="@style/SettingsSub"
-                    android:text="Erase every note, reminder and setting from this phone." />
-            </LinearLayout>
-
-            <TextView style="@style/SettingsHeader" android:text="APP UPDATES" />
-
-            <Switch
-                android:id="@+id/sw_auto_update"
-                style="@style/SettingsSwitch"
-                android:text="Check for updates automatically\n(a popup appears when a new version is ready)" />
-
-            <LinearLayout android:id="@+id/row_check_update" style="@style/SettingsRow">
-                <TextView style="@style/SettingsTitle" android:text="Check for updates now" />
-                <TextView android:id="@+id/txt_update" style="@style/SettingsSub" />
-            </LinearLayout>
-
-            <LinearLayout android:id="@+id/row_download_latest" style="@style/SettingsRow">
-                <TextView style="@style/SettingsTitle" android:text="Download latest version" />
-                <TextView style="@style/SettingsSub"
-                    android:text="Note downloads the newest version (with a progress bar). Tap Install, then Update. The file is deleted automatically afterwards." />
-            </LinearLayout>
-
-            <LinearLayout android:id="@+id/row_copy_link" style="@style/SettingsRow">
-                <TextView style="@style/SettingsTitle" android:text="Copy download link" />
-                <TextView android:id="@+id/txt_link" style="@style/SettingsSub" android:textIsSelectable="false" />
-            </LinearLayout>
-
-            <LinearLayout android:id="@+id/row_delete_apks" style="@style/SettingsRow">
-                <TextView style="@style/SettingsTitle" android:text="Delete old update files" />
-                <TextView style="@style/SettingsSub"
-                    android:text="Only for files your browser downloaded earlier: pick them in Downloads and Note deletes them." />
-            </LinearLayout>
-
-            <LinearLayout android:id="@+id/row_update_help" style="@style/SettingsRow">
-                <TextView style="@style/SettingsTitle" android:text="Update help" />
-                <TextView style="@style/SettingsSub" android:text="What to do if downloading or installing doesn't work." />
-            </LinearLayout>
-
-            <TextView style="@style/SettingsHeader" android:text="ABOUT" />
-
-            <LinearLayout android:id="@+id/row_help" style="@style/SettingsRow">
-                <TextView style="@style/SettingsTitle" android:text="How to use" />
-                <TextView android:id="@+id/txt_version" style="@style/SettingsSub" />
-            </LinearLayout>
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

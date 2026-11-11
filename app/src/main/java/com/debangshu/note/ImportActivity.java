@@ -20,6 +20,7 @@ public class ImportActivity extends Activity {
     @SuppressWarnings("deprecation")
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        Ui.install(this);
         setContentView(R.layout.activity_import);
         Intent in = getIntent();
         String action = in.getAction();
@@ -96,7 +97,7 @@ public class ImportActivity extends Activity {
                 if (text.trim().isEmpty() && !pictures.isEmpty()) {
                     openEditor(t, "", pictures);       // a photo without text: still becomes a note
                 } else if (text.trim().isEmpty()) {
-                    new AlertDialog.Builder(this)
+                    new Ui.Popup(this)
                             .setTitle("No text found")
                             .setMessage(err != null ? err : "Couldn't find any text to put in a note.")
                             .setPositiveButton("OK", (d, w) -> finish())

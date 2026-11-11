@@ -115,6 +115,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        Ui.install(this);
         setContentView(R.layout.activity_editor);
         store = Store.get(this);
 
@@ -259,6 +260,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         }
         holders.add(index, h);
         blocksBox.addView(h.view, index);
+        styleContent(h);
         return h;
     }
 
@@ -667,7 +669,9 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     }
 
     private void updatePin() {
-        pinBtn.setAlpha(note != null && note.pinned ? 1f : 0.45f);
+        boolean on = note != null && note.pinned;
+        pinBtn.setImageTintList(android.content.res.ColorStateList.valueOf(getColor(on ? R.color.accent : R.color.text2)));
+        pinBtn.setBackground(on ? getDrawable(R.drawable.bg_pin) : getDrawable(R.drawable.bg_round_ripple));
     }
 
     private void share() {
@@ -730,7 +734,13 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             box.addView(t);
         }
         View strip = new View(this);
-        LinearLayout.LayoutParams sl = new LinearLayout.LayoutParams((int) (22 * d), (int) (5 * d));
+        strip.setClipToOutline(true);
+        strip.setOutlineProvider(new android.view.ViewOutlineProvider() {
+            @Override public void getOutline(View view, android.graphics.Outline o) {
+                o.setRoundRect(0, 0, view.getWidth(), view.getHeight(), view.getHeight() / 2f);
+            }
+        });
+        LinearLayout.LayoutParams sl = new LinearLayout.LayoutParams((int) (20 * d), (int) (4 * d));
         sl.topMargin = (int) (2 * d);
         box.addView(strip, sl);
         barOut[0] = strip;
@@ -762,8 +772,8 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         float d = getResources().getDisplayMetrics().density;
         View s = new View(this);
         s.setBackgroundColor(getColor(R.color.divider));
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams((int) d, (int) (24 * d));
-        lp.setMargins((int) (5 * d), 0, (int) (5 * d), 0);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams((int) Math.max(1, d), (int) (22 * d));
+        lp.setMargins((int) (6 * d), 0, (int) (6 * d), 0);
         bar.addView(s, lp);
     }
 
@@ -774,6 +784,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         ((TextView) tBold).setTypeface(null, Typeface.BOLD);
         tItalic = tool(bar, "I", 0, "Italic", v -> fmt(c -> c.toggle(RichText.Italic.class)));
         ((TextView) tItalic).setTypeface(Typeface.SERIF, Typeface.ITALIC);
+        tItalic.setTag(Ui.KEEP_FONT);
         tUnder = tool(bar, "U", 0, "Underline", v -> fmt(c -> c.toggle(RichText.Under.class)));
         ((TextView) tUnder).setPaintFlags(((TextView) tUnder).getPaintFlags() | Paint.UNDERLINE_TEXT_FLAG);
         tStrike = tool(bar, "S", 0, "Strikethrough", v -> fmt(c -> c.toggle(RichText.Strike.class)));
@@ -784,6 +795,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         tSize.setTypeface(null, Typeface.BOLD);
         View font = tool(bar, "F", 0, "Font style", v -> pickFont());
         ((TextView) font).setTypeface(Typeface.SERIF, Typeface.BOLD_ITALIC);
+        font.setTag(Ui.KEEP_FONT);
         View[] out = new View[1];
         colorTool(bar, "A", 0, "Font colour", v -> pickInk(), out);
         inkBar = out[0];
@@ -804,6 +816,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         ((TextView) clear).setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         tool(bar, null, R.drawable.ic_undo, "Undo", v -> fmt(TextBlockController::undo));
         tool(bar, null, R.drawable.ic_redo, "Redo", v -> fmt(TextBlockController::redo));
+        Ui.fonts(bar);
         updateToolbar();
     }
 
@@ -848,7 +861,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             items[i] = s;
         }
         items[RichText.SIZES.length] = "Custom size…";
-        new AlertDialog.Builder(this).setTitle("Font size").setItems(items, (d, w) -> {
+        new Ui.Popup(this).setTitle("Font size").setItems(items, (d, w) -> {
             if (w == RichText.SIZES.length) { customSize(now); return; }
             applySize(RichText.SIZES[w]);
         }).show();
@@ -863,7 +876,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         LinearLayout box = new LinearLayout(this);
         box.setPadding(p, p / 2, p, 0);
         box.addView(in, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        new AlertDialog.Builder(this).setTitle("Font size (6 – 120)").setView(box)
+        new Ui.Popup(this).setTitle("Font size (6 – 120)").setView(box)
                 .setPositiveButton("OK", (d, w) -> {
                     try {
                         int sp = Integer.parseInt(in.getText().toString().trim());
@@ -898,7 +911,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             items.add(s);
             ids.add(Fonts.IDS[i]);
         }
-        new AlertDialog.Builder(this).setTitle("Font style").setItems(items.toArray(new CharSequence[0]), (d, w) -> {
+        new Ui.Popup(this).setTitle("Font style").setItems(items.toArray(new CharSequence[0]), (d, w) -> {
             String id = ids.get(w);
             if (id == null) { pickFont(); return; }      // tapped a section title
             fmt(c -> c.setValue(RichText.Font.class, "sans-serif".equals(id) ? null : id));
@@ -948,7 +961,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     private void insertMenu() {
         String[] items = {"📷  Take photo", "🖼  Photo from gallery", "🧾  Scan document", "📄  PDF pages",
                 "✏️  Drawing", "🗒  Sticky note", "▦  Table", "⤵  New page (page break)"};
-        new AlertDialog.Builder(this).setTitle("Insert").setItems(items, (d, w) -> {
+        new Ui.Popup(this).setTitle("Insert").setItems(items, (d, w) -> {
             pendingReplace = null;
             switch (w) {
                 case 0: takePhoto(); break;
@@ -1022,7 +1035,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     private void pickTableSize() {
         String[] items = {"2 × 2", "3 × 3", "4 × 3 (4 rows, 3 columns)", "5 × 2 (list with prices)", "6 × 4"};
         int[][] sizes = {{2, 2}, {3, 3}, {4, 3}, {5, 2}, {6, 4}};
-        new AlertDialog.Builder(this).setTitle("Table size (rows × columns)").setItems(items, (d, w) -> {
+        new Ui.Popup(this).setTitle("Table size (rows × columns)").setItems(items, (d, w) -> {
             List<Block> l = new ArrayList<>();
             l.add(Block.table(sizes[w][0], sizes[w][1]));
             insertBlocks(l);
@@ -1113,7 +1126,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                 }
                 insertBlocks(blocks);
                 if (scanned) {
-                    new AlertDialog.Builder(this)
+                    new Ui.Popup(this)
                             .setTitle("Scanned " + files.size() + (files.size() == 1 ? " page" : " pages"))
                             .setMessage("Also add the text from the scan, so you can edit and search it?")
                             .setPositiveButton("Add text", (d, w) -> ocrIntoNote(files))
@@ -1128,7 +1141,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         int count = Media.pdfPageCount(this, uri);
         String pages = count > 30 ? " (first 30 of " + count + " pages)" : count > 0 ? " (" + count + (count == 1 ? " page)" : " pages)") : "";
         String[] items = {"Pages as pictures" + pages, "Text only (editable)", "Both"};
-        new AlertDialog.Builder(this).setTitle("Add PDF").setItems(items, (d, w) -> {
+        new Ui.Popup(this).setTitle("Add PDF").setItems(items, (d, w) -> {
             Toast.makeText(this, "Adding the PDF…", Toast.LENGTH_SHORT).show();
             new Thread(() -> {
                 List<Block> blocks = new ArrayList<>();
@@ -1243,7 +1256,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                 break;
         }
         items.add(DEL);
-        new AlertDialog.Builder(this).setTitle(title).setItems(items.toArray(new String[0]), (d, w) -> {
+        new Ui.Popup(this).setTitle(title).setItems(items.toArray(new String[0]), (d, w) -> {
             switch (items.get(w)) {
                 case FULL: PhotoViewer.show(this, b.file); break;
                 case OCR: { List<String> f = new ArrayList<>(); f.add(b.file); ocrAfter(h, f); break; }
@@ -1274,7 +1287,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                     break;
                 }
                 case DEL:
-                    new AlertDialog.Builder(this).setMessage("Delete this " + title.toLowerCase(Locale.ROOT) + "?")
+                    new Ui.Popup(this).setMessage("Delete this " + title.toLowerCase(Locale.ROOT) + "?")
                             .setPositiveButton("Delete", (dd, ww) -> removeHolder(h))
                             .setNegativeButton("Cancel", null).show();
                     break;
@@ -1345,7 +1358,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
     private void stickyMenu(Holder h) {
         String[] items = {"🎨 Colour", "↑ Move up", "↓ Move down", "🗑 Delete sticky note"};
-        new AlertDialog.Builder(this).setTitle("Sticky note").setItems(items, (d, w) -> {
+        new Ui.Popup(this).setTitle("Sticky note").setItems(items, (d, w) -> {
             if (w == 0) pickStickyColor(h.block.argb != 0 ? h.block.argb : NoteStyle.stickyPrintColor(h.block.color), c -> {
                 h.block.argb = c;
                 applyStickyColor(h);
@@ -1353,7 +1366,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             });
             else if (w == 1) moveHolder(h, -1);
             else if (w == 2) moveHolder(h, 1);
-            else new AlertDialog.Builder(this).setMessage("Delete this sticky note?")
+            else new Ui.Popup(this).setMessage("Delete this sticky note?")
                         .setPositiveButton("Delete", (dd, ww) -> removeHolder(h))
                         .setNegativeButton("Cancel", null).show();
         }).show();
@@ -1364,7 +1377,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         String[] items = {"Add row below", "Add column to the right", "Delete this row", "Delete this column",
                 t.header() ? "Header row: on (turn off)" : "Header row: off (turn on)",
                 "↑ Move table up", "↓ Move table down", "🗑 Delete table"};
-        new AlertDialog.Builder(this)
+        new Ui.Popup(this)
                 .setTitle("Table · row " + (t.focusRow + 1) + ", column " + (t.focusCol + 1))
                 .setItems(items, (d, w) -> {
                     switch (w) {
@@ -1376,7 +1389,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                         case 5: moveHolder(h, -1); break;
                         case 6: moveHolder(h, 1); break;
                         case 7:
-                            new AlertDialog.Builder(this).setMessage("Delete this table?")
+                            new Ui.Popup(this).setMessage("Delete this table?")
                                     .setPositiveButton("Delete", (dd, ww) -> removeHolder(h))
                                     .setNegativeButton("Cancel", null).show();
                             break;
@@ -1397,7 +1410,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
     private void pageBreakMenu(Holder h) {
         String[] items = {"↑ Move up", "↓ Move down", "🗑 Remove this page break", "📑 Page sorter…"};
-        new AlertDialog.Builder(this).setTitle("Page break").setItems(items, (d, w) -> {
+        new Ui.Popup(this).setTitle("Page break").setItems(items, (d, w) -> {
             if (w == 0) moveHolder(h, -1);
             else if (w == 1) moveHolder(h, 1);
             else if (w == 2) removeHolder(h);
@@ -1409,7 +1422,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
     private void moreMenu() {
         String[] items = {"🔍  Find & replace", "📑  Page sorter", "🎨  Note style", "📐  Page settings", "🗑  Delete note"};
-        new AlertDialog.Builder(this).setItems(items, (d, w) -> {
+        new Ui.Popup(this).setItems(items, (d, w) -> {
             switch (w) {
                 case 0: openFind(); break;
                 case 1: pageSorter(); break;
@@ -1421,7 +1434,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     }
 
     private void confirmDelete() {
-        new AlertDialog.Builder(this)
+        new Ui.Popup(this)
                 .setTitle("Delete this note?")
                 .setMessage("The note, its pictures and its reminders will be removed from this phone.")
                 .setPositiveButton("Delete", (d, w) -> {
@@ -1444,51 +1457,257 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
     // ---- note style
 
+    private int ink = 0;   // text colour that reads well on the note's background
+
     private void applyStyle() {
-        int bg = note == null ? 0 : NoteStyle.noteColor(this, note.color);
-        int color = bg != 0 ? bg : getColor(R.color.bg);
-        findViewById(R.id.editor_root).setBackgroundColor(color);
-        getWindow().setStatusBarColor(color);
+        int base = NoteStyle.noteColor(this, note);
+        int color = base != 0 ? base : getColor(R.color.bg);
+        int second = NoteStyle.noteColor2(this, note);
+        View root = findViewById(R.id.editor_root);
+        android.graphics.drawable.Drawable bg = NoteStyle.background(this, note, 0);
+        if (bg != null) root.setBackground(bg); else root.setBackgroundColor(color);
+        boolean lightBg = ColorPicker.luminance(color) > 0.5;
+        Ui.bars(this, color, lightBg);
+        if (second != 0) getWindow().setNavigationBarColor(second);
+        ink = base == 0 ? getColor(R.color.text) : (lightBg ? 0xFF14151A : 0xFFF2F3F7);
+        titleEt.setTextColor(ink);
+        titleEt.setHintTextColor((ink & 0x00FFFFFF) | 0x59000000);
+        titleEt.setTypeface(NoteStyle.font(this, note, true));
+        metaTv.setTextColor((ink & 0x00FFFFFF) | 0x8C000000);
+        for (Holder h : holders) styleContent(h);
         int paper = note == null ? 0 : note.paper;
         float lh = 17 * getResources().getDisplayMetrics().scaledDensity * 1.17f + 5 * getResources().getDisplayMetrics().density;
-        int line = (getColor(R.color.text) & 0x00FFFFFF) | 0x1E000000;
-        page.setBackground(paper == 0 ? null : new NoteStyle.Paper(paper, lh, lh * 4, line));
+        page.setBackground(paper == 0 ? null : new NoteStyle.Paper(paper, lh, lh * 4, NoteStyle.lineColor(this, note, ink)));
+    }
+
+    /** Note font and text colour for one block (sticky notes keep their own colours). */
+    private void styleContent(Holder h) {
+        if (titleEt == null) return;
+        android.graphics.Typeface tf = NoteStyle.font(this, note, false);
+        int textInk = ink != 0 ? ink : getColor(R.color.text);
+        if (h.tc != null) {
+            h.tc.et.setTypeface(tf);
+            h.tc.et.setTextColor(textInk);
+            h.tc.et.setHintTextColor((textInk & 0x00FFFFFF) | 0x59000000);
+        } else if (h.sticky != null) {
+            h.sticky.setTypeface(tf);
+        } else if (h.table != null) {
+            h.table.setBaseTypeface(tf);
+        }
     }
 
     private void noteStyleDialog() {
         saveNow();
         if (note == null) { Toast.makeText(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
-        float d = getResources().getDisplayMetrics().density;
+        final int oColor = note.color, oCustom = note.customColor, oPaper = note.paper, oLine = note.lineColor;
+        final String oFont = note.font;
+        final float d = getResources().getDisplayMetrics().density;
+        final List<Runnable> refresh = new ArrayList<>();
+        final Runnable changed = () -> { applyStyle(); for (Runnable r : refresh) r.run(); };
+
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding((int) (24 * d), (int) (8 * d), (int) (24 * d), 0);
-        box.addView(label("Colour (also shows on the home screen)"));
-        RadioGroup colors = new RadioGroup(this);
-        for (int i = 0; i < NoteStyle.COLOR_NAMES.length; i++) {
-            RadioButton r = new RadioButton(this);
-            r.setId(View.generateViewId());
-            SpannableString s = new SpannableString("●  " + NoteStyle.COLOR_NAMES[i]);
-            int c = NoteStyle.noteColor(this, i);
-            if (c != 0) s.setSpan(new ForegroundColorSpan(c | 0xFF000000), 0, 1, 0);
-            r.setText(s);
-            r.setTag(i);
-            colors.addView(r);
-            if (i == note.color) r.setChecked(true);
+        box.setPadding((int) (20 * d), 0, (int) (20 * d), (int) (8 * d));
+
+        // ---- colour
+        TextView colorLabel = styleLabel(box, "Colour");
+        refresh.add(() -> colorLabel.setText(styleHeading("Colour", note.customColor != 0 ? "Custom"
+                : NoteStyle.COLOR_NAMES[Math.max(0, Math.min(NoteStyle.COLOR_NAMES.length - 1, note.color))])));
+        LinearLayout row = null;
+        int perRow = 7, n = NoteStyle.COLOR_NAMES.length + 1;
+        for (int k = 0; k < n; k++) {
+            if (k % perRow == 0) { row = new LinearLayout(this); box.addView(row); }
+            final int i = k;
+            View sw = new View(this);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, (int) (40 * d), 1);
+            lp.setMargins((int) (3 * d), (int) (3 * d), (int) (3 * d), (int) (3 * d));
+            row.addView(sw, lp);
+            if (i < NoteStyle.COLOR_NAMES.length) {
+                int[] sc = NoteStyle.swatch(this, i);
+                refresh.add(() -> sw.setBackground(swatch(sc[0], sc[1], note.customColor == 0 && note.color == i)));
+                sw.setOnClickListener(v -> { note.color = i; note.customColor = 0; changed.run(); });
+                Tips.set(sw, NoteStyle.COLOR_NAMES[i]);
+            } else {
+                refresh.add(() -> {
+                    android.graphics.drawable.GradientDrawable g = new android.graphics.drawable.GradientDrawable();
+                    g.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+                    if (note.customColor != 0) g.setColor(NoteStyle.noteColor(this, note));
+                    else {
+                        g.setGradientType(android.graphics.drawable.GradientDrawable.SWEEP_GRADIENT);
+                        g.setColors(new int[]{0xFFFF5F6D, 0xFFFFC371, 0xFFFFF176, 0xFF7CF29C, 0xFF64B5F6, 0xFFB388FF, 0xFFFF5F6D});
+                    }
+                    g.setStroke((int) ((note.customColor != 0 ? 3 : 1) * d), note.customColor != 0 ? getColor(R.color.accent) : getColor(R.color.divider));
+                    sw.setBackground(g);
+                });
+                sw.setOnClickListener(v -> ColorPicker.showFill(this, "Any colour", note.customColor, col -> {
+                    if (col != 0) { note.customColor = col; changed.run(); }
+                }));
+                Tips.set(sw, "Any colour…");
+            }
         }
-        box.addView(colors);
-        box.addView(label("Paper"));
-        RadioGroup paper = group(NoteStyle.PAPER_NAMES, note.paper);
-        box.addView(paper);
+        if (row != null) while (row.getChildCount() < perRow) row.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1));
+
+        // ---- paper
+        TextView paperLabel = styleLabel(box, "Paper");
+        refresh.add(() -> paperLabel.setText(styleHeading("Paper", NoteStyle.PAPER_NAMES[Math.max(0, Math.min(NoteStyle.PAPER_NAMES.length - 1, note.paper))])));
+        row = null;
+        int cols = 4;
+        for (int k = 0; k < NoteStyle.PAPER_ORDER.length; k++) {
+            if (k % cols == 0) { row = new LinearLayout(this); box.addView(row); }
+            final int kind = NoteStyle.PAPER_ORDER[k];
+            LinearLayout tile = new LinearLayout(this);
+            tile.setOrientation(LinearLayout.VERTICAL);
+            tile.setGravity(Gravity.CENTER_HORIZONTAL);
+            android.widget.FrameLayout prev = new android.widget.FrameLayout(this);
+            prev.setClipToOutline(true);
+            View lines = new View(this);
+            prev.addView(lines, new android.widget.FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            tile.addView(prev, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (58 * d)));
+            TextView name = new TextView(this);
+            name.setText(NoteStyle.PAPER_NAMES[kind]);
+            name.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+            name.setTextColor(getColor(R.color.text2));
+            name.setGravity(Gravity.CENTER);
+            name.setMaxLines(1);
+            name.setPadding(0, (int) (4 * d), 0, (int) (6 * d));
+            tile.addView(name);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
+            lp.setMargins((int) (4 * d), (int) (2 * d), (int) (4 * d), (int) (2 * d));
+            row.addView(tile, lp);
+            refresh.add(() -> {
+                int base = NoteStyle.noteColor(this, note);
+                int fill = base != 0 ? base : getColor(R.color.surface);
+                boolean sel = note.paper == kind;
+                android.graphics.drawable.GradientDrawable g = Ui.round(fill, 12 * d);
+                g.setStroke((int) ((sel ? 3 : 1) * d), sel ? getColor(R.color.accent) : getColor(R.color.divider));
+                prev.setBackground(g);
+                int inkNow = ColorPicker.luminance(fill) > 0.5 ? 0xFF14151A : 0xFFF2F3F7;
+                lines.setBackground(new NoteStyle.Paper(kind, 11 * d, 9 * d, NoteStyle.lineColor(this, note, inkNow)));
+                name.setTextColor(getColor(sel ? R.color.accent : R.color.text2));
+            });
+            tile.setOnClickListener(v -> { note.paper = kind; changed.run(); });
+        }
+
+        // ---- line colour
+        TextView lineLabel = styleLabel(box, "Line colour");
+        refresh.add(() -> {
+            int idx = 0;
+            for (int i = 0; i < NoteStyle.LINE_COLORS.length; i++) if (NoteStyle.LINE_COLORS[i] == note.lineColor) idx = i;
+            lineLabel.setText(styleHeading("Line colour", NoteStyle.LINE_NAMES[idx]));
+        });
+        LinearLayout lineRow = new LinearLayout(this);
+        box.addView(lineRow);
+        for (int i = 0; i < NoteStyle.LINE_COLORS.length; i++) {
+            final int lc = NoteStyle.LINE_COLORS[i];
+            TextView sw = new TextView(this);
+            sw.setGravity(Gravity.CENTER);
+            sw.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+            if (lc == 0) { sw.setText("A"); sw.setTextColor(getColor(R.color.text2)); }
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams((int) (34 * d), (int) (34 * d));
+            lp.setMargins((int) (3 * d), (int) (3 * d), (int) (6 * d), (int) (3 * d));
+            lineRow.addView(sw, lp);
+            refresh.add(() -> sw.setBackground(swatch(lc == 0 ? getColor(R.color.surface2) : lc, lc == 0 ? getColor(R.color.surface2) : lc,
+                    note.lineColor == lc)));
+            sw.setOnClickListener(v -> { note.lineColor = lc; changed.run(); });
+            Tips.set(sw, NoteStyle.LINE_NAMES[i] + " lines");
+        }
+
+        // ---- font
+        TextView fontLabel = styleLabel(box, "Font");
+        refresh.add(() -> {
+            int idx = 0;
+            for (int i = 0; i < NoteStyle.FONT_IDS.length; i++) if (NoteStyle.FONT_IDS[i].equals(note.font)) idx = i;
+            fontLabel.setText(styleHeading("Font", NoteStyle.FONT_NAMES[idx]));
+        });
+        android.widget.HorizontalScrollView hs = new android.widget.HorizontalScrollView(this);
+        hs.setHorizontalScrollBarEnabled(false);
+        LinearLayout fontRow = new LinearLayout(this);
+        hs.addView(fontRow);
+        box.addView(hs);
+        for (int i = 0; i < NoteStyle.FONT_IDS.length; i++) {
+            final String id = NoteStyle.FONT_IDS[i];
+            LinearLayout chip = new LinearLayout(this);
+            chip.setOrientation(LinearLayout.VERTICAL);
+            chip.setGravity(Gravity.CENTER);
+            chip.setPadding((int) (10 * d), (int) (8 * d), (int) (10 * d), (int) (8 * d));
+            TextView aa = new TextView(this);
+            aa.setText("Aa");
+            aa.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
+            aa.setTextColor(getColor(R.color.text));
+            Note probe = new Note();
+            probe.font = id;
+            aa.setTypeface(NoteStyle.font(this, probe, false));
+            aa.setTag(Ui.KEEP_FONT);
+            TextView nm = new TextView(this);
+            nm.setText(NoteStyle.FONT_NAMES[i].replace(" (default)", ""));
+            nm.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+            nm.setTextColor(getColor(R.color.text2));
+            nm.setMaxLines(1);
+            chip.addView(aa);
+            chip.addView(nm);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams((int) (84 * d), (int) (72 * d));
+            lp.setMargins(0, (int) (2 * d), (int) (8 * d), (int) (2 * d));
+            fontRow.addView(chip, lp);
+            refresh.add(() -> {
+                boolean sel = id.equals(note.font == null ? "" : note.font);
+                android.graphics.drawable.GradientDrawable g = Ui.round(getColor(sel ? R.color.accent_soft : R.color.surface2), 14 * d);
+                if (sel) g.setStroke((int) (2 * d), getColor(R.color.accent));
+                chip.setBackground(Ui.ripple(g));
+            });
+            chip.setOnClickListener(v -> { note.font = id; changed.run(); });
+        }
+
         ScrollView sv = new ScrollView(this);
         sv.addView(box);
-        new AlertDialog.Builder(this).setTitle("Note style").setView(sv)
-                .setPositiveButton("Apply", (dd, w) -> {
-                    note.color = checked(colors);
-                    note.paper = checked(paper);
-                    store.saveNote(note);
-                    applyStyle();
-                })
-                .setNegativeButton("Cancel", null).show();
+        for (Runnable r : refresh) r.run();
+
+        Runnable restore = () -> {
+            note.color = oColor; note.customColor = oCustom; note.paper = oPaper; note.lineColor = oLine; note.font = oFont;
+            applyStyle();
+        };
+        AlertDialog dlg = new Ui.Popup(this).sheet().setTitle("Note style").setView(Ui.capHeight(sv, 0.5f))
+                .setPositiveButton("Done", (dd, w) -> store.saveNote(note))
+                .setNegativeButton("Cancel", (dd, w) -> restore.run())
+                .setNeutralButton("Reset", null)
+                .create();
+        dlg.setOnCancelListener(x -> restore.run());
+        dlg.show();
+        android.widget.Button reset = dlg.getButton(android.content.DialogInterface.BUTTON_NEUTRAL);
+        if (reset != null) reset.setOnClickListener(v -> {
+            note.color = 0; note.customColor = 0; note.paper = 0; note.lineColor = 0; note.font = "";
+            changed.run();
+        });
+    }
+
+    private TextView styleLabel(LinearLayout box, String text) {
+        TextView t = new TextView(this);
+        t.setText(text);
+        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        t.setTextColor(getColor(R.color.text));
+        float d = getResources().getDisplayMetrics().density;
+        t.setPadding((int) (4 * d), (int) (16 * d), 0, (int) (8 * d));
+        box.addView(t);
+        return t;
+    }
+
+    private CharSequence styleHeading(String name, String value) {
+        SpannableStringBuilder b = new SpannableStringBuilder(name);
+        b.setSpan(new android.text.style.StyleSpan(Typeface.BOLD), 0, name.length(), 0);
+        int at = b.length();
+        b.append("   ").append(value);
+        b.setSpan(new ForegroundColorSpan(getColor(R.color.text2)), at, b.length(), 0);
+        return b;
+    }
+
+    /** Round colour swatch (two colours = gradient); selected ones get an accent ring. */
+    private android.graphics.drawable.Drawable swatch(int a, int b, boolean selected) {
+        float d = getResources().getDisplayMetrics().density;
+        android.graphics.drawable.GradientDrawable g = a == b ? new android.graphics.drawable.GradientDrawable()
+                : new android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.TL_BR, new int[]{a, b});
+        if (a == b) g.setColor(a);
+        g.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+        g.setStroke((int) ((selected ? 3 : 1) * d), selected ? getColor(R.color.accent) : getColor(R.color.divider));
+        return Ui.ripple(g);
     }
 
     // ---- page settings
@@ -1521,7 +1740,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         box.addView(tip);
         ScrollView sv = new ScrollView(this);
         sv.addView(box);
-        new AlertDialog.Builder(this).setTitle("Page settings").setView(sv)
+        new Ui.Popup(this).setTitle("Page settings").setView(sv)
                 .setPositiveButton("Apply", (dd, w) -> {
                     note.pageSize = PAGE_SIZES[checked(size)];
                     note.landscape = checked(orient) == 1;
@@ -1538,7 +1757,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         saveNow();
         List<List<Block>> pages = splitPages(collectBlocks());
         if (pages.size() < 2) {
-            new AlertDialog.Builder(this).setTitle("Page sorter")
+            new Ui.Popup(this).setTitle("Page sorter")
                     .setMessage("This note has 1 page.\n\nTo make more pages, tap ＋ → New page where a page should start.")
                     .setPositiveButton("Add a page at the end", (d, w) -> {
                         focusLastText();
@@ -1566,7 +1785,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                 row.addView(t, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
                 row.addView(mini(R.drawable.ic_up, "Move up", x -> { swap(pages, pos, pos - 1); notifyDataSetChanged(); }));
                 row.addView(mini(R.drawable.ic_down, "Move down", x -> { swap(pages, pos, pos + 1); notifyDataSetChanged(); }));
-                row.addView(mini(R.drawable.ic_delete, "Delete page", x -> new AlertDialog.Builder(EditorActivity.this)
+                row.addView(mini(R.drawable.ic_delete, "Delete page", x -> new Ui.Popup(EditorActivity.this)
                         .setMessage("Delete page " + (pos + 1) + " and everything on it?")
                         .setPositiveButton("Delete", (d, w) -> { if (pages.size() > 1) { pages.remove(pos); notifyDataSetChanged(); } })
                         .setNegativeButton("Cancel", null).show()));
@@ -1574,7 +1793,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             }
         };
         lv.setAdapter(adapter);
-        new AlertDialog.Builder(this).setTitle("Page sorter").setView(lv)
+        new Ui.Popup(this).setTitle("Page sorter").setView(lv)
                 .setPositiveButton("Done", (d, w) -> {
                     List<Block> all = new ArrayList<>();
                     for (int i = 0; i < pages.size(); i++) {
@@ -1885,7 +2104,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         items.add(r.ignored ? ON : OFF);
         if (!r.ignored) items.add(r.done ? UNDONE : DONE);
         if (r.calendarEventId > 0) items.add(CAL);
-        new AlertDialog.Builder(this)
+        new Ui.Popup(this)
                 .setTitle(ReminderKind.emoji(r.kind) + " " + r.title + "\n" + Notifier.formatWhen(this, r))
                 .setItems(items.toArray(new String[0]), (d, which) -> {
                     String pick = items.get(which);

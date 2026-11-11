@@ -252,7 +252,7 @@ public final class Updater {
            .append("2. Tap Install, then tap Note-update.apk at the top of Downloads and choose Update.\n")
            .append("3. Done. Your notes stay, and the downloaded file is deleted automatically.\n\n")
            .append("Trouble? Tap Help.");
-        new AlertDialog.Builder(a)
+        new Ui.Popup(a)
                 .setTitle("Update available")
                 .setMessage(msg.toString())
                 .setPositiveButton("Update", (d, w) -> startUpdate(a))
@@ -281,7 +281,7 @@ public final class Updater {
                 + "   Download in the browser instead, or copy the link and open it on your computer.\n"
                 + "   (Files downloaded by the browser can't be deleted by Note automatically — use "
                 + "Settings → Delete old update files.)";
-        new AlertDialog.Builder(a)
+        new Ui.Popup(a)
                 .setTitle("Update help")
                 .setMessage(msg)
                 .setPositiveButton("Update again", (d, w) -> startUpdate(a))
@@ -381,7 +381,7 @@ public final class Updater {
         label.setPadding(0, (int) (8 * dp), 0, 0);
         box.addView(bar);
         box.addView(label);
-        AlertDialog dlg = new AlertDialog.Builder(a)
+        AlertDialog dlg = new Ui.Popup(a)
                 .setTitle("Downloading update")
                 .setView(box)
                 .setNegativeButton("Hide", null)   // keeps downloading; the notification shows when it's done
@@ -409,7 +409,7 @@ public final class Updater {
                     dlg.dismiss();
                     try { dm.remove(id); } catch (Exception ignored) { }
                     prefs(a).edit().remove("dlId").remove("dlFor").apply();
-                    new AlertDialog.Builder(a)
+                    new Ui.Popup(a)
                             .setTitle("Download failed")
                             .setMessage("GitHub may be busy for a moment, or the internet dropped. Try again in a minute.")
                             .setPositiveButton("Try again", (d, w) -> startUpdate(a))
@@ -436,7 +436,7 @@ public final class Updater {
         if (a.isFinishing()) return;
         Info latest = remembered(a);
         String name = latest == null ? "" : " " + latest.versionName;
-        new AlertDialog.Builder(a)
+        new Ui.Popup(a)
                 .setTitle("Update ready")
                 .setMessage("Note" + name + " is downloaded.\n\n"
                         + "Tap Install: the Files app opens your Download folder. Tap “" + UPDATE_FILE
@@ -468,7 +468,7 @@ public final class Updater {
                 return;
             } catch (Exception ignored) { }
         }
-        new AlertDialog.Builder(a)
+        new Ui.Popup(a)
                 .setTitle("Install the update")
                 .setMessage("Open the Files app → Downloads → tap " + UPDATE_FILE + " → Update.\n\n"
                         + "Or pull down your notifications and tap “Note update”.")
@@ -588,7 +588,7 @@ public final class Updater {
             msg.append("The update file Note downloaded has been deleted automatically. "
                     + "If your browser or Files app saved older Note.apk files, tap “Clean up old files” to remove them.");
         }
-        AlertDialog.Builder b = new AlertDialog.Builder(a)
+        AlertDialog.Builder b = new Ui.Popup(a)
                 .setTitle("Updated to " + currentVersionName(a))
                 .setMessage(msg.toString());
         if (offerCleanup) {

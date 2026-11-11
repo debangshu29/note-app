@@ -56,7 +56,7 @@ public final class ShareHelper {
         }
 
         final RadioGroup whichF = which;
-        new AlertDialog.Builder(a)
+        new Ui.Popup(a)
                 .setTitle(notes.size() == 1 ? "Share note" : "Share " + notes.size() + " notes")
                 .setView(box)
                 .setPositiveButton("Share", (d, w) -> {

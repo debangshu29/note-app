@@ -1,5 +1,7 @@
-• Pictures: tap a picture to select it, then drag the corner handles to resize (keeps its shape) or the side handles to stretch it freely
-• Drag a selected picture to move it: left or right on the line, or up and down anywhere in the note (it can even go between two lines of text)
-• Long-press a picture for its options: full screen (pinch to zoom), get text from the picture, full width, delete
-• Extra options depend on the picture: photos can be rotated, retaken or saved to the gallery; gallery pictures can be replaced; scans can be made black & white, rescanned or shared as PDF; drawings can be edited or duplicated
-• Sticky notes can use any colour (the full colour picker, with soft paper colours first)
+• A brand-new look: the whole app has been redesigned, with a fresh colour scheme in light and dark mode, rounded cards and the new Plus Jakarta Sans font
+• Home: greeting with today's date, a cleaner search bar, Notes / Reminders tabs with counts, and a "New note" button
+• Popups are rounded cards, and menus slide up from the bottom
+• Editor: round buttons, ＋ next to Share, and a floating formatting bar
+• Settings are now short: tap a section (Smart writing, Reminders, Your data, App updates, About) to open its options
+• Note style has many more options: 24 colours and gradients plus any colour, 12 papers (lined, legal pad, grid, small grid, engineering, dotted, crosses, isometric, music, Cornell…), paper line colours, and a font for the whole note, all with a live preview
+• New alarm screen, welcome guide and app icon

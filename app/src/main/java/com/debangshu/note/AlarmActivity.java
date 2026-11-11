@@ -29,7 +29,9 @@ public class AlarmActivity extends Activity {
                     | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
         }
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        Ui.install(this);
         setContentView(R.layout.activity_alarm);
+        Ui.bars(this, 0xFF3B2FCB, false);
 
         reminderId = getIntent().getLongExtra("reminderId", -1);
         Reminder r = Store.get(this).reminder(reminderId);

@@ -1,15 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bg">#121215</color>
-    <color name="surface">#1D1D22</color>
-    <color name="text">#ECEBF0</color>
-    <color name="text2">#A3A1AB</color>
-    <color name="hint">#6D6B74</color>
-    <color name="divider">#2C2C33</color>
-    <color name="accent">#8F8AFF</color>
-    <color name="accent_soft">#2A2952</color>
-    <color name="on_accent">#121215</color>
-    <color name="danger">#FF7A7A</color>
-    <color name="suggest_bg">#ECEBF0</color>
-    <color name="suggest_text">#121215</color>
+    <color name="bg">#0E0F14</color>
+    <color name="surface">#181A21</color>
+    <color name="surface2">#22252E</color>
+    <color name="card_stroke">#262935</color>
+    <color name="text">#F2F3F7</color>
+    <color name="text2">#A5A9B8</color>
+    <color name="hint">#6C7081</color>
+    <color name="divider">#2A2D38</color>
+    <color name="accent">#8A7DFF</color>
+    <color name="accent2">#B18CFF</color>
+    <color name="accent_soft">#262350</color>
+    <color name="on_accent">#FFFFFF</color>
+    <color name="danger">#FF6B70</color>
+    <color name="danger_soft">#3A1E22</color>
+    <color name="success">#3DD598</color>
+    <color name="warn">#FBBF24</color>
+    <color name="suggest_bg">#F2F3F7</color>
+    <color name="suggest_text">#0E0F14</color>
+    <color name="scrim">#99000000</color>
 </resources>

@@ -34,8 +34,10 @@ public class SettingsActivity extends Activity {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        Ui.install(this);
         setContentView(R.layout.activity_settings);
         Tips.applyAll(findViewById(android.R.id.content));
+        setupSections();
         store = Store.get(this);
 
         findViewById(R.id.btn_back).setOnClickListener(v -> finish());
@@ -191,7 +193,7 @@ public class SettingsActivity extends Activity {
         for (int r : results) if (r != PackageManager.PERMISSION_GRANTED) denied = true;
         if (denied && !shouldShowAny(perms)) {
             // Android stops showing the popup after two "Don't allow": send the user to app settings
-            new AlertDialog.Builder(this)
+            new Ui.Popup(this)
                     .setTitle("Allow in phone settings")
                     .setMessage("Open Settings → Permissions and allow Notifications and Calendar for Note.")
                     .setPositiveButton("Open settings", (d, w) -> startActivity(new Intent(
@@ -283,7 +285,7 @@ public class SettingsActivity extends Activity {
         alsoFolder.setChecked(true);
         box.addView(alsoFolder);
 
-        new AlertDialog.Builder(this)
+        new Ui.Popup(this)
                 .setTitle("Delete all data?")
                 .setMessage("Every note, reminder and setting will be erased from this phone. This cannot be undone.\n\nTip: export a backup first if you might want them later.")
                 .setView(box)
@@ -306,5 +308,61 @@ public class SettingsActivity extends Activity {
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    // ------------------------------------------------------------------ look
+
+    /** Each settings section is a card: tap its header to open or close the list under it. */
+    private void setupSections() {
+        android.widget.LinearLayout list = findViewById(R.id.settings_list);
+        android.animation.LayoutTransition lt = new android.animation.LayoutTransition();
+        lt.enableTransitionType(android.animation.LayoutTransition.CHANGING);
+        list.setLayoutTransition(lt);
+        for (int i = 0; i < list.getChildCount(); i++) {
+            android.view.View c = list.getChildAt(i);
+            if (!"section".equals(c.getTag()) || !(c instanceof android.view.ViewGroup)) continue;
+            android.view.ViewGroup card = (android.view.ViewGroup) c;
+            android.animation.LayoutTransition t = new android.animation.LayoutTransition();
+            t.enableTransitionType(android.animation.LayoutTransition.CHANGING);
+            card.setLayoutTransition(t);
+            android.view.View head = card.getChildAt(0), body = card.getChildAt(1);
+            android.view.View chevron = head.findViewWithTag("chevron");
+            head.setOnClickListener(v -> {
+                boolean open = body.getVisibility() != android.view.View.VISIBLE;
+                body.setVisibility(open ? android.view.View.VISIBLE : android.view.View.GONE);
+                if (chevron != null) chevron.animate().rotation(open ? 180f : 0f).setDuration(200).start();
+            });
+            prettySwitches(body);
+        }
+    }
+
+    /** "Title\n(explanation)" on a switch becomes a bold title with a smaller grey line under it. */
+    private void prettySwitches(android.view.View v) {
+        if (v instanceof Switch) {
+            Switch sw = (Switch) v;
+            String t = sw.getText().toString();
+            int nl = t.indexOf('\n');
+            if (nl > 0) {
+                String title = t.substring(0, nl);
+                String sub = t.substring(nl + 1).trim();
+                if (sub.startsWith("(") && sub.endsWith(")")) sub = sub.substring(1, sub.length() - 1);
+                android.text.SpannableStringBuilder b = new android.text.SpannableStringBuilder(title);
+                b.setSpan(new android.text.style.TypefaceSpan("sans-serif-medium") {
+                    @Override public void updateDrawState(android.text.TextPaint p) { p.setTypeface(Ui.face(SettingsActivity.this, Ui.SEMIBOLD)); }
+                    @Override public void updateMeasureState(android.text.TextPaint p) { p.setTypeface(Ui.face(SettingsActivity.this, Ui.SEMIBOLD)); }
+                }, 0, title.length(), 0);
+                int at = b.length();
+                b.append("\n").append(sub);
+                b.setSpan(new android.text.style.RelativeSizeSpan(0.87f), at, b.length(), 0);
+                b.setSpan(new android.text.style.ForegroundColorSpan(getColor(R.color.text2)), at, b.length(), 0);
+                sw.setText(b);
+                sw.setLineSpacing(Ui.dp(this, 2), 1f);
+            }
+            return;
+        }
+        if (v instanceof android.view.ViewGroup) {
+            android.view.ViewGroup g = (android.view.ViewGroup) v;
+            for (int i = 0; i < g.getChildCount(); i++) prettySwitches(g.getChildAt(i));
+        }
     }
 }

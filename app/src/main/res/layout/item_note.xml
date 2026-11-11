@@ -2,23 +2,28 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingTop="5dp"
-    android:paddingBottom="5dp">
+    android:clipToPadding="false"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp">
 
     <LinearLayout
+        android:id="@+id/note_card"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/note_card"
         android:background="@drawable/bg_card"
-        android:foreground="@drawable/fg_card_select"
         android:duplicateParentState="true"
+        android:elevation="1dp"
+        android:foreground="@drawable/fg_card_select"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:paddingStart="18dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="14dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
+            android:gravity="top"
             android:orientation="horizontal">
 
             <TextView
@@ -28,15 +33,20 @@
                 android:layout_weight="1"
                 android:ellipsize="end"
                 android:fontFamily="sans-serif-medium"
+                android:letterSpacing="-0.01"
                 android:maxLines="2"
                 android:textColor="@color/text"
-                android:textSize="17sp" />
+                android:textSize="17sp"
+                android:textStyle="bold" />
 
             <ImageView
                 android:id="@+id/note_pin"
-                android:layout_width="18dp"
-                android:layout_height="18dp"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
                 android:layout_marginStart="8dp"
+                android:background="@drawable/bg_pin"
+                android:contentDescription="Pinned"
+                android:padding="6dp"
                 android:src="@drawable/ic_pin"
                 android:tint="@color/accent"
                 android:visibility="gone" />
@@ -48,17 +58,23 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
             android:ellipsize="end"
-            android:lineSpacingExtra="2dp"
+            android:lineSpacingExtra="3dp"
             android:maxLines="4"
             android:textColor="@color/text2"
             android:textSize="14sp" />
 
         <TextView
             android:id="@+id/note_meta"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:textColor="@color/hint"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_badge"
+            android:fontFamily="sans-serif-medium"
+            android:paddingStart="10dp"
+            android:paddingTop="4dp"
+            android:paddingEnd="10dp"
+            android:paddingBottom="4dp"
+            android:textColor="@color/text2"
             android:textSize="12sp" />
     </LinearLayout>
 </FrameLayout>

@@ -1,21 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="AppTheme" parent="android:Theme.Material.NoActionBar">
-        <item name="android:colorPrimary">@color/bg</item>
+        <item name="android:colorPrimary">@color/accent</item>
         <item name="android:colorPrimaryDark">@color/bg</item>
         <item name="android:colorAccent">@color/accent</item>
+        <item name="android:colorControlActivated">@color/accent</item>
+        <item name="android:colorControlHighlight">#1F7A7F99</item>
         <item name="android:windowBackground">@color/bg</item>
+        <item name="android:colorBackground">@color/bg</item>
         <item name="android:statusBarColor">@color/bg</item>
         <item name="android:navigationBarColor">@color/bg</item>
-        <item name="android:windowLightStatusBar">false</item>
         <item name="android:textColorPrimary">@color/text</item>
         <item name="android:textColorSecondary">@color/text2</item>
         <item name="android:textColorHint">@color/hint</item>
+        <item name="android:textColorHighlight">#557A6CF7</item>
         <item name="android:alertDialogTheme">@style/DialogTheme</item>
         <item name="android:windowActionModeOverlay">true</item>
-        <item name="android:actionModeBackground">@color/surface</item>
+        <item name="android:actionModeBackground">@drawable/bg_action_mode</item>
+        <item name="android:actionModeCloseDrawable">@drawable/ic_close</item>
+        <item name="android:windowAnimationStyle">@style/ScreenAnim</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
     <style name="DialogTheme" parent="android:Theme.Material.Dialog.Alert">
         <item name="android:colorAccent">@color/accent</item>
+        <item name="android:colorControlActivated">@color/accent</item>
+        <item name="android:colorBackground">@color/surface</item>
+        <item name="android:windowBackground">@drawable/bg_dialog</item>
+        <item name="android:textColorPrimary">@color/text</item>
+        <item name="android:textColorSecondary">@color/text2</item>
+        <item name="android:textColorHint">@color/hint</item>
+        <item name="android:backgroundDimAmount">0.45</item>
+        <item name="android:windowAnimationStyle">@style/PopAnim</item>
     </style>
 </resources>

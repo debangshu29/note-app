@@ -22,7 +22,10 @@ public class Note {
 
     // ---- note style
     public int color = 0;        // NoteStyle.COLORS index, 0 = default
-    public int paper = 0;        // NoteStyle.PAPER_* (plain, lined, grid, dotted)
+    public int paper = 0;        // NoteStyle.PAPER_* (plain, lined, grid, dotted, …)
+    public int customColor = 0;  // any colour from the colour picker (0 = use the colour index)
+    public int lineColor = 0;    // paper line colour (0 = automatic)
+    public String font = "";     // the note's font (NoteStyle.FONT_IDS; "" = the app font)
 
     // ---- page settings (used for PDF)
     public String pageSize = "A4";      // A4, LETTER, A5, ENDLESS
@@ -71,6 +74,9 @@ public class Note {
         }
         o.put("color", color);
         o.put("paper", paper);
+        if (customColor != 0) o.put("customColor", customColor);
+        if (lineColor != 0) o.put("lineColor", lineColor);
+        if (font != null && !font.isEmpty()) o.put("font", font);
         o.put("pageSize", pageSize);
         o.put("landscape", landscape);
         o.put("margins", margins);
@@ -95,6 +101,9 @@ public class Note {
         if (n.blocks.isEmpty()) n.blocks.add(Block.text(n.body));
         n.color = o.optInt("color", 0);
         n.paper = o.optInt("paper", 0);
+        n.customColor = o.optInt("customColor", 0);
+        n.lineColor = o.optInt("lineColor", 0);
+        n.font = o.optString("font", "");
         n.pageSize = o.optString("pageSize", "A4");
         n.landscape = o.optBoolean("landscape", false);
         n.margins = o.optInt("margins", 1);

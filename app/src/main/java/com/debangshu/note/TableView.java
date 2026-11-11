@@ -116,12 +116,17 @@ public class TableView extends LinearLayout {
         return e;
     }
 
+    private Typeface base;
+
+    /** The note's font for every cell (header row in bold). */
+    public void setBaseTypeface(Typeface t) { base = t; styleAll(); }
+
     private void styleAll() {
         for (int r = 0; r < cells.size(); r++) {
             for (EditText e : cells.get(r)) {
                 boolean head = header && r == 0;
                 e.setBackgroundResource(head ? R.drawable.bg_cell_head : R.drawable.bg_cell);
-                e.setTypeface(null, head ? Typeface.BOLD : Typeface.NORMAL);
+                e.setTypeface(base, head ? Typeface.BOLD : Typeface.NORMAL);
             }
         }
     }

@@ -126,7 +126,7 @@ public final class ColorPicker {
 
         ScrollView sv = new ScrollView(a);
         sv.addView(box);
-        dlg[0] = new AlertDialog.Builder(a).setTitle(title).setView(sv).setNegativeButton("Cancel", null).show();
+        dlg[0] = new Ui.Popup(a).setTitle(title).setView(sv).setNegativeButton("Cancel", null).show();
     }
 
     private static TextView label(Activity a, String s) {
@@ -151,7 +151,7 @@ public final class ColorPicker {
             View sw = new View(a);
             GradientDrawable g = new GradientDrawable();
             g.setColor(c);
-            g.setCornerRadius(3 * dp);
+            g.setCornerRadius(7 * dp);
             boolean sel = (c | 0xFF000000) == (current | 0xFF000000) && current != 0;
             g.setStroke((int) ((sel ? 3 : 1) * dp), sel ? a.getColor(R.color.accent) : 0x33000000);
             sw.setBackground(g);
@@ -221,7 +221,7 @@ public final class ColorPicker {
         update.run();
         ScrollView sv = new ScrollView(a);
         sv.addView(box);
-        new AlertDialog.Builder(a).setTitle("More colours").setView(sv)
+        new Ui.Popup(a).setTitle("More colours").setView(sv)
                 .setPositiveButton("Use colour", (d, w) ->
                         pick.picked(Color.HSVToColor(new float[]{h.getProgress(), s.getProgress() / 100f, v.getProgress() / 100f})))
                 .setNegativeButton("Cancel", null).show();

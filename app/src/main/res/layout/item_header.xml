@@ -3,8 +3,11 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:fontFamily="sans-serif-medium"
-    android:paddingStart="8dp"
-    android:paddingTop="18dp"
+    android:letterSpacing="0.06"
+    android:paddingStart="6dp"
+    android:paddingTop="20dp"
     android:paddingBottom="6dp"
-    android:textColor="@color/accent"
-    android:textSize="14sp" />
+    android:textAllCaps="true"
+    android:textColor="@color/text2"
+    android:textSize="12sp"
+    android:textStyle="bold" />

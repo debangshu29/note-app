@@ -48,6 +48,7 @@ public class DrawingActivity extends Activity {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        Ui.install(this);
         dp = getResources().getDisplayMetrics().density;
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -56,24 +57,46 @@ public class DrawingActivity extends Activity {
         // top: cancel / undo / redo / clear / done
         LinearLayout top = new LinearLayout(this);
         top.setGravity(Gravity.CENTER_VERTICAL);
-        top.setPadding((int) (8 * dp), (int) (6 * dp), (int) (8 * dp), (int) (6 * dp));
+        top.setPadding((int) (9 * dp), (int) (10 * dp), (int) (9 * dp), (int) (8 * dp));
         top.addView(button("Cancel", v -> confirmCancel()));
         View sp = new View(this);
         top.addView(sp, new LinearLayout.LayoutParams(0, 1, 1));
-        top.addView(button("↶ Undo", v -> draw.undo()));
-        top.addView(button("↷ Redo", v -> draw.redo()));
-        top.addView(button("Clear", v -> new AlertDialog.Builder(this).setMessage("Clear the whole drawing?")
+        TextView undo = button("↶", v -> draw.undo());
+        undo.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
+        undo.setContentDescription("Undo");
+        Tips.set(undo, "Undo");
+        top.addView(undo);
+        TextView redo = button("↷", v -> draw.redo());
+        redo.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
+        redo.setContentDescription("Redo");
+        Tips.set(redo, "Redo");
+        top.addView(redo);
+        top.addView(button("Clear", v -> new Ui.Popup(this).setMessage("Clear the whole drawing?")
                 .setPositiveButton("Clear", (d, w) -> draw.clear()).setNegativeButton("Cancel", null).show()));
         TextView done = button("Done", v -> save());
-        done.setTextColor(getColor(R.color.accent));
+        done.setTextColor(getColor(R.color.on_accent));
+        done.setBackgroundResource(R.drawable.bg_fab);
         top.addView(done);
         root.addView(top);
 
         draw = new DrawView(this);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1);
-        int m = (int) (10 * dp);
-        lp.setMargins(m, 0, m, 0);
+        int m = (int) (12 * dp);
+        lp.setMargins(m, (int) (4 * dp), m, 0);
+        draw.setOutlineProvider(new android.view.ViewOutlineProvider() {
+            @Override public void getOutline(View view, android.graphics.Outline o) {
+                o.setRoundRect(0, 0, view.getWidth(), view.getHeight(), 22 * dp);
+            }
+        });
+        draw.setClipToOutline(true);
+        draw.setElevation(2 * dp);
         root.addView(draw, lp);
+        LinearLayout panel = new LinearLayout(this);
+        panel.setOrientation(LinearLayout.VERTICAL);
+        panel.setBackgroundResource(R.drawable.bg_toolbar);
+        panel.setElevation(6 * dp);
+        LinearLayout.LayoutParams pl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        pl.setMargins(m, (int) (12 * dp), m, (int) (12 * dp));
 
         // tools
         HorizontalScrollView hs1 = new HorizontalScrollView(this);
@@ -89,7 +112,7 @@ public class DrawingActivity extends Activity {
             tools.addView(t);
         }
         hs1.addView(tools);
-        root.addView(hs1);
+        panel.addView(hs1);
 
         // colours
         HorizontalScrollView hs2 = new HorizontalScrollView(this);
@@ -107,7 +130,9 @@ public class DrawingActivity extends Activity {
             colors.addView(dot, dl);
         }
         hs2.addView(colors);
-        root.addView(hs2);
+        panel.addView(hs2);
+        root.addView(panel, pl);
+        Ui.fonts(root);
         setContentView(root);
 
         String strokes = getIntent().getStringExtra(EXTRA_STROKES);
@@ -120,10 +145,15 @@ public class DrawingActivity extends Activity {
     private TextView button(String text, View.OnClickListener l) {
         TextView t = new TextView(this);
         t.setText(text);
-        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         t.setTextColor(getColor(R.color.text));
-        int p = (int) (10 * dp);
-        t.setPadding(p, p, p, p);
+        t.setTypeface(Ui.face(this, Ui.SEMIBOLD));
+        t.setGravity(Gravity.CENTER);
+        t.setBackgroundResource(R.drawable.bg_button_soft);
+        t.setPadding((int) (14 * dp), (int) (9 * dp), (int) (14 * dp), (int) (9 * dp));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, (int) (40 * dp));
+        lp.setMargins((int) (3 * dp), 0, (int) (3 * dp), 0);
+        t.setLayoutParams(lp);
         t.setOnClickListener(l);
         return t;
     }
@@ -153,7 +183,7 @@ public class DrawingActivity extends Activity {
 
     private void confirmCancel() {
         if (!draw.changed) { setResult(RESULT_CANCELED); finish(); return; }
-        new AlertDialog.Builder(this).setMessage("Discard this drawing?")
+        new Ui.Popup(this).setMessage("Discard this drawing?")
                 .setPositiveButton("Discard", (d, w) -> { setResult(RESULT_CANCELED); finish(); })
                 .setNegativeButton("Keep drawing", null).show();
     }

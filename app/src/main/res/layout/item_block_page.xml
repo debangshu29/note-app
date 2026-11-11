@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="40dp"
-    android:background="?android:attr/selectableItemBackground"
+    android:layout_height="48dp"
+    android:background="@drawable/bg_row"
     android:gravity="center_vertical"
     android:orientation="horizontal">
 
@@ -10,20 +10,26 @@
         android:layout_width="0dp"
         android:layout_height="1dp"
         android:layout_weight="1"
-        android:background="@color/hint" />
+        android:background="@color/divider" />
 
     <TextView
         android:id="@+id/page_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="10dp"
+        android:background="@drawable/bg_badge"
+        android:fontFamily="sans-serif-medium"
         android:paddingStart="12dp"
+        android:paddingTop="5dp"
         android:paddingEnd="12dp"
-        android:textColor="@color/hint"
+        android:paddingBottom="5dp"
+        android:textColor="@color/text2"
         android:textSize="12sp" />
 
     <View
         android:layout_width="0dp"
         android:layout_height="1dp"
         android:layout_weight="1"
-        android:background="@color/hint" />
+        android:background="@color/divider" />
 </LinearLayout>
