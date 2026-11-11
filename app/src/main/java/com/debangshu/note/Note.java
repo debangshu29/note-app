@@ -164,7 +164,9 @@ public class Note {
     }
 
     public boolean isEmpty() {
-        boolean noText = (title == null || title.trim().isEmpty()) && (body == null || body.trim().isEmpty());
+        // a body that is only empty checkboxes / bullets ("☐ ") counts as empty too
+        boolean noText = (title == null || title.trim().isEmpty())
+                && (body == null || body.replaceAll("[☐☑•\\-*\\s]", "").isEmpty());
         if (!noText) return false;
         if (blocks != null) for (Block b : blocks) if (Block.IMAGE.equals(b.type) || Block.TABLE.equals(b.type)) return false;
         return true;

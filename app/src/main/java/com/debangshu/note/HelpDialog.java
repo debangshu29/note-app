@@ -49,6 +49,14 @@ public final class HelpDialog {
             {"🎨", "Look & feel",
                     "Settings → Look & feel: light, dark or pure black, 8 accent colours, and the text size. "
                     + "Home → ⚙ switches between list and grid and changes the sort order."},
+            {"☀️", "Today & morning brief",
+                    "Tap “☀ Today” on the home screen: today's reminders, everything still unticked on your lists, pinned notes. "
+                    + "Each morning one quiet notification shows the same (Settings → Reminders)."},
+            {"📲", "Widgets & quick capture",
+                    "Long-press your home screen → Widgets → Note: quick buttons, Today, a tickable checklist, a countdown. "
+                    + "Long-press the Note icon for New note / checklist / voice / scan, or add the “New note” quick-settings tile."},
+            {"🎤", "Voice notes & read aloud",
+                    "Tap 🎤 on the formatting bar and speak — Note types it. ⋮ → Read aloud reads a note to you."},
             {"☑️", "Checklists",
                     "Type [] and a space for a checkbox, tap the box to tick it. Lists continue when you press Enter."},
             {"📤", "Sharing",

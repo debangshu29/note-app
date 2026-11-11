@@ -300,6 +300,25 @@
         </LinearLayout>
     </ScrollView>
 
+    <!-- read aloud: tap to stop -->
+    <TextView
+        android:id="@+id/read_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="4dp"
+        android:background="@drawable/bg_fab"
+        android:contentDescription="Stop reading"
+        android:elevation="4dp"
+        android:fontFamily="sans-serif-medium"
+        android:gravity="center"
+        android:paddingStart="18dp"
+        android:paddingEnd="18dp"
+        android:text="🔊  Reading aloud…   ⏹ Stop"
+        android:textColor="@color/on_accent"
+        android:textSize="14sp"
+        android:visibility="gone" />
+
     <!-- formatting bar: a floating card just above the keyboard -->
     <FrameLayout
         android:layout_width="match_parent"

@@ -104,6 +104,7 @@ public class SettingsActivity extends Activity {
         findViewById(R.id.row_trash).setOnClickListener(v -> startActivity(new Intent(this, TrashActivity.class)));
         setupLook();
         setupLock();
+        setupBrief();
     }
 
     @Override
@@ -173,6 +174,34 @@ public class SettingsActivity extends Activity {
         new Ui.Popup(this).setTitle(title).setItems(items, (dd, w) -> p.picked(w)).show();
     }
 
+    // ------------------------------------------------------------------ morning brief, voice language
+
+    private static final String[] VOICE_NAMES = {"Same as phone", "English (India)", "English (US)", "हिन्दी (Hindi)", "বাংলা (Bengali)"};
+    private static final String[] VOICE_CODES = {"", "en-IN", "en-US", "hi-IN", "bn-IN"};
+
+    private void setupBrief() {
+        Switch b = findViewById(R.id.sw_brief);
+        b.setChecked(Brief.on(this));
+        b.setOnCheckedChangeListener((x, on) -> {
+            store.prefs().edit().putBoolean(Brief.P_ON, on).apply();
+            Brief.schedule(this);
+        });
+        findViewById(R.id.row_brief_time).setOnClickListener(v -> new TimePickerDialog(this, (tp, h, m) -> {
+            store.prefs().edit().putInt(Brief.P_HOUR, h).putInt(Brief.P_MIN, m).apply();
+            Brief.schedule(this);
+            updateTexts();
+        }, Brief.hour(this), Brief.minute(this), android.text.format.DateFormat.is24HourFormat(this)).show());
+        findViewById(R.id.row_voice_lang).setOnClickListener(v -> {
+            String cur = store.prefs().getString(EditorActivity.P_VOICE_LANG, "");
+            int sel = 0;
+            for (int i = 0; i < VOICE_CODES.length; i++) if (VOICE_CODES[i].equals(cur)) sel = i;
+            pickChoice("Voice typing language", VOICE_NAMES, sel, w -> {
+                store.prefs().edit().putString(EditorActivity.P_VOICE_LANG, VOICE_CODES[w]).apply();
+                updateTexts();
+            });
+        });
+    }
+
     // ------------------------------------------------------------------ privacy & lock
 
     private boolean settingLock = false;
@@ -238,6 +267,15 @@ public class SettingsActivity extends Activity {
     }
 
     private void updateTexts() {
+        java.util.Calendar bt = java.util.Calendar.getInstance();
+        bt.set(java.util.Calendar.HOUR_OF_DAY, Brief.hour(this));
+        bt.set(java.util.Calendar.MINUTE, Brief.minute(this));
+        ((TextView) findViewById(R.id.txt_brief_time)).setText(android.text.format.DateFormat.getTimeFormat(this).format(bt.getTime())
+                + " every morning");
+        String vl = store.prefs().getString(EditorActivity.P_VOICE_LANG, "");
+        String vname = VOICE_NAMES[0];
+        for (int i = 0; i < VOICE_CODES.length; i++) if (VOICE_CODES[i].equals(vl)) vname = VOICE_NAMES[i];
+        ((TextView) findViewById(R.id.txt_voice_lang)).setText(vname + " · tap 🎤 on the formatting bar to speak");
         String installApp = Updater.installWithLabel(this);
         ((TextView) findViewById(R.id.txt_install_with)).setText(installApp == null
                 ? "Ask each time (pick your phone's Files app — not Drive)" : installApp + " · tap to change");

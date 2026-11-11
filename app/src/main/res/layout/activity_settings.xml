@@ -163,6 +163,10 @@
 (apple 50 rs, banana 20 rs… → Total = ₹70)" />
                     <Switch android:id="@+id/sw_smart_lists" style="@style/SettingsSwitch" android:text="Smart lists and checkboxes
 (•, 1. and ☐ continue when you press Enter)" />
+                    <LinearLayout android:id="@+id/row_voice_lang" style="@style/SettingsRow">
+                        <TextView style="@style/SettingsTitle" android:text="Voice typing language" />
+                        <TextView android:id="@+id/txt_voice_lang" style="@style/SettingsSub" />
+                    </LinearLayout>
 
                 </LinearLayout>
             </LinearLayout>
@@ -234,6 +238,11 @@
 (wake-up lines become alarms)" />
                     <Switch android:id="@+id/sw_calendar" style="@style/SettingsSwitch" android:text="Add planned things to my phone calendar
 (the calendar never alerts twice)" />
+                    <Switch android:id="@+id/sw_brief" style="@style/SettingsSwitch" android:text="Morning brief\n(one quiet notification with today's plan — only when there is something)" />
+                    <LinearLayout android:id="@+id/row_brief_time" style="@style/SettingsRow">
+                        <TextView style="@style/SettingsTitle" android:text="Morning brief time" />
+                        <TextView android:id="@+id/txt_brief_time" style="@style/SettingsSub" />
+                    </LinearLayout>
                     <LinearLayout android:id="@+id/row_default_time" style="@style/SettingsRow">
                         <TextView style="@style/SettingsTitle" android:text="Default reminder time" />
                         <TextView android:id="@+id/txt_default_time" style="@style/SettingsSub" />

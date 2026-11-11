@@ -84,12 +84,16 @@ public class MainActivity extends Activity {
             Updater.showWhatsNewOnce(this);
         }
         if (getIntent().getBooleanExtra("showUpdate", false)) Updater.maybePrompt(this, true);
+        Brief.schedule(this);
+        handleQuick(getIntent());
+        findViewById(R.id.today_chip).setOnClickListener(v -> startActivity(new Intent(this, TodayActivity.class)));
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         if (intent.getBooleanExtra("showUpdate", false)) Updater.maybePrompt(this, true);
+        handleQuick(intent);
     }
 
     @Override
@@ -115,6 +119,21 @@ public class MainActivity extends Activity {
         if (remindersTab) showReminders(q); else showNotes(q);
     }
 
+    /** Home-screen shortcuts, widgets, the quick-settings tile and the morning brief all come in here. */
+    private void handleQuick(Intent in) {
+        if (in == null) return;
+        String q = in.getStringExtra("quick");
+        long openId = in.getLongExtra("openNote", -1);
+        in.removeExtra("quick");
+        in.removeExtra("openNote");
+        if (openId != -1) { open(openId); return; }
+        if (q == null) return;
+        if (q.equals("today")) { startActivity(new Intent(this, TodayActivity.class)); return; }
+        Intent e = new Intent(this, EditorActivity.class);
+        e.putExtra(EditorActivity.EXTRA_QUICK, q);
+        startActivity(e);
+    }
+
     /** Greeting with today's date, and how many notes / upcoming reminders there are on the tabs. */
     private void paintHeader() {
         int h = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
@@ -127,6 +146,13 @@ public class MainActivity extends Activity {
         long now = System.currentTimeMillis();
         for (Reminder r : store.reminders()) if (!r.done && !r.ignored && r.time > now) upcoming++;
         tabNotes.setText(tabLabel("All notes", notes));
+        List<Reminder> todayRem = Today.remindersToday(store);
+        int todo = Checklist.open(store).size();
+        StringBuilder t = new StringBuilder("☀  Today");
+        if (todayRem.isEmpty() && todo == 0) t.append("  ·  nothing planned");
+        if (!todayRem.isEmpty()) t.append("  ·  ").append(todayRem.size()).append(todayRem.size() == 1 ? " reminder" : " reminders");
+        if (todo > 0) t.append("  ·  ").append(todo).append(" to do");
+        ((TextView) findViewById(R.id.today_chip)).setText(t.append("   ›").toString());
         tabReminders.setText(tabLabel("Reminders", upcoming));
     }
 

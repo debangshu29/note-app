@@ -80,9 +80,13 @@ public final class Lock {
     public static void leavingForOtherApp() { externalAt = System.currentTimeMillis(); }
 
     /** Call in onResume of every screen with notes on it. Shows the lock screen when needed; returns true then. */
+    static boolean screenShowing = false;
+
     public static boolean guard(Activity a) {
         afterMs = prefs(a).getInt(P_AFTER, 0) * 1000L;
         if (!appLockOn(a) || unlocked) return false;
+        if (screenShowing) return true;            // one lock screen is enough
+        screenShowing = true;
         Intent i = new Intent(a, LockActivity.class);
         i.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
         a.startActivity(i);

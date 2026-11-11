@@ -67,7 +67,8 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     public static final String EXTRA_IMAGES = "noteImages";   // picture files already in Media (from import)
     public static final String EXTRA_TEMPLATE = "noteTemplate"; // Templates index for a new note
 
-    private static final int REQ_PERMS = 41, REQ_CAMERA = 61, REQ_GALLERY = 62, REQ_PDF = 63, REQ_DRAW = 64;
+    private static final int REQ_PERMS = 41, REQ_CAMERA = 61, REQ_GALLERY = 62, REQ_PDF = 63, REQ_DRAW = 64, REQ_VOICE = 65;
+    public static final String EXTRA_QUICK = "quick";   // note / checklist / voice / scan (shortcuts, widgets, tile)
 
     private Store store;
     private Note note;                 // null until something is written
@@ -171,6 +172,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         pinBtn.setOnClickListener(v -> togglePin());
         findViewById(R.id.btn_share).setOnClickListener(v -> share());
         findViewById(R.id.btn_more).setOnClickListener(v -> moreMenu());
+        findViewById(R.id.read_bar).setOnClickListener(v -> stopReading());
         findViewById(R.id.btn_insert).setOnClickListener(v -> insertMenu());
         Tips.applyAll(findViewById(R.id.editor_root));
         findViewById(R.id.tap_end).setOnClickListener(v -> focusLastText());
@@ -182,8 +184,26 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         if (note == null && (getIntent().getStringExtra(Intent.EXTRA_TEXT) != null
                 || getIntent().getStringArrayListExtra(EXTRA_IMAGES) != null
                 || getIntent().getIntExtra(EXTRA_TEMPLATE, -1) >= 0)) onEdited();
+        String quick = getIntent().getStringExtra(EXTRA_QUICK);
+        getIntent().removeExtra(EXTRA_QUICK);
+        if (quick != null && note == null) {
+            switch (quick) {
+                case "checklist":
+                    loading = true;
+                    List<Block> l = new ArrayList<>();
+                    l.add(Block.text("☐ "));
+                    renderBlocks(l);
+                    loading = false;
+                    cursorToFirstItem();
+                    break;
+                case "voice": scroll.postDelayed(this::startVoice, 350); break;
+                case "scan": scroll.postDelayed(() -> DocScan.start(this), 350); break;
+                case "photo": scroll.postDelayed(this::takePhoto, 350); break;
+                default: break;
+            }
+        }
         if (getIntent().getIntExtra(EXTRA_TEMPLATE, -1) >= 0) cursorToFirstItem();
-        else if (note == null && getIntent().getStringExtra(Intent.EXTRA_TEXT) == null
+        else if (quick == null && note == null && getIntent().getStringExtra(Intent.EXTRA_TEXT) == null
                 && getIntent().getStringArrayListExtra(EXTRA_IMAGES) == null) showTemplates();
         refreshChips();
     }
@@ -383,9 +403,116 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         checkLock();
     }
 
+    // ---- voice typing (speech → text, on the phone where possible)
+
+    public static final String P_VOICE_LANG = "voice_lang";
+
+    private void startVoice() {
+        Intent i = new Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        i.putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        i.putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Speak your note");
+        i.putExtra(android.speech.RecognizerIntent.EXTRA_PREFER_OFFLINE, true);
+        String lang = store.prefs().getString(P_VOICE_LANG, "");
+        if (!lang.isEmpty()) i.putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, lang);
+        try {
+            startActivityForResult(i, REQ_VOICE);
+        } catch (Exception e) {
+            Toast.makeText(this, "Voice typing isn't available on this phone (it needs the Google app or Speech Services).",
+                    Toast.LENGTH_LONG).show();
+        }
+    }
+
+    /** Puts spoken words where the cursor is (or at the end), with a capital first letter. */
+    private void insertSpoken(String said) {
+        said = said.trim();
+        if (said.isEmpty()) return;
+        said = Character.toUpperCase(said.charAt(0)) + said.substring(1);
+        Holder h = focusedTextHolder();
+        if (h == null) for (Holder x : holders) if (x.tc != null) h = x;
+        if (h == null) return;
+        EditText et = h.tc.et;
+        Editable e = et.getText();
+        int at = et.hasFocus() ? Math.max(0, et.getSelectionStart()) : e.length();
+        String before = at > 0 ? e.subSequence(at - 1, at).toString() : "";
+        String add = (at == 0 || before.equals("\n") || before.equals(" ") ? "" : " ") + said;
+        e.insert(at, add);
+        et.requestFocus();
+        et.setSelection(Math.min(e.length(), at + add.length()));
+        onEdited();
+    }
+
+    // ---- read aloud
+
+    private android.speech.tts.TextToSpeech tts;
+    private boolean speaking = false;
+
+    private void readAloud() {
+        saveNow();
+        String text = (titleEt.getText().toString().trim() + ".\n" + currentPlain()).trim();
+        text = text.replaceAll("[☐☑•]", "").trim();
+        if (text.replace(".", "").trim().isEmpty()) { Toast.makeText(this, "Nothing to read yet", Toast.LENGTH_SHORT).show(); return; }
+        final String all = text;
+        if (tts != null) { speakNow(all); return; }
+        tts = new android.speech.tts.TextToSpeech(this, status -> {
+            if (status != android.speech.tts.TextToSpeech.SUCCESS) {
+                Toast.makeText(this, "Read aloud isn't available — check Settings → Accessibility → Text-to-speech", Toast.LENGTH_LONG).show();
+                tts = null;
+                return;
+            }
+            speakNow(all);
+        });
+    }
+
+    private void speakNow(String text) {
+        if (tts == null) return;
+        // pick a voice for the script the note is written in
+        java.util.Locale loc = java.util.Locale.getDefault();
+        if (text.matches("(?s).*[\\u0980-\\u09FF].*")) loc = new java.util.Locale("bn", "IN");
+        else if (text.matches("(?s).*[\\u0900-\\u097F].*")) loc = new java.util.Locale("hi", "IN");
+        int ok = tts.setLanguage(loc);
+        if (ok == android.speech.tts.TextToSpeech.LANG_MISSING_DATA || ok == android.speech.tts.TextToSpeech.LANG_NOT_SUPPORTED) {
+            tts.setLanguage(java.util.Locale.getDefault());
+        }
+        tts.setOnUtteranceProgressListener(new android.speech.tts.UtteranceProgressListener() {
+            @Override public void onStart(String id) { }
+            @Override public void onDone(String id) { if (id.equals("last")) runOnUiThread(() -> showReadBar(false)); }
+            @Override public void onError(String id) { runOnUiThread(() -> showReadBar(false)); }
+        });
+        tts.stop();
+        int max = Math.max(500, android.speech.tts.TextToSpeech.getMaxSpeechInputLength() - 100);
+        List<String> parts = new ArrayList<>();
+        for (String para : text.split("\\n+")) {
+            String p = para.trim();
+            while (p.length() > max) { parts.add(p.substring(0, max)); p = p.substring(max); }
+            if (!p.isEmpty()) parts.add(p);
+        }
+        for (int i = 0; i < parts.size(); i++) {
+            tts.speak(parts.get(i), android.speech.tts.TextToSpeech.QUEUE_ADD, null, i == parts.size() - 1 ? "last" : "p" + i);
+        }
+        showReadBar(true);
+    }
+
+    private void stopReading() {
+        if (tts != null) tts.stop();
+        showReadBar(false);
+    }
+
+    private void showReadBar(boolean on) {
+        speaking = on;
+        TextView bar = findViewById(R.id.read_bar);
+        bar.setVisibility(on ? View.VISIBLE : View.GONE);
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (tts != null) { tts.stop(); tts.shutdown(); tts = null; }
+        super.onDestroy();
+    }
+
     @Override
     protected void onPause() {
         super.onPause();
+        if (speaking && isFinishing()) stopReading();
         handler.removeCallbacks(saveTask);
         handler.removeCallbacks(syncTask);
         saveNow();
@@ -989,6 +1116,8 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     private void buildToolbar() {
         LinearLayout bar = findViewById(R.id.format_bar);
         bar.removeAllViews();
+        tool(bar, null, R.drawable.ic_mic, "Voice typing: speak and it types", v -> startVoice());
+        separator(bar);
         tBold = tool(bar, "B", 0, "Bold", v -> fmt(c -> c.toggle(RichText.Bold.class)));
         ((TextView) tBold).setTypeface(null, Typeface.BOLD);
         tItalic = tool(bar, "I", 0, "Italic", v -> fmt(c -> c.toggle(RichText.Italic.class)));
@@ -1169,7 +1298,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
     private void insertMenu() {
         String[] items = {"📷  Take photo", "🖼  Photo from gallery", "🧾  Scan document", "📄  PDF pages",
-                "✏️  Drawing", "🗒  Sticky note", "▦  Table", "⤵  New page (page break)"};
+                "✏️  Drawing", "🗒  Sticky note", "▦  Table", "⤵  New page (page break)", "🎤  Voice note (speak to type)"};
         new Ui.Popup(this).setTitle("Insert").setItems(items, (d, w) -> {
             pendingReplace = null;
             switch (w) {
@@ -1187,6 +1316,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                 }); break;
                 case 6: pickTableSize(); break;
                 case 7: { List<Block> l = new ArrayList<>(); l.add(Block.pageBreak()); insertBlocks(l); break; }
+                case 8: startVoice(); break;
             }
         }).show();
     }
@@ -1256,6 +1386,13 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         super.onActivityResult(req, res, data);
         Holder replace = pendingReplace != null && holders.contains(pendingReplace) ? pendingReplace : null;
         pendingReplace = null;
+        if (req == REQ_VOICE) {
+            if (res == RESULT_OK && data != null) {
+                ArrayList<String> said = data.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS);
+                if (said != null && !said.isEmpty()) insertSpoken(said.get(0));
+            }
+            return;
+        }
         if (req == DocScan.REQ_SCAN) {
             List<Uri> pages = DocScan.pages(res, data);
             if (!pages.isEmpty()) importPictures(pages, "scan", replace);
@@ -1631,17 +1768,18 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
     private void moreMenu() {
         boolean locked = note != null && note.locked;
-        String[] items = {"🔍  Find & replace", "🏷  Add a label", "🎨  Note style", "📑  Page sorter", "📐  Page settings",
-                locked ? "🔓  Remove lock" : "🔒  Lock this note", "🗑  Delete note"};
+        String[] items = {"🔍  Find & replace", "🏷  Add a label", "🎨  Note style", speaking ? "⏹  Stop reading" : "🔊  Read aloud",
+                "📑  Page sorter", "📐  Page settings", locked ? "🔓  Remove lock" : "🔒  Lock this note", "🗑  Delete note"};
         new Ui.Popup(this).setItems(items, (d, w) -> {
             switch (w) {
                 case 0: openFind(); break;
                 case 1: addLabelMenu(); break;
                 case 2: noteStyleDialog(); break;
-                case 3: pageSorter(); break;
-                case 4: pageSettingsDialog(); break;
-                case 5: toggleNoteLock(); break;
-                case 6: confirmDelete(); break;
+                case 3: if (speaking) stopReading(); else readAloud(); break;
+                case 4: pageSorter(); break;
+                case 5: pageSettingsDialog(); break;
+                case 6: toggleNoteLock(); break;
+                case 7: confirmDelete(); break;
             }
         }).show();
     }

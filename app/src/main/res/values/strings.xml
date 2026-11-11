@@ -1,4 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Note</string>
+    <string name="w_quick">Note: quick buttons</string>
+    <string name="w_quick_desc">New note, checklist, voice note or scan in one tap</string>
+    <string name="w_today">Note: today</string>
+    <string name="w_today_desc">Today\'s reminders and things still to do</string>
+    <string name="w_checklist">Note: checklist</string>
+    <string name="w_checklist_desc">A checklist you can tick right on the home screen</string>
+    <string name="w_countdown">Note: countdown</string>
+    <string name="w_countdown_desc">Days left until a reminder (exam, trip, birthday…)</string>
+    <string name="s_note">New note</string>
+    <string name="s_checklist">New checklist</string>
+    <string name="s_voice">Voice note</string>
+    <string name="s_scan">Scan document</string>
+    <string name="s_today">Today</string>
+    <string name="tile_label">New note</string>
 </resources>

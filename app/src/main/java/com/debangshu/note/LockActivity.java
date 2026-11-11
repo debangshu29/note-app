@@ -22,6 +22,12 @@ public class LockActivity extends Activity {
     }
 
     @Override
+    protected void onDestroy() {
+        Lock.screenShowing = false;
+        super.onDestroy();
+    }
+
+    @Override
     @SuppressWarnings("deprecation")
     public void onBackPressed() {
         moveTaskToBack(true);

@@ -68,13 +68,30 @@
                 android:src="@drawable/ic_settings" />
         </LinearLayout>
 
+        <!-- today: reminders and to-dos at a glance -->
+        <TextView
+            android:id="@+id/today_chip"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_chip"
+            android:contentDescription="Today page: reminders and things still to do"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center_vertical"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:text="☀  Today"
+            android:textColor="?attr/nAccent"
+            android:textSize="13sp" />
+
         <!-- search -->
         <EditText
             android:id="@+id/search"
             android:layout_width="match_parent"
             android:layout_height="52dp"
             android:layout_marginStart="16dp"
-            android:layout_marginTop="18dp"
+            android:layout_marginTop="12dp"
             android:layout_marginEnd="16dp"
             android:background="@drawable/bg_search"
             android:drawableStart="@drawable/ic_search"

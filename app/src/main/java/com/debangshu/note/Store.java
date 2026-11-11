@@ -321,6 +321,7 @@ public final class Store {
     }
 
     private void saveNotes() {
+        Widgets.changed(app);
         try {
             JSONArray arr = new JSONArray();
             for (Note n : notes) arr.put(n.toJson());
@@ -329,6 +330,7 @@ public final class Store {
     }
 
     private void saveReminders() {
+        Widgets.changed(app);
         try {
             JSONArray arr = new JSONArray();
             for (Reminder r : reminders) arr.put(r.toJson());

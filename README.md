@@ -112,6 +112,14 @@ The `Documents/Note` folder stays even if you uninstall the app, so your backups
 - App lock (fingerprint / PIN)
 - More automatic actions: phone numbers → tap to call, amounts → running total, links → open
 
+## New in 3.2
+
+- **Widgets**: quick buttons, Today (tick to-dos on the home screen), Checklist (pick a note), Countdown (pick a reminder). With app lock on they show "locked".
+- **Quick capture**: app-icon shortcuts (New note / checklist / voice / scan) and a quick-settings tile.
+- **Voice notes**: 🎤 on the formatting bar (Android speech recognition; language in Settings → Smart writing).
+- **Read aloud**: ⋮ → Read aloud (Android text-to-speech; Hindi / Bengali voices when the text is in those scripts).
+- **Today page** and **morning brief** (one low-importance notification, only when there is something planned).
+
 ## New in 3.1
 
 - **Repeating reminders**: every day / weekday / Monday… / month on the 5th / year / every N hours. The next one is set after each alert; repeating "calendar" reminders become repeating calendar events.

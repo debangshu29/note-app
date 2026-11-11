@@ -1,3 +1,6 @@
-• Updates now open in your phone's Files app, not Drive: after downloading, tap Install and pick your Files app (tick "Always use this app")
-• When the download finishes, Note shows its own "tap to install" notification
-• To change the app later: Settings → App updates → Open updates with
+• Home-screen widgets: quick buttons (note, list, voice, scan), Today (reminders + things to do, tick them right there), a checklist you can tick, and a countdown to a reminder
+• Quick capture: long-press the Note icon for New note / New checklist / Voice note / Scan, or add the "New note" tile to your quick settings
+• Voice notes: tap 🎤 on the formatting bar and speak, Note types it (and finds reminders in it); pick Hindi or Bengali in Settings → Smart writing
+• Read aloud: ⋮ → Read aloud reads the note to you
+• Today page: tap "☀ Today" on the home screen for today's reminders, everything still unticked and pinned notes
+• Morning brief: one quiet notification each morning with today's plan (Settings → Reminders to change the time or turn it off)
