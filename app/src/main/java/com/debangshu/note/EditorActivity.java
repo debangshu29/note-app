@@ -66,6 +66,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     public static final String EXTRA_TITLE = "noteTitle";
     public static final String EXTRA_IMAGES = "noteImages";   // picture files already in Media (from import)
     public static final String EXTRA_TEMPLATE = "noteTemplate"; // Templates index for a new note
+    public static final String EXTRA_NEW_TITLE = "noteNewTitle"; // new note with this title (from a [[link]])
 
     private static final int REQ_PERMS = 41, REQ_CAMERA = 61, REQ_GALLERY = 62, REQ_PDF = 63, REQ_DRAW = 64, REQ_VOICE = 65;
     public static final String EXTRA_QUICK = "quick";   // note / checklist / voice / scan (shortcuts, widgets, tile)
@@ -149,6 +150,8 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             if (imgs != null) for (String f : imgs) start.add(Block.image(f, "import"));
             String shared = getIntent().getStringExtra(Intent.EXTRA_TEXT);
             int tpl = getIntent().getIntExtra(EXTRA_TEMPLATE, -1);
+            String newTitle = getIntent().getStringExtra(EXTRA_NEW_TITLE);
+            if (newTitle != null) titleEt.setText(newTitle);
             if (tpl >= 0 && tpl < Templates.NAMES.length && shared == null) {
                 shared = Templates.body(tpl);
                 titleEt.setText(Templates.title(tpl));
@@ -183,7 +186,8 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
         if (note == null && (getIntent().getStringExtra(Intent.EXTRA_TEXT) != null
                 || getIntent().getStringArrayListExtra(EXTRA_IMAGES) != null
-                || getIntent().getIntExtra(EXTRA_TEMPLATE, -1) >= 0)) onEdited();
+                || getIntent().getIntExtra(EXTRA_TEMPLATE, -1) >= 0
+                || getIntent().getStringExtra(EXTRA_NEW_TITLE) != null)) onEdited();
         String quick = getIntent().getStringExtra(EXTRA_QUICK);
         getIntent().removeExtra(EXTRA_QUICK);
         if (quick != null && note == null) {
@@ -280,15 +284,259 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
     // ---- #labels
 
-    /** Colours every #label in the text (only on screen, not saved). */
+    /** Colours #labels and [[links]], and makes "# headings" big (only on screen, not saved). */
     private void highlightTags() {
         int c = Ui.col(this, R.color.accent);
         for (Holder h : holders) {
             if (h.tc == null) continue;
             Editable e = h.tc.et.getText();
-            for (RichText.TagMark m : e.getSpans(0, e.length(), RichText.TagMark.class)) e.removeSpan(m);
+            for (Object m : e.getSpans(0, e.length(), RichText.TagMark.class)) e.removeSpan(m);
+            for (Object m : e.getSpans(0, e.length(), RichText.LinkMark.class)) e.removeSpan(m);
+            for (Object m : e.getSpans(0, e.length(), RichText.HeadMark.class)) e.removeSpan(m);
+            for (Object m : e.getSpans(0, e.length(), RichText.HeadBold.class)) e.removeSpan(m);
             for (int[] r : Note.tagRanges(e)) e.setSpan(new RichText.TagMark(c), r[0], r[1], Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            for (int[] r : SmartLinks.linkRanges(e)) e.setSpan(new RichText.LinkMark(c), r[0], r[1], Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            String t = e.toString();
+            int start = 0;
+            while (start <= t.length()) {
+                int end = t.indexOf('\n', start);
+                if (end < 0) end = t.length();
+                int lvl = headingLevel(t.substring(start, end));
+                if (lvl > 0 && end > start) {
+                    e.setSpan(new RichText.HeadMark(lvl == 1 ? 1.35f : lvl == 2 ? 1.2f : 1.1f), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    e.setSpan(new RichText.HeadBold(), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+                start = end + 1;
+            }
         }
+    }
+
+    /** "# Title" = 1, "## Part" = 2, "### Point" = 3, otherwise 0. */
+    static int headingLevel(String line) {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("^\\s*(#{1,3})\\s+\\S").matcher(line);
+        return m.find() ? m.group(1).length() : 0;
+    }
+
+    // ---- outline: headings you can fold and unfold, and jump to
+
+    private void outlineSheet() {
+        saveNow();
+        float d = getResources().getDisplayMetrics().density;
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding((int) (16 * d), 0, (int) (16 * d), (int) (8 * d));
+        final android.app.Dialog[] dlg = {null};
+        int count = 0;
+        LinearLayout section = null;
+        int sectionLevel = 0;
+        for (Holder h : holders) {
+            if (h.tc == null) continue;
+            String t = h.tc.et.getText().toString();
+            int start = 0;
+            while (start <= t.length()) {
+                int end = t.indexOf('\n', start);
+                if (end < 0) end = t.length();
+                String line = t.substring(start, end);
+                int lvl = headingLevel(line);
+                final Holder fh = h;
+                final int at = start;
+                if (lvl > 0) {
+                    count++;
+                    LinearLayout row = new LinearLayout(this);
+                    row.setGravity(Gravity.CENTER_VERTICAL);
+                    row.setPadding((int) ((lvl - 1) * 16 * d), (int) (6 * d), 0, (int) (6 * d));
+                    TextView arrow = new TextView(this);
+                    arrow.setText("▾");
+                    arrow.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+                    arrow.setTextColor(Ui.col(this, R.color.accent));
+                    arrow.setPadding((int) (4 * d), 0, (int) (10 * d), 0);
+                    TextView name = new TextView(this);
+                    name.setText(line.replaceFirst("^\\s*#{1,3}\\s+", ""));
+                    name.setTextSize(TypedValue.COMPLEX_UNIT_SP, lvl == 1 ? 17 : lvl == 2 ? 15 : 14);
+                    name.setTypeface(Ui.face(this, lvl == 1 ? Ui.EXTRABOLD : Ui.BOLD));
+                    name.setTextColor(getColor(R.color.text));
+                    row.addView(arrow);
+                    row.addView(name, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+                    box.addView(row);
+                    LinearLayout kids = new LinearLayout(this);
+                    kids.setOrientation(LinearLayout.VERTICAL);
+                    kids.setPadding((int) ((lvl - 1) * 16 * d + 30 * d), 0, 0, (int) (4 * d));
+                    box.addView(kids);
+                    section = kids;
+                    sectionLevel = lvl;
+                    arrow.setOnClickListener(v -> {
+                        boolean open = kids.getVisibility() == View.VISIBLE;
+                        kids.setVisibility(open ? View.GONE : View.VISIBLE);
+                        arrow.setText(open ? "▸" : "▾");
+                    });
+                    name.setOnClickListener(v -> { if (dlg[0] != null) dlg[0].dismiss(); jumpTo(fh, at); });
+                } else if (section != null && !line.trim().isEmpty()) {
+                    TextView l = new TextView(this);
+                    l.setText(line.trim());
+                    l.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+                    l.setTextColor(getColor(R.color.text2));
+                    l.setMaxLines(1);
+                    l.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                    l.setPadding(0, (int) (2 * d), 0, (int) (2 * d));
+                    l.setOnClickListener(v -> { if (dlg[0] != null) dlg[0].dismiss(); jumpTo(fh, at); });
+                    section.addView(l);
+                }
+                start = end + 1;
+            }
+        }
+        if (count == 0) {
+            new Ui.Popup(this).setTitle("Outline")
+                    .setMessage("Start a line with  #  for a heading,  ##  for a part and  ###  for a point.\n\n"
+                            + "Then ⋮ → Outline lists them: tap ▾ to fold a part, tap a heading to jump to it.")
+                    .setPositiveButton("OK", null).show();
+            return;
+        }
+        ScrollView sv = new ScrollView(this);
+        sv.addView(box);
+        AlertDialog a = new Ui.Popup(this).sheet().setTitle("Outline").setView(Ui.capHeight(sv, 0.55f))
+                .setNegativeButton("Close", null).create();
+        dlg[0] = a;
+        a.show();
+    }
+
+    private void jumpTo(Holder h, int offset) {
+        if (!holders.contains(h) || h.tc == null) return;
+        EditText et = h.tc.et;
+        et.requestFocus();
+        et.setSelection(Math.min(offset, et.length()));
+        et.post(() -> {
+            android.text.Layout lay = et.getLayout();
+            int y = h.view.getTop() + (lay == null ? 0 : lay.getLineTop(lay.getLineForOffset(Math.min(offset, et.length()))));
+            scroll.smoothScrollTo(0, Math.max(0, blocksBox.getTop() + y - (int) (80 * getResources().getDisplayMetrics().density)));
+        });
+    }
+
+    // ---- [[links]], phone numbers, web links, e-mails as chips under the title
+
+    private void addSmartChips(LayoutInflater inf) {
+        String all = titleEt.getText().toString() + "\n" + currentPlain();
+        for (String p : SmartLinks.phones(all)) smartChip(inf, "📞 " + SmartLinks.pretty(p), () -> phoneMenu(p));
+        for (String u : SmartLinks.urls(all)) {
+            String host = u.replaceFirst("(?i)^https?://", "").replaceFirst("^www\\.", "");
+            int slash = host.indexOf('/');
+            smartChip(inf, "🌐 " + (slash > 0 ? host.substring(0, slash) : host), () -> openUrl(u));
+        }
+        for (String m : SmartLinks.emails(all)) smartChip(inf, "✉ " + m, () -> {
+            try { startActivity(new Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:" + m))); }
+            catch (Exception e) { Toast.makeText(this, "No e-mail app found", Toast.LENGTH_SHORT).show(); }
+        });
+        for (String t : SmartLinks.links(all)) {
+            Note target = findNoteByTitle(t);
+            smartChip(inf, (target == null ? "＋ " : "🔗 ") + t, () -> openLinked(t));
+        }
+        // notes that link here
+        if (note != null && !note.displayTitle().isEmpty()) {
+            String me = note.displayTitle();
+            for (Note n : store.notes()) {
+                if (n.id == note.id || n.locked) continue;
+                for (String l : SmartLinks.links(n.title + "\n" + n.body)) {
+                    if (l.equalsIgnoreCase(me)) { smartChip(inf, "↩ " + n.displayTitle(), () -> openNoteId(n.id)); break; }
+                }
+            }
+        }
+    }
+
+    private void smartChip(LayoutInflater inf, String text, Runnable onTap) {
+        View chip = inf.inflate(R.layout.item_chip, chipsRow, false);
+        ((TextView) chip.findViewById(R.id.chip_text)).setText(text);
+        chip.setOnClickListener(v -> onTap.run());
+        chipsRow.addView(chip);
+    }
+
+    private void phoneMenu(String phone) {
+        String[] items = {"📞  Call", "💬  WhatsApp", "✉  Text message (SMS)", "👤  Save to contacts", "⧉  Copy number"};
+        new Ui.Popup(this).setTitle(SmartLinks.pretty(phone)).setItems(items, (d, w) -> {
+            try {
+                switch (w) {
+                    case 0: startActivity(new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + phone))); break;
+                    case 1: startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/" + SmartLinks.whatsapp(phone)))); break;
+                    case 2: startActivity(new Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:" + phone))); break;
+                    case 3: {
+                        Intent i = new Intent(Intent.ACTION_INSERT, android.provider.ContactsContract.Contacts.CONTENT_URI);
+                        i.putExtra(android.provider.ContactsContract.Intents.Insert.PHONE, phone);
+                        startActivity(i);
+                        break;
+                    }
+                    case 4: {
+                        android.content.ClipboardManager cm = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                        if (cm != null) cm.setPrimaryClip(ClipData.newPlainText("phone", phone));
+                        Toast.makeText(this, "Number copied", Toast.LENGTH_SHORT).show();
+                        break;
+                    }
+                }
+            } catch (Exception e) {
+                Toast.makeText(this, "No app on this phone can do that", Toast.LENGTH_SHORT).show();
+            }
+        }).show();
+    }
+
+    private void openUrl(String u) {
+        String url = u.matches("(?i)^https?://.*") ? u : "https://" + u;
+        try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))); }
+        catch (Exception e) { Toast.makeText(this, "No browser found", Toast.LENGTH_SHORT).show(); }
+    }
+
+    private Note findNoteByTitle(String t) {
+        for (Note n : store.notes()) if (n.displayTitle().equalsIgnoreCase(t.trim())) return n;
+        return null;
+    }
+
+    /** [[Title]]: opens that note, or makes a new note with that title. */
+    private void openLinked(String t) {
+        saveNow();
+        Note n = findNoteByTitle(t);
+        if (n != null) { openNoteId(n.id); return; }
+        Intent i = new Intent(this, EditorActivity.class);
+        i.putExtra(EXTRA_NEW_TITLE, t.trim());
+        startActivity(i);
+    }
+
+    private void openNoteId(long id) {
+        saveNow();
+        Note n = store.note(id);
+        if (n != null && n.locked && !Lock.isOpen(id)) {
+            Lock.verify(this, "Locked note", ok -> { if (ok) { Lock.markOpen(id); openNoteId(id); } });
+            return;
+        }
+        Intent i = new Intent(this, EditorActivity.class);
+        i.putExtra(EXTRA_NOTE_ID, id);
+        startActivity(i);
+    }
+
+    private int linkPickerAt = -1;
+
+    /** Typing "[[" opens a list of your notes; picking one writes "Title]]". */
+    private void maybeLinkPicker() {
+        Holder h = focusedTextHolder();
+        if (h == null) return;
+        EditText et = h.tc.et;
+        int cur = et.getSelectionStart();
+        Editable e = et.getText();
+        if (cur < 2 || cur != et.getSelectionEnd()) return;
+        if (e.charAt(cur - 1) != '[' || e.charAt(cur - 2) != '[') { linkPickerAt = -1; return; }
+        if (cur >= 3 && e.charAt(cur - 3) == '[') return;
+        if (linkPickerAt == cur) return;
+        linkPickerAt = cur;
+        List<Note> notes = new ArrayList<>();
+        for (Note n : store.notes()) if (note == null || n.id != note.id) if (!n.displayTitle().isEmpty()) notes.add(n);
+        if (notes.size() > 40) notes = notes.subList(0, 40);
+        CharSequence[] items = new CharSequence[notes.size() + 1];
+        items[0] = "＋   New note… (type its name, then ]])";
+        for (int i = 0; i < notes.size(); i++) items[i + 1] = "🔗   " + notes.get(i).displayTitle();
+        final List<Note> fn = notes;
+        new Ui.Popup(this).setTitle("Link to a note").setItems(items, (d, w) -> {
+            if (w == 0) return;
+            String t = fn.get(w - 1).displayTitle() + "]]";
+            int at = Math.min(et.getSelectionStart(), e.length());
+            e.insert(at, t);
+            et.setSelection(Math.min(at + t.length(), e.length()));
+            onEdited();
+        }).show();
     }
 
     private void addLabelMenu() {
@@ -938,6 +1186,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
     private void onEdited() {
         if (templatesShown && !loading) hideTemplates();
+        if (!loading) maybeLinkPicker();
         handler.removeCallbacks(saveTask);
         handler.postDelayed(saveTask, 800);
         handler.removeCallbacks(chipsTask);
@@ -1768,18 +2017,20 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
     private void moreMenu() {
         boolean locked = note != null && note.locked;
-        String[] items = {"🔍  Find & replace", "🏷  Add a label", "🎨  Note style", speaking ? "⏹  Stop reading" : "🔊  Read aloud",
-                "📑  Page sorter", "📐  Page settings", locked ? "🔓  Remove lock" : "🔒  Lock this note", "🗑  Delete note"};
+        String[] items = {"🔍  Find & replace", "🏷  Add a label", "🎨  Note style", "🗂  Outline (headings)",
+                speaking ? "⏹  Stop reading" : "🔊  Read aloud", "📑  Page sorter", "📐  Page settings",
+                locked ? "🔓  Remove lock" : "🔒  Lock this note", "🗑  Delete note"};
         new Ui.Popup(this).setItems(items, (d, w) -> {
             switch (w) {
                 case 0: openFind(); break;
                 case 1: addLabelMenu(); break;
                 case 2: noteStyleDialog(); break;
-                case 3: if (speaking) stopReading(); else readAloud(); break;
-                case 4: pageSorter(); break;
-                case 5: pageSettingsDialog(); break;
-                case 6: toggleNoteLock(); break;
-                case 7: confirmDelete(); break;
+                case 3: outlineSheet(); break;
+                case 4: if (speaking) stopReading(); else readAloud(); break;
+                case 5: pageSorter(); break;
+                case 6: pageSettingsDialog(); break;
+                case 7: toggleNoteLock(); break;
+                case 8: confirmDelete(); break;
             }
         }).show();
     }
@@ -2422,7 +2673,8 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             chip.setOnClickListener(v -> chipMenu(r, f));
             chipsRow.addView(chip);
         }
-        chipsScroll.setVisibility(found.isEmpty() ? View.GONE : View.VISIBLE);
+        addSmartChips(inf);
+        chipsScroll.setVisibility(chipsRow.getChildCount() == 0 ? View.GONE : View.VISIBLE);
         if (!found.isEmpty()) askPermissionsOnce();
     }
 
@@ -2432,8 +2684,10 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         else if (DateUtils.isToday(t - DateUtils.DAY_IN_MILLIS)) day = "Tomorrow";
         else day = DateUtils.formatDateTime(this, t, DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_SHOW_WEEKDAY
                 | DateUtils.FORMAT_ABBREV_ALL | DateUtils.FORMAT_NO_YEAR);
-        if (!hasTime) return day;
-        return day + " " + DateUtils.formatDateTime(this, t, DateUtils.FORMAT_SHOW_TIME);
+        int days = Widgets.daysUntil(t);
+        String count = days >= 2 ? " · in " + days + " days" : "";   // countdown
+        if (!hasTime) return day + count;
+        return day + " " + DateUtils.formatDateTime(this, t, DateUtils.FORMAT_SHOW_TIME) + count;
     }
 
     private void chipMenu(Reminder r, ReminderSync.Found f) {

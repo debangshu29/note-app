@@ -49,6 +49,8 @@ public final class ReminderSync {
         for (String raw : all.split("\n")) {
             String line = raw.trim();
             if (line.isEmpty() || line.startsWith("☑")) continue; // ticked items are finished
+            int eq = line.indexOf('=');
+            if (SmartCalc.isCalc(eq > 0 ? line.substring(0, eq) : line)) continue;   // "45 days from today = …" is maths
             DateParser.Result r = DateParser.parse(line, now, hour, 0);
             if (r == null) continue;
             String k = r.title.toLowerCase();

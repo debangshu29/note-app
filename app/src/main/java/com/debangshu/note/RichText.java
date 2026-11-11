@@ -63,6 +63,11 @@ public final class RichText {
 
     /** Find-in-note highlight: shown only on screen, never saved. */
     public static class FindMark extends BackgroundColorSpan { public FindMark(int c) { super(c); } }
+    /** [[note link]] colour in the editor (never saved). */
+    public static class LinkMark extends android.text.style.ForegroundColorSpan { public LinkMark(int c) { super(c); } }
+    /** "# Heading" lines look bigger and bold in the editor (never saved). */
+    public static class HeadMark extends android.text.style.RelativeSizeSpan { public HeadMark(float f) { super(f); } }
+    public static class HeadBold extends android.text.style.StyleSpan { public HeadBold() { super(android.graphics.Typeface.BOLD); } }
     /** #label colour in the editor (never saved). */
     public static class TagMark extends android.text.style.ForegroundColorSpan { public TagMark(int c) { super(c); } }
 

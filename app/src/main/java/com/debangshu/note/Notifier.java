@@ -110,7 +110,37 @@ public final class Notifier {
                         actionIntent(ctx, r, ActionReceiver.ACTION_DONE, 0)).build())
                 .addAction(new Notification.Action.Builder(null, "In " + SNOOZE_REMINDER_MIN + " min",
                         actionIntent(ctx, r, ActionReceiver.ACTION_SNOOZE, SNOOZE_REMINDER_MIN)).build());
+        PendingIntent call = callIntent(ctx, r);
+        if (call != null) b.addAction(new Notification.Action.Builder(null, "📞 Call", call).build());
         nm.notify(r.requestCode(), b.build());
+    }
+
+    /** "Call mom at 6" → a Call button: the number in the line, or the number written next to that name
+     *  in the note, or just the dialer. Null when the reminder isn't about calling anyone. */
+    static PendingIntent callIntent(Context ctx, Reminder r) {
+        String line = r.sourceLine == null ? "" : r.sourceLine;
+        String phone = null;
+        java.util.List<String> inLine = SmartLinks.phones(line);
+        if (!inLine.isEmpty()) phone = inLine.get(0);
+        String who = SmartLinks.callWho(line);
+        if (phone == null && who == null) return null;
+        if (phone == null) {
+            Note n = Store.get(ctx).note(r.noteId);
+            if (n != null && !n.locked) {
+                java.util.List<String> all = SmartLinks.phones(n.body);
+                for (String l : n.body.split("\n")) {
+                    if (l.toLowerCase(java.util.Locale.ROOT).contains(who.toLowerCase(java.util.Locale.ROOT))) {
+                        java.util.List<String> p = SmartLinks.phones(l);
+                        if (!p.isEmpty()) { phone = p.get(0); break; }
+                    }
+                }
+                if (phone == null && all.size() == 1) phone = all.get(0);
+            }
+        }
+        Intent i = new Intent(Intent.ACTION_DIAL, phone == null ? null : Uri.parse("tel:" + phone));
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        return PendingIntent.getActivity(ctx, r.requestCode() + 5, i,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
     /** An alarm: rings until Stop / Snooze, full screen when the phone allows it, stops itself after 10 minutes. */

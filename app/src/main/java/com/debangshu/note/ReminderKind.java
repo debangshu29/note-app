@@ -24,7 +24,8 @@ public final class ReminderKind {
     public static final int ALARM = 2;
 
     private static final Pattern ALARM_WORDS = Pattern.compile(
-            "\\b(wake\\s*(me\\s*)?up|wakeup|wake me|alarm|get up|getup)\\b");
+            "\\b(wake\\s*(me\\s*)?up|wakeup|wake me|alarm|get up|getup|utha\\s*(?:dena|do|diyo|dijiye|na)|uthana|uthaa|"
+            + "jaga\\s*(?:dena|do|diyo|na)|jagana|jagiye|tule\\s*(?:dio|diyo|deben)|ghum\\s+theke\\s+tule)\\b");
 
     /** Things people normally want to see in a calendar, whenever they happen. */
     private static final Pattern EVENT_WORDS = Pattern.compile(

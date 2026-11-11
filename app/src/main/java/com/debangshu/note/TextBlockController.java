@@ -303,6 +303,7 @@ public class TextBlockController {
         if (end < e.length() && e.charAt(end) != '\n') return;
         int eqPos = end - 1;
         String answer = MathEval.answerFor(e.subSequence(0, eqPos).toString());
+        if (answer == null) answer = SmartCalc.answerFor(e.subSequence(0, eqPos).toString());   // "18% gst on 1200 ="
         if (answer == null) return;
         String ins = (eqPos > 0 && e.charAt(eqPos - 1) == ' ') ? " " + answer : answer;
         quiet(() -> e.insert(end, ins));
@@ -429,6 +430,7 @@ public class TextBlockController {
                 char last = trimmed.isEmpty() ? 0 : trimmed.charAt(trimmed.length() - 1);
                 if (last != 0 && last != '=' && "+-*/x×÷^(".indexOf(last) < 0) {
                     String answer = MathEval.answerFor(before);
+                    if (answer == null) answer = SmartCalc.answerFor(before);   // GST, split, EMI, units, dates
                     if (answer != null) {
                         boolean space = before.endsWith(" ") || before.endsWith("\t");
                         ghost = (space ? "= " : " = ") + answer;

@@ -112,6 +112,15 @@ The `Documents/Note` folder stays even if you uninstall the app, so your backups
 - App lock (fingerprint / PIN)
 - More automatic actions: phone numbers → tap to call, amounts → running total, links → open
 
+## New in 3.3
+
+- **Smart calculator** (`SmartCalc`): GST incl./excl., discount, tip, %, split, EMI, simple / compound interest, units (length, weight, volume, area incl. bigha / katha, time, data, speed, temperature) and date maths. Ends with `=` like normal math.
+- **Hinglish / Bengali-style reminders**: kal, parso, subah, shaam, raat, N baje, saade / sawa / paune, har roz, har somvar, N ghante baad… are turned into English before the date parser runs.
+- **Countdowns, birthdays, warranty**: "in N days" on chips and the home list; birthday / anniversary lines repeat yearly; warranty / expiry lines remind a week (or a day) before.
+- **Smart chips**: phone numbers (Call / WhatsApp / SMS / save contact / copy), links, e-mails and `[[Note]]` links under the title; backlinks show as ↩. Typing `[[` opens a note picker. Call reminders get a 📞 Call action.
+- **Outline**: `#`, `##`, `###` heading lines are shown big and bold; ⋮ → Outline folds them and jumps.
+- **To-do roll-over** (`RollOver`): once a day, unticked ☐ in older #todo notes move to "To-do · d MMM" under "From earlier" (the old ☐ becomes ➜). Switch in Settings → Reminders.
+
 ## New in 3.2
 
 - **Widgets**: quick buttons, Today (tick to-dos on the home screen), Checklist (pick a note), Countdown (pick a reminder). With app lock on they show "locked".

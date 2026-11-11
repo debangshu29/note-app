@@ -239,6 +239,7 @@
                     <Switch android:id="@+id/sw_calendar" style="@style/SettingsSwitch" android:text="Add planned things to my phone calendar
 (the calendar never alerts twice)" />
                     <Switch android:id="@+id/sw_brief" style="@style/SettingsSwitch" android:text="Morning brief\n(one quiet notification with today's plan — only when there is something)" />
+                    <Switch android:id="@+id/sw_rollover" style="@style/SettingsSwitch" android:text="Carry over unfinished to-dos\n(each morning, unticked ☐ from older #todo notes move to today's To-do note)" />
                     <LinearLayout android:id="@+id/row_brief_time" style="@style/SettingsRow">
                         <TextView style="@style/SettingsTitle" android:text="Morning brief time" />
                         <TextView android:id="@+id/txt_brief_time" style="@style/SettingsSub" />

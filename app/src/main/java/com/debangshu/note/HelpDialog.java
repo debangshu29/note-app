@@ -28,12 +28,30 @@ public final class HelpDialog {
             {"🧮", "Auto math",
                     "Type 1+1= and the answer appears by itself. Or type 450+120+80 — the answer shows in grey; "
                     + "tap it or swipe it right to keep it. Works with + − × ÷ ^ % ( ) and √."},
+            {"🧠", "Smart calculator",
+                    "Ends in = and Note works it out: “2499 + 18% gst =”, “1200 incl 18% gst =”, “3400 split 4 =”, "
+                    + "“emi 5 lakh 9% 3 years =”, “5 ft in cm =”, “2 bigha in sq ft =”, “12 Nov + 45 days =”, “days until 25 Dec =”, “age 14 Aug 1995 =”."},
             {"🧾", "Price lists add up",
                     "Write items with prices, one per line (apple 50 rs, banana 20, milk ₹60, mango 3 x 40). "
                     + "The total appears under the list and keeps itself correct. With ☐ ☑ it shows what's bought and what's left."},
             {"⏰", "Reminders that fit the note",
                     "“wake me up at 6 am tomorrow” → a real alarm. “call mom at 5 pm on 12 Nov” → your calendar + one notification. "
                     + "“buy milk at 8 pm” → just one notification. Tap the chip under the note to change it."},
+            {"🗣", "Hindi & Bengali-style reminders",
+                    "Write the way you talk: “kal subah 7 baje gym”, “parso shaam 6 baje call mama”, “har roz raat 10 baje dawai”, "
+                    + "“2 ghante baad paani”, “somvar ko meeting”. Birthdays and anniversaries repeat every year by themselves."},
+            {"⏳", "Countdowns, warranty & expiry",
+                    "Reminder chips show “in 12 days”. “TV warranty till mar 2027” or “passport expires 3 Dec 2028” → "
+                    + "a reminder a week before (a day before when it's close)."},
+            {"📞", "Call, WhatsApp & links",
+                    "Phone numbers, web links and e-mails in a note show as chips under the title: tap a number to Call, WhatsApp, "
+                    + "text or save it. A reminder like “call Rahul at 6” gets a Call button on its notification."},
+            {"🔗", "Linked notes",
+                    "Type [[ and pick a note to link it, or write [[Any name]] to make a new one. Tap the 🔗 chip to open it; "
+                    + "the other note shows ↩ back to this one."},
+            {"🗂", "Outline & to-do roll-over",
+                    "Start lines with #, ## or ### for headings; ⋮ → Outline folds them and jumps to any part. "
+                    + "Unticked ☐ in older #todo notes move to today's “To-do” note each morning (Settings → Reminders)."},
             {"🔁", "Repeating reminders",
                     "“gym every Monday at 6 am”, “take medicine every day at 9 pm”, “pay rent on the 1st of every month”, "
                     + "“drink water every 2 hours”, “birthday every year on 12 Nov”. After each one rings, the next is set by itself."},

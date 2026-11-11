@@ -1,6 +1,6 @@
-• Home-screen widgets: quick buttons (note, list, voice, scan), Today (reminders + things to do, tick them right there), a checklist you can tick, and a countdown to a reminder
-• Quick capture: long-press the Note icon for New note / New checklist / Voice note / Scan, or add the "New note" tile to your quick settings
-• Voice notes: tap 🎤 on the formatting bar and speak, Note types it (and finds reminders in it); pick Hindi or Bengali in Settings → Smart writing
-• Read aloud: ⋮ → Read aloud reads the note to you
-• Today page: tap "☀ Today" on the home screen for today's reminders, everything still unticked and pinned notes
-• Morning brief: one quiet notification each morning with today's plan (Settings → Reminders to change the time or turn it off)
+• Smart calculator: GST, discount, tip, split the bill, EMI, interest, units (ft, kg, litre, bigha, °C…) and dates — end the line with =
+• Write reminders the way you talk: “kal subah 7 baje gym”, “parso shaam 6 baje call mama”, “har roz raat 10 baje dawai”
+• Birthdays & anniversaries repeat every year; warranty / expiry dates remind you a week before; chips show “in 12 days”
+• Phone numbers, links and e-mails become chips: Call, WhatsApp, SMS, save contact; “call Rahul at 6” gets a Call button on the notification
+• Linked notes: type [[ to link another note, tap to jump; the other note shows a link back
+• Outline: # ## ### headings, ⋮ → Outline to fold and jump; unfinished #todo items move to today's To-do note each morning

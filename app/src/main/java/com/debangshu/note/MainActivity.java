@@ -53,6 +53,12 @@ public class MainActivity extends Activity {
         Updater.cleanUpAfterUpdate(this);
         ReminderSync.runInBackground(() -> Media.deleteUnused(this, store.usedMedia()), null);
         ReminderSync.runInBackground(() -> store.purgeTrash(), null);   // recycle bin keeps notes 30 days
+        ReminderSync.runInBackground(() -> {
+            int n = RollOver.run(this);
+            if (n > 0) runOnUiThread(() -> android.widget.Toast.makeText(this,
+                    n + (n == 1 ? " unfinished to-do" : " unfinished to-dos") + " moved to " + RollOver.todayTitle(System.currentTimeMillis()),
+                    android.widget.Toast.LENGTH_LONG).show());
+        }, this::refresh);
 
         list = findViewById(R.id.list);
         grid = findViewById(R.id.grid);
@@ -584,6 +590,8 @@ public class MainActivity extends Activity {
             String when = r.hasTime ? DateUtils.formatDateTime(MainActivity.this, r.time, DateUtils.FORMAT_SHOW_TIME) : "Any time";
             if (r.time < System.currentTimeMillis() || r.done) when = Notifier.formatWhen(MainActivity.this, r);
             if (r.repeats()) when = "🔁 " + DateParser.describe(r.repeat) + " · next " + Notifier.formatWhen(MainActivity.this, r);
+            int days = Widgets.daysUntil(r.time);
+            if (!r.done && days >= 2) when += "  ·  ⏳ in " + days + " days";
             sub.setText(when + (n != null ? "  ·  " + n.displayTitle() : ""));
             if (r.done) title.setPaintFlags(title.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
             else title.setPaintFlags(title.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);

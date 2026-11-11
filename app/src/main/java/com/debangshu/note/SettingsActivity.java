@@ -186,6 +186,12 @@ public class SettingsActivity extends Activity {
             store.prefs().edit().putBoolean(Brief.P_ON, on).apply();
             Brief.schedule(this);
         });
+        Switch ro = findViewById(R.id.sw_rollover);
+        ro.setChecked(RollOver.on(this));
+        ro.setOnCheckedChangeListener((x, on) -> {
+            store.prefs().edit().putBoolean(RollOver.P_ON, on).apply();
+            if (on) ReminderSync.runInBackground(() -> RollOver.run(this), null);
+        });
         findViewById(R.id.row_brief_time).setOnClickListener(v -> new TimePickerDialog(this, (tp, h, m) -> {
             store.prefs().edit().putInt(Brief.P_HOUR, h).putInt(Brief.P_MIN, m).apply();
             Brief.schedule(this);

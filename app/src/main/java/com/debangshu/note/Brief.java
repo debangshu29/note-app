@@ -35,6 +35,7 @@ public final class Brief {
 
     public static class Receiver extends BroadcastReceiver {
         @Override public void onReceive(Context c, Intent i) {
+            RollOver.run(c);
             show(c);
             schedule(c);
             Widgets.updateAll(c);
