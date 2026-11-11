@@ -320,7 +320,11 @@ public final class Store {
         } catch (Exception ignored) { }
     }
 
+    /** Goes up every time notes are saved (the price book uses it to know when to look again). */
+    public static volatile int changes = 0;
+
     private void saveNotes() {
+        changes++;
         Widgets.changed(app);
         try {
             JSONArray arr = new JSONArray();

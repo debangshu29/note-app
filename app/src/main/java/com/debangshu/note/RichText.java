@@ -125,6 +125,20 @@ public final class RichText {
         return arr;
     }
 
+    /** {@code by} characters were inserted at {@code at}: moves the saved formatting after it along. */
+    public static void shiftSpans(JSONArray spans, int at, int by) {
+        if (spans == null) return;
+        for (int i = 0; i < spans.length(); i++) {
+            JSONObject o = spans.optJSONObject(i);
+            if (o == null) continue;
+            try {
+                int a = o.optInt("s"), b = o.optInt("e");
+                if (a >= at) o.put("s", a + by);
+                if (b > at || (b == at && a >= at)) o.put("e", b + by);
+            } catch (Exception ignored) { }
+        }
+    }
+
     public static void apply(Spannable s, JSONArray spans) {
         if (spans == null) return;
         int len = s.length();

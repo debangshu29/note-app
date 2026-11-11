@@ -421,6 +421,26 @@ public class TextBlockController {
                 }
             }
         }
+        if (ghost == null && store.setting(Store.S_LIST_TOTALS) && et.hasFocus()) {
+            // price memory: "milk" on a list → last time's price in grey
+            int cur = et.getSelectionStart();
+            Editable e = et.getText();
+            if (cur > 0 && cur == et.getSelectionEnd() && (cur == e.length() || e.charAt(cur) == '\n')) {
+                String[] lines = e.toString().split("\n", -1);
+                int li = lineIndex(e, cur);
+                String line = lines[li];
+                String bare = line.trim().replaceFirst("^(?:[-*•☐☑]|\\d{1,3}[.)])\\s*", "");
+                boolean listy = line.trim().matches("^(?:[-*•☐☑]|\\d{1,3}[.)]).*")
+                        || (li > 0 && ListTotals.price(lines[li - 1]) != null);
+                if (listy && bare.length() >= 2 && !bare.matches(".*\\d.*") && bare.matches(".*\\p{L}$|.*\\p{L}\\s$")) {
+                    PriceBook.Entry pe = PriceBook.get(store).find(line);
+                    if (pe != null) {
+                        ghost = (line.endsWith(" ") ? "" : " ") + ListTotals.money(pe.price, true);
+                        ghostKind = G_MATH;
+                    }
+                }
+            }
+        }
         if (ghost == null && store.setting(Store.S_MATH_SUGGEST) && et.hasFocus()) {
             int cur = et.getSelectionStart();
             Editable e = et.getText();

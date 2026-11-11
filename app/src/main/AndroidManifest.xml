@@ -99,6 +99,11 @@
             android:label="Today" />
 
         <activity
+            android:name=".MoneyActivity"
+            android:exported="false"
+            android:label="Money" />
+
+        <activity
             android:name=".WidgetSetupActivity"
             android:exported="true"
             android:excludeFromRecents="true"

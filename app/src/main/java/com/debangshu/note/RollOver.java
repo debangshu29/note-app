@@ -43,8 +43,12 @@ public final class RollOver {
         long startOfToday = c.getTimeInMillis();
         String title = todayTitle(now);
 
-        Note today = null;
-        for (Note n : s.notes()) if (n.deleted == 0 && title.equalsIgnoreCase(n.title.trim())) { today = n; break; }
+        Note today = null;   // today's to-do note, made by the template or by an earlier roll-over
+        for (Note n : s.notes()) {
+            if (n.deleted > 0 || n.locked) continue;
+            String nt = n.title.trim();
+            if (title.equalsIgnoreCase(nt) || (nt.toLowerCase(Locale.ROOT).startsWith("to-do") && n.created >= startOfToday)) { today = n; break; }
+        }
 
         List<String> moved = new ArrayList<>();
         for (Note n : new ArrayList<>(s.notes())) {

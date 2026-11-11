@@ -118,6 +118,7 @@ public final class DateParser {
     public static Result parse(String line, Calendar now, int defaultHour, int defaultMinute) {
         if (line == null) return null;
         line = hinglish(line);
+        line = billRepeat(line);
         String orig = line;
         if (orig.trim().length() < 3) return null;
         String low = orig.toLowerCase(Locale.ROOT);
@@ -435,6 +436,27 @@ public final class DateParser {
             {"shukravaar|shukravar|shukrawar|shukrabar|shukrobar", "friday"}, {"shanivaar|shanivar|shaniwar|shanibar|shonibar", "saturday"},
             {"ravivaar|ravivar|raviwar|itvaar|itwar|rabibar|robibar", "sunday"}};
 
+
+    private static final Pattern P_BILL_DAY = Pattern.compile(
+            "(?i)\\b(?:on|due(?:\\s+on)?|by|before|every)\\s+(?:the\\s+)?(\\d{1,2})(?:st|nd|rd|th)?\\b(?!\\s*(?:of\\s+)?" + MONTHS + ")(?!\\s*(?:am|pm|a\\.m|p\\.m|:|\\.\\d))");
+
+    /**
+     * Bills and subscriptions: "Netflix ₹649/month on 5th" → "Netflix ₹649 every month on the 5th",
+     * "LIC 24000 per year due 10 Mar" → "... due 10 Mar every year". Without a day it is not a reminder.
+     */
+    static String billRepeat(String line) {
+        String[] mk = Money.repeatMarker(line);
+        if (mk == null) return line;
+        String rest = mk[0];
+        if (mk[1].equals("month")) {
+            Matcher d = P_BILL_DAY.matcher(rest);
+            if (d.find()) return rest.substring(0, d.start()) + " every month on the " + d.group(1) + "th" + rest.substring(d.end());
+        }
+        Result r = parse(rest);
+        if (r == null || !r.repeat.isEmpty()) return rest;
+        return rest + (mk[1].equals("month") ? " every month" : mk[1].equals("year") ? " every year" : " every week");
+    }
+
     /** Turns Hinglish / Bengali time words into English ones the rest of the parser knows. */
     static String hinglish(String line) {
         String l = line;
@@ -598,7 +620,7 @@ public final class DateParser {
         s = s.replaceAll("(?i)\\b(?:yaad\\s+(?:dila|kara)\\w*(?:\\s+(?:dena|do|diyo|dijiye|na))?|remind\\s+kar\\w*(?:\\s+(?:dena|do))?|mujhe|mujhko)\\b", " ")
                 .replaceAll("[ \\t]{2,}", " ").trim();
         String before;
-        do { before = s; s = s.replaceAll("(?i)\\s+(?:ko|hai|hain|karna|karni|karo|dena|hoga|ke liye|ki|ka|ke|na)$", "").trim(); } while (!s.equals(before));
+        do { before = s; s = s.replaceAll("(?i)\\s+(?:ko|hai|hain|karna|karni|karo|dena|hoga|ke liye|ki|ka|ke|na|due on|due)$", "").trim(); } while (!s.equals(before));
         String prev;
         do { prev = s; s = P_EDGE_WORDS.matcher(s).replaceAll("").trim(); } while (!s.equals(prev));
         s = s.replaceAll("\\s+([,.!?])", "$1").replaceAll("^[,.;:\\-\\s]+|[,;:\\-\\s]+$", "").trim();

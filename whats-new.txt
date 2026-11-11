@@ -1,6 +1,6 @@
-• Smart calculator: GST, discount, tip, split the bill, EMI, interest, units (ft, kg, litre, bigha, °C…) and dates — end the line with =
-• Write reminders the way you talk: “kal subah 7 baje gym”, “parso shaam 6 baje call mama”, “har roz raat 10 baje dawai”
-• Birthdays & anniversaries repeat every year; warranty / expiry dates remind you a week before; chips show “in 12 days”
-• Phone numbers, links and e-mails become chips: Call, WhatsApp, SMS, save contact; “call Rahul at 6” gets a Call button on the notification
-• Linked notes: type [[ to link another note, tap to jump; the other note shows a link back
-• Outline: # ## ### headings, ⋮ → Outline to fold and jump; unfinished #todo items move to today's To-do note each morning
+• Money page (home ⚙ → Money): spending for each month, who owes you and whom you owe, bills & subscriptions, and a price book
+• Price memory: on a list, type “milk” and last time's price appears in grey — tap to keep it
+• Split with friends: “Rahul paid 1200”, “I paid 800”, “split between me, Rahul, Amit” → a 🤝 chip shows who pays whom
+• Lend & borrow: “gave Rahul 500”, “borrowed 200 from mom”, “Rahul ko 500 diye” — tick the line when settled; remind me to ask
+• Bills: “Netflix ₹649/month on 5th”, “rent 15000 pm due on 1st” remind you every month and add up to a monthly total
+• Scan a bill: ＋ → Scan a bill turns a shop bill into a price list with its total

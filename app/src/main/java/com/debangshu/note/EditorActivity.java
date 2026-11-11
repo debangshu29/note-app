@@ -429,6 +429,22 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             Note target = findNoteByTitle(t);
             smartChip(inf, (target == null ? "＋ " : "🔗 ") + t, () -> openLinked(t));
         }
+        // money: split, lend & borrow, bills
+        String plain = currentPlain();
+        Money.Split sp = Money.split(plain);
+        if (sp != null) smartChip(inf, "🤝 Split " + ListTotals.money(sp.total, true) + " · " + sp.people(), () -> splitSheet());
+        java.util.Map<String, Double> bal = Money.balances(java.util.Arrays.asList(plain.split("\n")));
+        for (java.util.Map.Entry<String, Double> e : bal.entrySet()) {
+            if (Math.abs(e.getValue()) < 0.5) continue;
+            String m = ListTotals.money(Math.abs(e.getValue()), true);
+            smartChip(inf, e.getValue() > 0 ? "💸 " + e.getKey() + " owes you " + m : "💸 You owe " + e.getKey() + " " + m,
+                    () -> startActivity(new Intent(this, MoneyActivity.class)));
+        }
+        double perMonth = 0;
+        for (String l : plain.split("\n")) { Money.Bill b = Money.bill(l); if (b != null && !l.trim().startsWith("☑")) perMonth += b.perMonth; }
+        if (perMonth > 0) smartChip(inf, "📅 ≈ " + ListTotals.money(perMonth, true) + " a month",
+                () -> startActivity(new Intent(this, MoneyActivity.class)));
+
         // notes that link here
         if (note != null && !note.displayTitle().isEmpty()) {
             String me = note.displayTitle();
@@ -439,6 +455,69 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                 }
             }
         }
+    }
+
+    /** Who paid what, each person's share, and who pays whom; can write the result into the note. */
+    private void splitSheet() {
+        Money.Split sp = Money.split(currentPlain());
+        if (sp == null) return;
+        StringBuilder msg = new StringBuilder();
+        for (java.util.Map.Entry<String, Double> e : sp.paid.entrySet()) {
+            double diff = e.getValue() - sp.share;
+            msg.append(e.getKey().equals("Me") ? "You" : e.getKey()).append(" paid ").append(ListTotals.money(e.getValue(), true));
+            if (Math.abs(diff) >= 0.01) msg.append(diff > 0 ? "  (gets back " : "  (owes ").append(ListTotals.money(Math.abs(diff), true)).append(")");
+            msg.append("\n");
+        }
+        msg.append("\nTotal ").append(ListTotals.money(sp.total, true)).append(" ÷ ").append(sp.people())
+                .append(" = ").append(ListTotals.money(sp.share, true)).append(" each\n\n");
+        if (sp.transfers.isEmpty()) msg.append("Everyone is even ✓");
+        for (String[] t : sp.transfers) {
+            msg.append(t[0].equals("Me") ? "You" : t[0]).append(" → ").append(t[1].equals("Me") ? "you" : t[1]).append("   ")
+                    .append(ListTotals.money(Double.parseDouble(t[2]), true)).append("\n");
+        }
+        boolean already = currentPlain().contains("Settle up (");
+        new Ui.Popup(this).setTitle("🤝 Split").setMessage(msg.toString().trim())
+                .setPositiveButton(already ? "Update in note" : "Add to note", (d, w) -> writeSettle(Money.settleText(sp)))
+                .setNeutralButton("Share", (d, w) -> {
+                    Intent i = new Intent(Intent.ACTION_SEND);
+                    i.setType("text/plain");
+                    i.putExtra(Intent.EXTRA_TEXT, Money.settleText(sp).replace("☐ ", "• ").replace("☑ ", "• "));
+                    startActivity(Intent.createChooser(i, "Share"));
+                })
+                .setNegativeButton("Close", null).show();
+    }
+
+    /** Puts the settle-up lines at the end of the note, or replaces the ones written before. */
+    private void writeSettle(String text) {
+        for (Holder h : holders) {
+            if (h.tc == null) continue;
+            Editable e = h.tc.et.getText();
+            String t = e.toString();
+            int at = t.indexOf("Settle up (");
+            if (at < 0) continue;
+            int ls = t.lastIndexOf('\n', at - 1) + 1;
+            int end = t.indexOf('\n', at);
+            if (end < 0) end = t.length();
+            while (end < t.length()) {
+                int next = t.indexOf('\n', end + 1);
+                if (next < 0) next = t.length();
+                String l = t.substring(end + 1, next);
+                if (!l.contains("→") && !l.contains("Everyone is even")) break;
+                end = next;
+            }
+            e.replace(ls, end, text);
+            onEdited();
+            Toast.makeText(this, "Settle-up updated", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Holder last = null;
+        for (Holder h : holders) if (h.tc != null) last = h;
+        if (last == null) return;
+        Editable e = last.tc.et.getText();
+        String t = e.toString();
+        e.append(t.isEmpty() ? "" : t.endsWith("\n\n") ? "" : t.endsWith("\n") ? "\n" : "\n\n").append(text);
+        onEdited();
+        Toast.makeText(this, "Added to the note", Toast.LENGTH_SHORT).show();
     }
 
     private void smartChip(LayoutInflater inf, String text, Runnable onTap) {
@@ -1546,14 +1625,16 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     // ======================================================================================= insert menu
 
     private void insertMenu() {
-        String[] items = {"📷  Take photo", "🖼  Photo from gallery", "🧾  Scan document", "📄  PDF pages",
+        String[] items = {"📷  Take photo", "🖼  Photo from gallery", "📑  Scan document", "🧾  Scan a bill → price list", "📄  PDF pages",
                 "✏️  Drawing", "🗒  Sticky note", "▦  Table", "⤵  New page (page break)", "🎤  Voice note (speak to type)"};
-        new Ui.Popup(this).setTitle("Insert").setItems(items, (d, w) -> {
+        new Ui.Popup(this).setTitle("Insert").setItems(items, (d, which) -> {
             pendingReplace = null;
+            billScan = which == 3;
+            if (which == 2 || which == 3) { DocScan.start(this); return; }
+            int w = which > 3 ? which - 1 : which;   // the list before "Scan a bill" was added
             switch (w) {
                 case 0: takePhoto(); break;
                 case 1: pickFromGallery(); break;
-                case 2: DocScan.start(this); break;
                 case 3: pickPdf(); break;
                 case 4: openDrawing(null, -1); break;
                 case 5: pickStickyColor(0, c -> {
@@ -1644,7 +1725,11 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         }
         if (req == DocScan.REQ_SCAN) {
             List<Uri> pages = DocScan.pages(res, data);
-            if (!pages.isEmpty()) importPictures(pages, "scan", replace);
+            boolean bill = billScan;
+            billScan = false;
+            if (pages.isEmpty()) return;
+            if (bill) readBill(pages);
+            else importPictures(pages, "scan", replace);
             return;
         }
         if (res != RESULT_OK) return;
@@ -1757,6 +1842,50 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                 });
             }).start();
         }).show();
+    }
+
+    private boolean billScan;
+
+    /** Scan a bill: reads the shop bill, writes it as a price list (with its total), then adds the picture. */
+    private void readBill(List<Uri> pages) {
+        Toast.makeText(this, "Reading the bill…", Toast.LENGTH_SHORT).show();
+        new Thread(() -> {
+            StringBuilder rows = new StringBuilder();
+            String shop = null, error = null;
+            for (Uri u : pages) {
+                try {
+                    String r = TextImporter.ocrRows(this, u);
+                    if (shop == null) {
+                        for (String l : r.split("\n")) {
+                            String t = l.trim();
+                            if (t.matches(".*\\p{L}{3,}.*") && !t.matches(".*\\d{3,}.*")) { shop = t; break; }
+                        }
+                    }
+                    rows.append(r).append("\n");
+                } catch (Exception e) {
+                    error = e.getMessage();
+                }
+            }
+            Money.ScannedBill b = Money.readBill(rows.toString());
+            final String err = error, shopName = shop, raw = rows.toString().trim();
+            runOnUiThread(() -> {
+                List<Block> l = new ArrayList<>();
+                if (b.items.isEmpty()) {
+                    if (raw.isEmpty()) {
+                        Toast.makeText(this, err != null ? err : "Couldn't read the bill", Toast.LENGTH_LONG).show();
+                    } else {
+                        l.add(Block.text(raw));
+                        Toast.makeText(this, "No prices found — added the text of the bill instead", Toast.LENGTH_LONG).show();
+                    }
+                } else {
+                    String head = shopName == null ? "" : shopName.length() > 40 ? shopName.substring(0, 40) : shopName;
+                    l.add(Block.text(Money.billText(b, head.isEmpty() ? "" : "🧾 " + head)));
+                    Toast.makeText(this, b.items.size() + " items · " + ListTotals.money(b.sum, true), Toast.LENGTH_LONG).show();
+                }
+                if (!l.isEmpty()) insertBlocks(l);
+                importPictures(pages, "bill", null);
+            });
+        }).start();
     }
 
     /** Reads the text in pictures (on the phone) and adds it after them. */

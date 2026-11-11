@@ -83,6 +83,53 @@ public final class TextImporter {
         return recognizer;
     }
 
+    /**
+     * Reads a picture and puts words that sit on the same line back together, left to right
+     * ("Milk ....... 60.00" stays one row even when the reader sees two columns). For shop bills.
+     */
+    public static String ocrRows(Context ctx, Uri uri) throws Exception {
+        Text t;
+        try {
+            t = Tasks.await(recognizer().process(InputImage.fromFilePath(ctx, uri)), 60, TimeUnit.SECONDS);
+        } catch (java.util.concurrent.ExecutionException e) {
+            throw new Exception("The text reader is still being set up by Google Play services. Please try again in a minute.");
+        }
+        java.util.List<Text.Line> lines = new java.util.ArrayList<>();
+        java.util.List<String> noBox = new java.util.ArrayList<>();
+        if (t.getTextBlocks() != null) {
+            for (Text.TextBlock b : t.getTextBlocks()) {
+                if (b.getLines() == null) continue;
+                for (Text.Line l : b.getLines()) {
+                    if (l.getBoundingBox() == null) noBox.add(l.getText());
+                    else lines.add(l);
+                }
+            }
+        }
+        java.util.Collections.sort(lines, (a, b) -> Integer.compare(a.getBoundingBox().centerY(), b.getBoundingBox().centerY()));
+        StringBuilder sb = new StringBuilder();
+        java.util.List<Text.Line> row = new java.util.ArrayList<>();
+        float rowY = 0, rowH = 0;
+        for (Text.Line l : lines) {
+            android.graphics.Rect r = l.getBoundingBox();
+            if (!row.isEmpty() && Math.abs(r.centerY() - rowY) > Math.max(6, Math.min(rowH, r.height()) * 0.55f)) {
+                flushRow(sb, row);
+            }
+            if (row.isEmpty()) { rowY = r.centerY(); rowH = r.height(); }
+            row.add(l);
+        }
+        flushRow(sb, row);
+        for (String s : noBox) sb.append(s).append('\n');
+        return sb.toString().trim();
+    }
+
+    private static void flushRow(StringBuilder sb, java.util.List<Text.Line> row) {
+        if (row.isEmpty()) return;
+        java.util.Collections.sort(row, (a, b) -> Integer.compare(a.getBoundingBox().left, b.getBoundingBox().left));
+        for (int i = 0; i < row.size(); i++) { if (i > 0) sb.append("  "); sb.append(row.get(i).getText()); }
+        sb.append('\n');
+        row.clear();
+    }
+
     private static String ocr(InputImage image) throws Exception {
         try {
             Text t = Tasks.await(recognizer().process(image), 60, TimeUnit.SECONDS);

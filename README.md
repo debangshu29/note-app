@@ -112,6 +112,16 @@ The `Documents/Note` folder stays even if you uninstall the app, so your backups
 - App lock (fingerprint / PIN)
 - More automatic actions: phone numbers → tap to call, amounts → running total, links → open
 
+## New in 3.4
+
+- **Money page** (`MoneyActivity`, home ⚙ → Money, also a card on Today): spending per month for the last 6 months (price lists in notes, by the month the note was made; ☑-only in checklists; #budget / #plan notes left out), grouped by label or note title; lend & borrow balances per person (remind me to ask, mark settled, message); bills & subscriptions with a monthly total; the price book.
+- **Parsing** lives in `Money` (plain Java, tested by `MoneyTest`): debts (English + Hinglish), split + settle-up, bills (/month, pm, per year, /week), item names, spending lines and scanned bills.
+- **Price memory** (`PriceBook`): last price per item, rebuilt when notes change; a grey ghost price on list lines.
+- **Split chip** in the editor → who pays whom → "Add to note" writes or updates a "Settle up" block.
+- **Bills** become monthly / yearly reminders when a day is written (`DateParser.billRepeat`).
+- **Scan a bill**: ML Kit text lines regrouped into rows by position (`TextImporter.ocrRows`) → `Money.readBill` (skips total, tax, payment and header lines) → price list + the photo.
+- New templates: Split with friends, Bills & subscriptions, Lend & borrow.
+
 ## New in 3.3
 
 - **Smart calculator** (`SmartCalc`): GST incl./excl., discount, tip, %, split, EMI, simple / compound interest, units (length, weight, volume, area incl. bigha / katha, time, data, speed, temperature) and date maths. Ends with `=` like normal math.

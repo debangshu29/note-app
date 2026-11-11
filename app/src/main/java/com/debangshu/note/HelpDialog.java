@@ -34,6 +34,16 @@ public final class HelpDialog {
             {"🧾", "Price lists add up",
                     "Write items with prices, one per line (apple 50 rs, banana 20, milk ₹60, mango 3 x 40). "
                     + "The total appears under the list and keeps itself correct. With ☐ ☑ it shows what's bought and what's left."},
+            {"💰", "Money",
+                    "Home → ⚙ → Money: what you spent each month (from the prices in your notes), who owes whom, and bills. "
+                    + "“gave Rahul 500”, “borrowed 200 from mom”, “Netflix ₹649/month on 5th” (a reminder every month). "
+                    + "On a list, Note fills in last time's price in grey — tap it to keep it."},
+            {"🤝", "Split with friends",
+                    "Write “Rahul paid 1200”, “I paid 800”, “split between me, Rahul, Amit”. The 🤝 chip shows who pays whom "
+                    + "and can add the settle-up to the note."},
+            {"🧾", "Scan a bill",
+                    "＋ → Scan a bill: the shop bill becomes a price list with its total (tax and total lines are skipped), "
+                    + "and the photo is kept under it."},
             {"⏰", "Reminders that fit the note",
                     "“wake me up at 6 am tomorrow” → a real alarm. “call mom at 5 pm on 12 Nov” → your calendar + one notification. "
                     + "“buy milk at 8 pm” → just one notification. Tap the chip under the note to change it."},

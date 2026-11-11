@@ -133,6 +133,20 @@ public class TodayActivity extends Activity {
             }
         }
 
+        // ---- money this month
+        List<MoneyActivity.Month> months = MoneyActivity.months(store, 1);
+        double spent = months.isEmpty() ? 0 : months.get(0).total;
+        int owe = MoneyActivity.people(store).size();
+        if (spent > 0 || owe > 0) {
+            LinearLayout mc = card("💰", "Money", (spent > 0 ? "Spent " + ListTotals.money(spent, true) + " this month" : "This month")
+                    + (owe > 0 ? " · " + owe + (owe == 1 ? " person" : " people") + " to settle with" : ""));
+            TextView open = text("Open Money  ›", 14, Ui.BOLD, Ui.col(this, R.color.accent));
+            open.setPadding(px(4), px(10), 0, px(2));
+            open.setOnClickListener(v -> startActivity(new Intent(this, MoneyActivity.class)));
+            mc.addView(open);
+            mc.setOnClickListener(v -> startActivity(new Intent(this, MoneyActivity.class)));
+        }
+
         // ---- pinned notes
         List<Note> pinned = new ArrayList<>();
         for (Note n : store.notes()) if (n.pinned) pinned.add(n);
