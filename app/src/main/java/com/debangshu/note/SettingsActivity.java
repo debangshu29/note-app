@@ -11,7 +11,9 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.view.ViewGroup;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -99,6 +101,8 @@ public class SettingsActivity extends Activity {
         });
         findViewById(R.id.row_export).setOnClickListener(v -> startExport());
         findViewById(R.id.row_import).setOnClickListener(v -> startImport());
+        findViewById(R.id.row_backup_pw).setOnClickListener(v -> backupPasswordDialog());
+        findViewById(R.id.row_places).setOnClickListener(v -> startActivity(new Intent(this, PlacesActivity.class)));
         findViewById(R.id.row_help).setOnClickListener(v -> HelpDialog.show(this));
         findViewById(R.id.row_delete_all).setOnClickListener(v -> confirmDeleteAll());
         findViewById(R.id.row_trash).setOnClickListener(v -> startActivity(new Intent(this, TrashActivity.class)));
@@ -273,6 +277,9 @@ public class SettingsActivity extends Activity {
     }
 
     private void updateTexts() {
+        ((TextView) findViewById(R.id.txt_backup_pw)).setText(store.backupProtected()
+                ? "On — backups (.note files) open only with your password"
+                : "Off — anyone with a backup file can read it. Tap to set a password.");
         java.util.Calendar bt = java.util.Calendar.getInstance();
         bt.set(java.util.Calendar.HOUR_OF_DAY, Brief.hour(this));
         bt.set(java.util.Calendar.MINUTE, Brief.minute(this));
@@ -415,9 +422,9 @@ public class SettingsActivity extends Activity {
     private void startExport() {
         Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         i.addCategory(Intent.CATEGORY_OPENABLE);
-        i.setType("application/zip");
+        i.setType(store.backupMime());
         i.putExtra(Intent.EXTRA_TITLE, "note-backup-"
-                + new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(new Date()) + ".zip");
+                + new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(new Date()) + "." + store.backupExtension());
         startActivityForResult(i, REQ_EXPORT);
     }
 
@@ -436,7 +443,7 @@ public class SettingsActivity extends Activity {
         Uri uri = data.getData();
         if (req == REQ_EXPORT) {
             try (OutputStream out = getContentResolver().openOutputStream(uri, "wt")) {
-                store.exportZip(out);
+                store.exportBackup(out);
                 Toast.makeText(this, "Backup saved", Toast.LENGTH_LONG).show();
             } catch (Exception e) {
                 Toast.makeText(this, "Could not save backup: " + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -447,14 +454,99 @@ public class SettingsActivity extends Activity {
                 byte[] b = new byte[8192];
                 int n;
                 while ((n = in.read(b)) > 0) buf.write(b, 0, n);
-                int added = store.importBackup(buf.toByteArray());
-                for (Note note : store.notes()) ReminderSync.syncAsync(this, note.id, null);
-                Toast.makeText(this, added + " notes restored", Toast.LENGTH_LONG).show();
-                updateTexts();
+                byte[] bytes = buf.toByteArray();
+                if (BackupCrypt.isEncrypted(bytes)) askBackupPassword(bytes);
+                else restore(bytes);
             } catch (Exception e) {
                 Toast.makeText(this, "That file is not a Note backup", Toast.LENGTH_LONG).show();
             }
         }
+    }
+
+    private void restore(byte[] data) {
+        try {
+            int added = store.importBackup(data);
+            for (Note note : store.notes()) ReminderSync.syncAsync(this, note.id, null);
+            Toast.makeText(this, added + " notes restored", Toast.LENGTH_LONG).show();
+            updateTexts();
+        } catch (Exception e) {
+            Toast.makeText(this, "That file is not a Note backup", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private EditText passwordField(String hint) {
+        EditText et = new EditText(this);
+        et.setHint(hint);
+        et.setSingleLine(true);
+        et.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        return et;
+    }
+
+    private void askBackupPassword(byte[] data) {
+        EditText pw = passwordField("Backup password");
+        LinearLayout box = new LinearLayout(this);
+        int pad = (int) (20 * getResources().getDisplayMetrics().density);
+        box.setPadding(pad, 0, pad, 0);
+        box.addView(pw, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        new Ui.Popup(this).setTitle("🔐 Protected backup").setMessage("This backup is locked. Type the password it was saved with.")
+                .setView(box)
+                .setPositiveButton("Open", (d, w) -> {
+                    String p = pw.getText().toString();
+                    Toast.makeText(this, "Opening…", Toast.LENGTH_SHORT).show();
+                    new Thread(() -> {
+                        byte[] plain = null;
+                        String err = null;
+                        try { plain = BackupCrypt.decrypt(data, p.toCharArray()); }
+                        catch (BackupCrypt.WrongPassword e) { err = "Wrong password"; }
+                        catch (Exception e) { err = "That file is not a Note backup"; }
+                        final byte[] pl = plain;
+                        final String er = err;
+                        runOnUiThread(() -> {
+                            if (pl != null) restore(pl);
+                            else if ("Wrong password".equals(er)) {
+                                Toast.makeText(this, "Wrong password — try again", Toast.LENGTH_LONG).show();
+                                askBackupPassword(data);
+                            } else Toast.makeText(this, er, Toast.LENGTH_LONG).show();
+                        });
+                    }).start();
+                })
+                .setNegativeButton("Cancel", null).show();
+    }
+
+    private void backupPasswordDialog() {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        int pad = (int) (20 * getResources().getDisplayMetrics().density);
+        box.setPadding(pad, 0, pad, 0);
+        EditText a = passwordField("New password (6 or more letters)");
+        EditText b = passwordField("Type it again");
+        box.addView(a);
+        box.addView(b);
+        Ui.Popup p = new Ui.Popup(this);
+        p.setTitle(store.backupProtected() ? "Change backup password" : "Protect backups with a password")
+                .setMessage("Backups — the automatic ones and the ones you export — will be locked (AES-256). "
+                        + "You need this password to restore them, also on a new phone.\n\n⚠ If you forget it, nobody can open those backups.")
+                .setView(box)
+                .setPositiveButton("Save", (d, w) -> {
+                    String x = a.getText().toString(), y = b.getText().toString();
+                    if (x.length() < 6) { Toast.makeText(this, "Use at least 6 letters or numbers", Toast.LENGTH_LONG).show(); return; }
+                    if (!x.equals(y)) { Toast.makeText(this, "The two passwords are different", Toast.LENGTH_LONG).show(); return; }
+                    try {
+                        store.setBackupPassword(x);
+                        Toast.makeText(this, "Backups are now password-protected", Toast.LENGTH_LONG).show();
+                        ReminderSync.runInBackground(() -> AppFolder.autoBackup(this, true), null);
+                    } catch (Exception e) {
+                        Toast.makeText(this, "Couldn't set it: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                    updateTexts();
+                })
+                .setNegativeButton("Cancel", null);
+        if (store.backupProtected()) p.setNeutralButton("Turn off", (d, w) -> {
+            try { store.setBackupPassword(null); } catch (Exception ignored) { }
+            Toast.makeText(this, "Backups are no longer protected", Toast.LENGTH_SHORT).show();
+            updateTexts();
+        });
+        p.show();
     }
 
     // ------------------------------------------------------------------ delete everything

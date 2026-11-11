@@ -11,6 +11,7 @@ public class BootReceiver extends BroadcastReceiver {
         ReminderSync.rescheduleAll(ctx);
         Brief.schedule(ctx);
         Habits.schedule(ctx);
+        Geo.resync(ctx);   // the phone forgets watched places when it restarts
         Widgets.updateAll(ctx);
         // right after an update: delete the downloaded installer file
         if (Intent.ACTION_MY_PACKAGE_REPLACED.equals(intent.getAction())) Updater.cleanUpAfterUpdate(ctx);

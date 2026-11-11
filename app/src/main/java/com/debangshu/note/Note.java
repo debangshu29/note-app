@@ -128,6 +128,8 @@ public class Note {
         if (!first.isEmpty()) return first;
         if (count(Block.IMAGE) > 0) return "Picture note";
         if (count(Block.TABLE) > 0) return "Table";
+        if (count(Block.AUDIO) > 0) return "Voice recording";
+        if (blocks != null) for (Block x : blocks) if (Block.FILE.equals(x.type) && !x.name.isEmpty()) return x.name;
         return "Untitled note";
     }
 
@@ -168,7 +170,7 @@ public class Note {
         boolean noText = (title == null || title.trim().isEmpty())
                 && (body == null || body.replaceAll("[☐☑•\\-*\\s]", "").isEmpty());
         if (!noText) return false;
-        if (blocks != null) for (Block b : blocks) if (Block.IMAGE.equals(b.type) || Block.TABLE.equals(b.type)) return false;
+        if (blocks != null) for (Block b : blocks) if (Block.IMAGE.equals(b.type) || Block.TABLE.equals(b.type) || b.isAttachment()) return false;
         return true;
     }
 }

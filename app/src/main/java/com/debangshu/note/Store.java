@@ -210,6 +210,8 @@ public final class Store {
         prefs().edit().clear().apply();
         app.getSharedPreferences("study", Context.MODE_PRIVATE).edit().clear().apply();
         Habits.deleteAll(app);
+        PhotoText.deleteAll(app);
+        Geo.deleteAll(app);
         Media.deleteAll(app);
     }
 
@@ -225,6 +227,36 @@ public final class Store {
         for (Reminder x : reminders) r.put(x.toJson());
         root.put("reminders", r);
         return root.toString(2);
+    }
+
+    // ---- password-protected backups: the key made from the password is kept in the app's private settings
+
+    public static final String P_BK_KEY = "bk_key", P_BK_SALT = "bk_salt";
+
+    public boolean backupProtected() { return prefs().getString(P_BK_KEY, null) != null; }
+
+    public void setBackupPassword(String password) throws Exception {
+        if (password == null || password.isEmpty()) {
+            prefs().edit().remove(P_BK_KEY).remove(P_BK_SALT).apply();
+            return;
+        }
+        byte[] salt = BackupCrypt.newSalt();
+        byte[] key = BackupCrypt.key(password.toCharArray(), salt, BackupCrypt.ROUNDS);
+        prefs().edit().putString(P_BK_KEY, android.util.Base64.encodeToString(key, android.util.Base64.NO_WRAP))
+                .putString(P_BK_SALT, android.util.Base64.encodeToString(salt, android.util.Base64.NO_WRAP)).apply();
+    }
+
+    public String backupExtension() { return backupProtected() ? "note" : "zip"; }
+    public String backupMime() { return backupProtected() ? "application/octet-stream" : "application/zip"; }
+
+    /** A backup file: the zip, locked with the backup password when one is set. */
+    public void exportBackup(java.io.OutputStream os) throws Exception {
+        if (!backupProtected()) { exportZip(os); return; }
+        java.io.ByteArrayOutputStream buf = new java.io.ByteArrayOutputStream();
+        exportZip(buf);
+        byte[] key = android.util.Base64.decode(prefs().getString(P_BK_KEY, ""), android.util.Base64.NO_WRAP);
+        byte[] salt = android.util.Base64.decode(prefs().getString(P_BK_SALT, ""), android.util.Base64.NO_WRAP);
+        os.write(BackupCrypt.encrypt(buf.toByteArray(), key, salt, BackupCrypt.ROUNDS));
     }
 
     /** Backup file: a zip with notes.json and the pictures (media/…). */

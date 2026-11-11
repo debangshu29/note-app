@@ -112,6 +112,16 @@ The `Documents/Note` folder stays even if you uninstall the app, so your backups
 - App lock (fingerprint / PIN)
 - More automatic actions: phone numbers → tap to call, amounts → running total, links → open
 
+## New in 3.6
+
+- **Recordings & files**: new block types `audio` (AAC .m4a from `MediaRecorder`, played with one shared `MediaPlayer`) and `file` (any file copied into the media folder, opened / shared through `ShareProvider`). `Attachments` draws them; they count as used media, appear in shared PDFs/images as a line, and their names are searchable.
+- **Document wallet** (`WalletActivity`): notes labelled #wallet are locked notes hidden from the home list and label chips; the wallet itself asks for the PIN / fingerprint. "Add a document" makes the note and opens the scanner.
+- **Place reminders** (`GeoParse` tested, `Geo`, `PlacesActivity`): saved places (prefs), one geofence per place and direction via Play services (re-registered after restarts), notification with Done (stops that line) and Call. Needs "Allow all the time" location.
+- **Translate & handwriting** (`SmartTools`): ML Kit Translate (en ↔ hi / bn, line by line, keeps list marks; packs on Wi-Fi unless allowed) and Digital Ink (drawing strokes grouped into lines).
+- **Search inside photos** (`PhotoText`): OCR of every picture once, in the background, kept in `photo_text.json`.
+- **QR sharing** (`QrCodec` tested, `QrShare`): short notes are plain-text QR; long ones are deflated, base64'd and split into up to 16 codes that can be scanned in any order (Google code scanner, no camera permission; ZXing to draw).
+- **Password-protected backups** (`BackupCrypt` tested): AES-256-GCM, PBKDF2 (120 000 rounds); `.note` files; restore asks for the password.
+
 ## New in 3.5
 
 - **Calendar** (`CalendarActivity`): month grid, dots for reminders (repeats expanded with `DateParser.nextAfter`), notes made and habit days; a day's list; ＋ opens a note starting with "on 14 Nov 2026 " so what you type becomes a reminder.

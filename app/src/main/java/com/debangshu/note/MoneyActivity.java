@@ -72,7 +72,7 @@ public class MoneyActivity extends Activity {
         for (Note n : s.notes()) {
             if (n.deleted > 0 || n.locked) continue;
             List<String> tags = n.tags();
-            if (tags.contains("budget") || tags.contains("plan")) continue;
+            if (tags.contains("budget") || tags.contains("plan") || tags.contains(WalletActivity.TAG)) continue;
             int idx = -1;
             for (int i = 0; i < count; i++) if (n.created >= starts[i + 1] && n.created < (i == 0 ? Long.MAX_VALUE : starts[i])) { idx = i; break; }
             if (idx < 0) continue;

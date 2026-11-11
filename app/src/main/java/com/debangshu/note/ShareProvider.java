@@ -86,6 +86,11 @@ public class ShareProvider extends ContentProvider {
         if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
         if (n.endsWith(".pdf")) return "application/pdf";
         if (n.endsWith(".txt")) return "text/plain";
+        int dot = n.lastIndexOf('.');
+        if (dot >= 0) {
+            String m = android.webkit.MimeTypeMap.getSingleton().getMimeTypeFromExtension(n.substring(dot + 1));
+            if (m != null) return m;
+        }
         return "application/octet-stream";
     }
 

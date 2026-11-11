@@ -46,6 +46,26 @@ public final class HelpDialog {
             {"🎴", "Flashcards & quiz",
                     "Write “question :: answer” (or Q: … then A: …) in any note. Home → ⚙ → Study, or ⋮ → Study these cards: "
                     + "flip cards (ones you knew come back after 1, 2, 4, 8, 16 days) or take a multiple-choice quiz."},
+            {"🎙", "Recordings & files",
+                    "＋ → Record audio keeps a voice recording in the note (tap ▶ to play). ＋ → Attach any file adds a PDF, "
+                    + "Excel, Word or any other file; tap it to open it in another app."},
+            {"🗂", "Document wallet",
+                    "Home → ⚙ → Document wallet: scan Aadhaar, PAN, licence, passport, policies… Each is a locked note kept off "
+                    + "the home screen, opened with your PIN or fingerprint. “Valid till 3 Dec 2030” reminds you before it runs out."},
+            {"📍", "Place reminders",
+                    "Home → ⚙ → Places: stand at home, office… and save it. Then write “when I reach office call Rahul”, "
+                    + "“buy milk when I get to the market” or “when I leave office call mom”. Your location stays on the phone."},
+            {"🌐", "Translate & handwriting",
+                    "⋮ → Translate turns a note into English, हिन्दी or বাংলা on your phone. Long-press a drawing → Handwriting → text "
+                    + "reads what you wrote. Each language pack downloads once, then works offline."},
+            {"🔎", "Search inside photos",
+                    "Search on the home screen also finds words inside your photos and scans (read on the phone in the background), "
+                    + "and the names of attached files."},
+            {"📱", "QR sharing",
+                    "Share → QR code shows the note as QR codes for a phone next to you — no internet. "
+                    + "On the other phone: home ＋ → Scan a QR code."},
+            {"🔐", "Password-protected backups",
+                    "Settings → Your data → Backup password: backups are locked (AES-256) and open only with your password."},
             {"💰", "Money",
                     "Home → ⚙ → Money: what you spent each month (from the prices in your notes), who owes whom, and bills. "
                     + "“gave Rahul 500”, “borrowed 200 from mom”, “Netflix ₹649/month on 5th” (a reminder every month). "

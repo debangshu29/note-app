@@ -140,6 +140,14 @@ public final class NoteRenderer {
                 case Block.PAGE:
                     it.kind = T_PAGE;
                     break;
+                case Block.AUDIO:
+                case Block.FILE: {
+                    it.kind = T_TEXT;
+                    String label = Attachments.icon(b) + "  " + Attachments.label(b)
+                            + (Block.AUDIO.equals(b.type) ? "  (" + Attachments.duration(b.duration) + ")" : "  (" + Attachments.size(b.size) + ")");
+                    it.text = layout(label, bp, cw, 1.35f);
+                    break;
+                }
                 default: {
                     if (b.text.isEmpty()) continue;
                     it.kind = T_TEXT;

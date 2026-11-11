@@ -1,5 +1,6 @@
-• Calendar (home ⚙ → Calendar): your month with reminders, repeating ones, notes made and habits — tap a day, ＋ plans something for it
-• Board view (⋮ in a note): # To do / # Doing / # Done become columns; drag cards between them
-• Habits (home ⚙ → Habits): tick each day, streaks 🔥, a reminder with a Done button, and today's habits on the Today page
-• Flashcards & quiz: write “question :: answer” in a note, then ⋮ → Study these cards — cards you know come back less often
-• New templates: Project board, Flashcards
+• Voice recordings and any file (PDF, Excel, Word…) inside a note: ＋ → Record audio / Attach any file
+• Document wallet (home ⚙): scan your ID cards, licence, policies — locked, off the home screen, expiry reminders
+• Place reminders: save home / office in Places, then write “when I reach office call Rahul”
+• Translate a note (English · हिन्दी · বাংলা) and turn handwriting in a drawing into text — on your phone
+• Search finds words inside your photos and scans; share a note to a phone nearby as a QR code
+• Backups can have a password (Settings → Your data → Backup password)

@@ -33,7 +33,7 @@ public final class PriceBook {
     private static PriceBook build(Store s) {
         PriceBook pb = new PriceBook();
         for (Note n : s.notes()) {
-            if (n.deleted > 0 || n.locked || n.body == null) continue;
+            if (n.deleted > 0 || n.locked || n.body == null || n.tags().contains(WalletActivity.TAG)) continue;
             String[] lines = n.body.split("\n", -1);
             boolean[] seen = new boolean[lines.length];
             for (int i = lines.length - 1; i >= 0; i--) {

@@ -16,7 +16,8 @@ import java.util.List;
  *   PAGE    a page break
  */
 public class Block {
-    public static final String TEXT = "text", IMAGE = "image", STICKY = "sticky", TABLE = "table", PAGE = "page";
+    public static final String TEXT = "text", IMAGE = "image", STICKY = "sticky", TABLE = "table", PAGE = "page",
+            AUDIO = "audio", FILE = "file";
 
     public String type = TEXT;
     public String text = "";
@@ -32,6 +33,10 @@ public class Block {
     public int argb = 0;                        // STICKY: any colour from the colour picker (0 = use the index)
     public List<List<String>> rows = new ArrayList<>(); // TABLE: cells
     public boolean header = true;               // TABLE: first row is a header
+    public String name = "";                    // FILE: the file's own name; AUDIO: a label
+    public String mime = "";                    // FILE / AUDIO: what kind of file
+    public long size = 0;                       // FILE / AUDIO: bytes
+    public long duration = 0;                   // AUDIO: length in ms
 
     public static Block text(String t) {
         Block b = new Block();
@@ -77,7 +82,28 @@ public class Block {
         return b;
     }
 
+    public static Block audio(String file, long durationMs, long size) {
+        Block b = new Block();
+        b.type = AUDIO;
+        b.file = file;
+        b.duration = durationMs;
+        b.size = size;
+        b.mime = "audio/mp4";
+        return b;
+    }
+
+    public static Block attachment(String file, String name, String mime, long size) {
+        Block b = new Block();
+        b.type = FILE;
+        b.file = file;
+        b.name = name == null ? "" : name;
+        b.mime = mime == null ? "" : mime;
+        b.size = size;
+        return b;
+    }
+
     public boolean isText() { return TEXT.equals(type); }
+    public boolean isAttachment() { return AUDIO.equals(type) || FILE.equals(type); }
 
     /** Plain text of this block, used for search, reminders, totals and text sharing. */
     public String plain() {
@@ -131,6 +157,14 @@ public class Block {
                 if (source != null && !source.isEmpty()) o.put("source", source);
                 if (original != null && !original.isEmpty()) o.put("original", original);
                 break;
+            case AUDIO:
+            case FILE:
+                o.put("file", file);
+                if (!name.isEmpty()) o.put("name", name);
+                if (!mime.isEmpty()) o.put("mime", mime);
+                o.put("size", size);
+                if (duration > 0) o.put("duration", duration);
+                break;
             case TABLE: {
                 JSONArray rs = new JSONArray();
                 for (List<String> row : rows) {
@@ -162,6 +196,10 @@ public class Block {
         b.color = o.optInt("color", 0);
         b.argb = o.optInt("argb", 0);
         b.header = o.optBoolean("header", true);
+        b.name = o.optString("name", "");
+        b.mime = o.optString("mime", "");
+        b.size = o.optLong("size", 0);
+        b.duration = o.optLong("duration", 0);
         JSONArray rs = o.optJSONArray("rows");
         if (rs != null) {
             for (int i = 0; i < rs.length(); i++) {

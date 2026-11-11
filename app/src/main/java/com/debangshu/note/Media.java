@@ -267,6 +267,8 @@ public final class Media {
                 if (b.file != null && !b.file.isEmpty()) s.add(b.file);
                 if (b.drawing != null && !b.drawing.isEmpty()) s.add(b.drawing);
                 if (b.original != null && !b.original.isEmpty()) s.add(b.original);
+            } else if (b.isAttachment() && b.file != null && !b.file.isEmpty()) {
+                s.add(b.file);
             }
         }
         return s;

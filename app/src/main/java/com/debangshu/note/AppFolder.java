@@ -159,8 +159,8 @@ public final class AppFolder {
         if (s.notes().isEmpty()) return;
         try {
             // a zip with all notes AND their pictures
-            String name = "note-backup-" + new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(new Date()) + ".zip";
-            if (save(ctx, BACKUPS, name, "application/zip", s::exportZip)) {
+            String name = "note-backup-" + new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(new Date()) + "." + s.backupExtension();
+            if (save(ctx, BACKUPS, name, s.backupMime(), s::exportBackup)) {
                 s.prefs().edit().putLong("lastAutoBackup", System.currentTimeMillis()).apply();
                 trimBackups(ctx);
             }

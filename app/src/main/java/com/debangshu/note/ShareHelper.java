@@ -43,9 +43,11 @@ public final class ShareHelper {
         box.setPadding((int) (24 * dp), (int) (8 * dp), (int) (24 * dp), 0);
 
         box.addView(label(a, "Share as"));
-        RadioGroup format = group(a, new String[]{"Text message (words only)",
-                        "Image (as it looks, with pictures)", "PDF (pages, formatting, pictures)"},
-                p.getInt("format", TEXT));
+        String[] formats = notes.size() == 1
+                ? new String[]{"Text message (words only)", "Image (as it looks, with pictures)", "PDF (pages, formatting, pictures)",
+                        "QR code (to a phone next to you, no internet)"}
+                : new String[]{"Text message (words only)", "Image (as it looks, with pictures)", "PDF (pages, formatting, pictures)"};
+        RadioGroup format = group(a, formats, p.getInt("format", TEXT));
         box.addView(format);
 
         RadioGroup which = null;
@@ -63,6 +65,11 @@ public final class ShareHelper {
                     int f = checkedIndex(format);
                     int mode = whichF == null ? NoteFilter.ALL : checkedIndex(whichF);
                     p.edit().putInt("format", f).apply();
+                    if (f == 3) {
+                        Note n = notes.get(0);
+                        QrShare.show(a, NoteFilter.titleFor(n.title, mode), NoteFilter.filter(n.body, mode));
+                        return;
+                    }
                     share(a, notes, f, mode);
                 })
                 .setNegativeButton("Cancel", null)

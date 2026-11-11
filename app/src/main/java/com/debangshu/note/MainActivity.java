@@ -54,6 +54,8 @@ public class MainActivity extends Activity {
         ReminderSync.runInBackground(() -> Media.deleteUnused(this, store.usedMedia()), null);
         ReminderSync.runInBackground(() -> store.purgeTrash(), null);   // recycle bin keeps notes 30 days
         ReminderSync.runInBackground(() -> Habits.schedule(this), null);
+        PhotoText.indexAsync(this);
+        Geo.syncAsync(this);
         ReminderSync.runInBackground(() -> {
             int n = RollOver.run(this);
             if (n > 0) runOnUiThread(() -> android.widget.Toast.makeText(this,
@@ -188,14 +190,17 @@ public class MainActivity extends Activity {
     private void showNotes(String q) {
         List<Note> all = store.notes();
         List<String[]> labels = store.labels();
+        labels.removeIf(l -> l[0].equals(WalletActivity.TAG));   // the wallet has its own locked screen
         boolean filterOk = false;
         for (String[] l : labels) if (l[0].equals(labelFilter)) filterOk = true;
         if (!filterOk) labelFilter = null;
         paintLabels(labels);
         List<Note> shown = new ArrayList<>();
         for (Note n : all) {
+            if (n.tags().contains(WalletActivity.TAG)) continue;   // documents live in the wallet
             String hay = n.locked ? n.title : n.title + "\n" + n.body;
-            if (!q.isEmpty() && !hay.toLowerCase(Locale.ROOT).contains(q)) continue;
+            if (!q.isEmpty() && !hay.toLowerCase(Locale.ROOT).contains(q)
+                    && (n.locked || !PhotoText.forNote(this, n).contains(q))) continue;
             if (labelFilter != null && !n.tags().contains(labelFilter)) continue;
             shown.add(n);
         }
@@ -280,7 +285,10 @@ public class MainActivity extends Activity {
         items.add("✅   Habits");
         items.add("🎴   Study (flashcards & quiz)");
         items.add("💰   Money (spending, lend & borrow, bills)");
-        Class<?>[] screens = {CalendarActivity.class, HabitsActivity.class, StudyActivity.class, MoneyActivity.class};
+        items.add("🗂   Document wallet (locked)");
+        items.add("📍   Places (for place reminders)");
+        Class<?>[] screens = {CalendarActivity.class, HabitsActivity.class, StudyActivity.class, MoneyActivity.class,
+                WalletActivity.class, PlacesActivity.class};
         new Ui.Popup(this).setTitle("View & tools").setItems(items.toArray(new CharSequence[0]), (d, w) -> {
             if (w == 0) store.prefs().edit().putBoolean(P_GRID, !gridMode).apply();
             else if (w <= SORT_NAMES.length) store.prefs().edit().putInt(P_SORT, w - 1).apply();
@@ -296,11 +304,12 @@ public class MainActivity extends Activity {
     private static final int REQ_IMPORT = 51;
 
     private void pickImport() {
-        String[] items = {"📷  Photo or screenshot", "📄  PDF", "📝  Text file"};
+        String[] items = {"📷  Photo or screenshot", "📄  PDF", "📝  Text file", "📱  Scan a QR code (a note from another phone)"};
         String[] types = {"image/*", "application/pdf", "text/*"};
         new Ui.Popup(this)
                 .setTitle("Make a note from…")
                 .setItems(items, (d, which) -> {
+                    if (which == 3) { QrShare.scan(this); return; }
                     Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                     i.addCategory(Intent.CATEGORY_OPENABLE);
                     i.setType(types[which]);

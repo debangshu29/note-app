@@ -67,6 +67,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     public static final String EXTRA_IMAGES = "noteImages";   // picture files already in Media (from import)
     public static final String EXTRA_TEMPLATE = "noteTemplate"; // Templates index for a new note
     public static final String EXTRA_NEW_TITLE = "noteNewTitle"; // new note with this title (from a [[link]])
+    public static final String EXTRA_AUTO_SCAN = "noteAutoScan";  // open the document scanner right away (wallet)
     public static final String EXTRA_NEW_BODY = "noteNewBody";   // new note starting with this text (calendar: "on 14 Nov 2026 ")
 
     private static final int REQ_PERMS = 41, REQ_CAMERA = 61, REQ_GALLERY = 62, REQ_PDF = 63, REQ_DRAW = 64, REQ_VOICE = 65;
@@ -208,6 +209,10 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                 case "photo": scroll.postDelayed(this::takePhoto, 350); break;
                 default: break;
             }
+        }
+        if (getIntent().getBooleanExtra(EXTRA_AUTO_SCAN, false)) {
+            getIntent().removeExtra(EXTRA_AUTO_SCAN);
+            scroll.postDelayed(() -> { billScan = false; DocScan.start(this); }, 350);
         }
         if (getIntent().getIntExtra(EXTRA_TEMPLATE, -1) >= 0) cursorToFirstItem();
         else if (quick == null && note == null && getIntent().getStringExtra(Intent.EXTRA_TEXT) == null
@@ -435,6 +440,15 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         }
         // money: split, lend & borrow, bills
         String plain = currentPlain();
+        // place reminders: "when I reach office call Rahul"
+        List<String> placeNames = Geo.placeNames(this);
+        for (String l : plain.split("\n")) {
+            GeoParse.Hit gh = GeoParse.parse(l, placeNames);
+            if (gh == null) continue;
+            boolean ready = placeNames.contains(gh.place) && Geo.hasLocation(this) && Geo.hasBackground(this);
+            smartChip(inf, (ready ? "📍 " : "📍⚠ ") + (gh.leaving ? "Leaving " : "At ") + gh.place + ": " + gh.task,
+                    () -> startActivity(new Intent(this, PlacesActivity.class)));
+        }
         Money.Split sp = Money.split(plain);
         if (sp != null) smartChip(inf, "🤝 Split " + ListTotals.money(sp.total, true) + " · " + sp.people(), () -> splitSheet());
         java.util.Map<String, Double> bal = Money.balances(java.util.Arrays.asList(plain.split("\n")));
@@ -851,8 +865,11 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             if (note.isEmpty()) store.removeNote(note.id);
             ReminderSync.syncAsync(this, note.id, null);
         }
+        if (isFinishing()) Attachments.Player.stop();
         final Context app = getApplicationContext();
         ReminderSync.runInBackground(() -> AppFolder.autoBackup(app, false), null);
+        Geo.syncAsync(app);
+        PhotoText.indexAsync(app);
     }
 
     // ======================================================================================= blocks
@@ -903,6 +920,11 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                         if (has) { current = null; updateToolbar(); }
                     }));
                 }
+                break;
+            }
+            case Block.AUDIO:
+            case Block.FILE: {
+                h.view = Attachments.view(this, bl, () -> attachmentMenu(h));
                 break;
             }
             case Block.PAGE: {
@@ -1629,30 +1651,103 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     // ======================================================================================= insert menu
 
     private void insertMenu() {
-        String[] items = {"📷  Take photo", "🖼  Photo from gallery", "📑  Scan document", "🧾  Scan a bill → price list", "📄  PDF pages",
-                "✏️  Drawing", "🗒  Sticky note", "▦  Table", "⤵  New page (page break)", "🎤  Voice note (speak to type)"};
-        new Ui.Popup(this).setTitle("Insert").setItems(items, (d, which) -> {
+        List<String> items = new ArrayList<>();
+        List<Runnable> acts = new ArrayList<>();
+        items.add("📷  Take photo"); acts.add(this::takePhoto);
+        items.add("🖼  Photo from gallery"); acts.add(this::pickFromGallery);
+        items.add("📑  Scan document"); acts.add(() -> { billScan = false; DocScan.start(this); });
+        items.add("🧾  Scan a bill → price list"); acts.add(() -> { billScan = true; DocScan.start(this); });
+        items.add("📄  PDF pages"); acts.add(this::pickPdf);
+        items.add("🎙  Record audio"); acts.add(this::recordAudio);
+        items.add("📎  Attach any file"); acts.add(this::pickAnyFile);
+        items.add("✏️  Drawing / handwriting"); acts.add(() -> openDrawing(null, -1));
+        items.add("🗒  Sticky note"); acts.add(() -> pickStickyColor(0, c -> {
+            Block sb = Block.sticky(0);
+            sb.argb = c;
+            List<Block> l = new ArrayList<>();
+            l.add(sb);
+            insertBlocks(l);
+        }));
+        items.add("▦  Table"); acts.add(this::pickTableSize);
+        items.add("⤵  New page (page break)"); acts.add(() -> { List<Block> l = new ArrayList<>(); l.add(Block.pageBreak()); insertBlocks(l); });
+        items.add("🎤  Voice typing (speak to type)"); acts.add(this::startVoice);
+        new Ui.Popup(this).setTitle("Insert").setItems(items.toArray(new String[0]), (d, w) -> {
             pendingReplace = null;
-            billScan = which == 3;
-            if (which == 2 || which == 3) { DocScan.start(this); return; }
-            int w = which > 3 ? which - 1 : which;   // the list before "Scan a bill" was added
-            switch (w) {
-                case 0: takePhoto(); break;
-                case 1: pickFromGallery(); break;
-                case 3: pickPdf(); break;
-                case 4: openDrawing(null, -1); break;
-                case 5: pickStickyColor(0, c -> {
-                    Block sb = Block.sticky(0);
-                    sb.argb = c;
-                    List<Block> l = new ArrayList<>();
-                    l.add(sb);
-                    insertBlocks(l);
-                }); break;
-                case 6: pickTableSize(); break;
-                case 7: { List<Block> l = new ArrayList<>(); l.add(Block.pageBreak()); insertBlocks(l); break; }
-                case 8: startVoice(); break;
-            }
+            acts.get(w).run();
         }).show();
+    }
+
+    // ---- audio recordings and attached files
+
+    private static final int REQ_FILE = 66;
+
+    private void recordAudio() {
+        Attachments.record(this, b -> {
+            List<Block> l = new ArrayList<>();
+            l.add(b);
+            insertBlocks(l);
+        });
+    }
+
+    private void pickAnyFile() {
+        Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        i.addCategory(Intent.CATEGORY_OPENABLE);
+        i.setType("*/*");
+        i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        try { Lock.leavingForOtherApp(); startActivityForResult(i, REQ_FILE); }
+        catch (Exception e) { Toast.makeText(this, "No file picker found", Toast.LENGTH_SHORT).show(); }
+    }
+
+    private void importFiles(List<Uri> uris) {
+        Toast.makeText(this, uris.size() == 1 ? "Adding the file…" : "Adding " + uris.size() + " files…", Toast.LENGTH_SHORT).show();
+        new Thread(() -> {
+            List<Block> blocks = new ArrayList<>();
+            String error = null;
+            for (Uri u : uris) {
+                try { blocks.add(Attachments.importFile(this, u)); }
+                catch (Exception e) { error = e.getMessage(); }
+            }
+            final String err = error;
+            runOnUiThread(() -> {
+                if (!blocks.isEmpty()) insertBlocks(blocks);
+                if (err != null) Toast.makeText(this, "Couldn't add a file: " + err, Toast.LENGTH_LONG).show();
+            });
+        }).start();
+    }
+
+    private void attachmentMenu(Holder h) {
+        Block b = h.block;
+        boolean audio = Block.AUDIO.equals(b.type);
+        List<String> items = new ArrayList<>();
+        List<Runnable> acts = new ArrayList<>();
+        if (!audio) { items.add("📂  Open"); acts.add(() -> Attachments.open(this, b)); }
+        else { items.add("📂  Open in another app"); acts.add(() -> Attachments.open(this, b)); }
+        items.add("📤  Share"); acts.add(() -> Attachments.share(this, b));
+        items.add("✏️  Rename"); acts.add(() -> {
+            EditText et = new EditText(this);
+            et.setText(Attachments.label(b));
+            et.setSelectAllOnFocus(true);
+            LinearLayout box = new LinearLayout(this);
+            int pad = (int) (20 * getResources().getDisplayMetrics().density);
+            box.setPadding(pad, 0, pad, 0);
+            box.addView(et, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            new Ui.Popup(this).setTitle("Rename").setView(box).setPositiveButton("OK", (d, w) -> {
+                String n = et.getText().toString().trim();
+                if (n.isEmpty()) return;
+                b.name = n;
+                int i = holders.indexOf(h);
+                if (i < 0) return;
+                blocksBox.removeView(h.view);
+                h.view = Attachments.view(this, b, () -> attachmentMenu(h));
+                blocksBox.addView(h.view, i);
+                onEdited();
+            }).setNegativeButton("Cancel", null).show();
+        });
+        items.add("🗑  Delete"); acts.add(() -> new Ui.Popup(this).setTitle("Delete " + (audio ? "this recording" : "“" + Attachments.label(b) + "”") + "?")
+                .setPositiveButton("Delete", (d, w) -> { Attachments.Player.stop(); removeHolder(h); onEdited(); })
+                .setNegativeButton("Keep", null).show());
+        new Ui.Popup(this).setTitle(Attachments.icon(b) + "  " + Attachments.label(b))
+                .setItems(items.toArray(new String[0]), (d, w) -> acts.get(w).run()).show();
     }
 
     private void takePhoto() {
@@ -1725,6 +1820,15 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                 ArrayList<String> said = data.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS);
                 if (said != null && !said.isEmpty()) insertSpoken(said.get(0));
             }
+            return;
+        }
+        if (req == REQ_FILE) {
+            if (res != RESULT_OK || data == null) return;
+            List<Uri> l = new ArrayList<>();
+            if (data.getClipData() != null)
+                for (int k = 0; k < data.getClipData().getItemCount(); k++) l.add(data.getClipData().getItemAt(k).getUri());
+            else if (data.getData() != null) l.add(data.getData());
+            if (!l.isEmpty()) importFiles(l);
             return;
         }
         if (req == DocScan.REQ_SCAN) {
@@ -1947,6 +2051,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                 BW = "⚫  Black & white (clearer text)", COLOUR = "🎨  Back to original colours",
                 RESCAN = "🧾  Rescan this page", PDF = "📤  Share as PDF", SHARE = "📤  Share picture",
                 GALLERY = "💾  Save to phone gallery", EDIT = "✏️  Edit drawing", DUP = "⧉  Duplicate",
+                INK = "✍️  Handwriting → text",
                 DEL = "🗑  Delete";
         List<String> items = new ArrayList<>();
         items.add(FULL);
@@ -1976,7 +2081,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                 break;
             case "drawing":
                 title = "Drawing";
-                items.add(EDIT); items.add(DUP); items.add(GALLERY); items.add(SHARE);
+                items.add(EDIT); items.add(INK); items.add(DUP); items.add(GALLERY); items.add(SHARE);
                 break;
             default:
                 title = "Picture";
@@ -2006,6 +2111,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                 case SHARE: sharePicture(b.file, false); break;
                 case GALLERY: saveToGallery(b.file); break;
                 case EDIT: openDrawing(b.drawing, holders.indexOf(h)); break;
+                case INK: handwritingToText(h); break;
                 case DUP: {
                     int at = holders.indexOf(h) + 1;
                     addHolder(at, b.copy());
@@ -2160,12 +2266,150 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         if (Cards.parse(titleEt.getText() + "\n" + currentPlain()).size() >= 1) {
             items.add("🎴  Study these cards"); acts.add(this::openStudy);
         }
+        items.add("🌐  Translate (English · हिन्दी · বাংলা)"); acts.add(this::translateMenu);
+        boolean inWallet = note != null && note.tags().contains(WalletActivity.TAG);
+        items.add(inWallet ? "🗂  Take out of document wallet" : "🗂  Move to document wallet"); acts.add(this::toggleWallet);
         items.add(speaking ? "⏹  Stop reading" : "🔊  Read aloud"); acts.add(() -> { if (speaking) stopReading(); else readAloud(); });
         items.add("📑  Page sorter"); acts.add(this::pageSorter);
         items.add("📐  Page settings"); acts.add(this::pageSettingsDialog);
         items.add(locked ? "🔓  Remove lock" : "🔒  Lock this note"); acts.add(this::toggleNoteLock);
         items.add("🗑  Delete note"); acts.add(this::confirmDelete);
         new Ui.Popup(this).setItems(items.toArray(new String[0]), (d, w) -> acts.get(w).run()).show();
+    }
+
+    // ---- handwriting
+
+    private void handwritingToText(Holder h) {
+        String strokes = h.block.drawing;
+        if (strokes == null || strokes.isEmpty()) return;
+        int last = Math.max(0, store.prefs().getInt("ink_lang", 0));
+        CharSequence[] names = new CharSequence[SmartTools.INK_NAMES.length];
+        for (int i = 0; i < names.length; i++) names[i] = (i == last ? "✓   " : "      ") + SmartTools.INK_NAMES[i];
+        new Ui.Popup(this).setTitle("Which language is the writing in?").setItems(names, (d, w) -> {
+            store.prefs().edit().putInt("ink_lang", w).apply();
+            SmartTools.inBackground(this, "Reading your handwriting…\n(the first time it downloads a small language pack)",
+                    () -> SmartTools.handwriting(this, strokes, SmartTools.INK_TAGS[w]),
+                    text -> {
+                        if (!holders.contains(h)) return;
+                        int at = holders.indexOf(h) + 1;
+                        Holder t = addHolder(at, Block.text(text));
+                        if (at + 1 < holders.size()) mergeText(t, holders.get(at + 1));
+                        ensureTrailingText();
+                        refreshBlockDecor();
+                        onEdited();
+                        Toast.makeText(this, "Text added under the drawing", Toast.LENGTH_SHORT).show();
+                    });
+        }).show();
+    }
+
+    // ---- translate
+
+    private void translateMenu() {
+        saveNow();
+        String text = currentPlain().trim();
+        String title = titleEt.getText().toString().trim();
+        if (text.isEmpty() && title.isEmpty()) { Toast.makeText(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
+        String from = SmartTools.guessLanguage(title + "\n" + text);
+        List<String> names = new ArrayList<>();
+        List<String> codes = new ArrayList<>();
+        for (int i = 0; i < SmartTools.LANG_CODES.length; i++) {
+            if (SmartTools.LANG_CODES[i].equals(from)) continue;
+            names.add("→  " + SmartTools.LANG_NAMES[i]);
+            codes.add(SmartTools.LANG_CODES[i]);
+        }
+        String fromName = SmartTools.LANG_NAMES[java.util.Arrays.asList(SmartTools.LANG_CODES).indexOf(from)];
+        new Ui.Popup(this).setTitle("Translate from " + fromName).setItems(names.toArray(new String[0]), (d, w) -> {
+            String to = codes.get(w);
+            boolean wifi = !store.prefs().getBoolean("translate_mobile_data", false);
+            SmartTools.inBackground(this, "Translating on your phone…\n(the first time it downloads the language pack, about 30 MB)",
+                    () -> SmartTools.translate((title.isEmpty() ? "" : title + "\n") + text, from, to, wifi),
+                    out -> translated(out, !title.isEmpty()));
+        }).setNeutralButton(store.prefs().getBoolean("translate_mobile_data", false) ? "Packs: any internet ✓" : "Packs: Wi-Fi only ✓", (d, w) -> {
+            store.prefs().edit().putBoolean("translate_mobile_data", !store.prefs().getBoolean("translate_mobile_data", false)).apply();
+            translateMenu();
+        }).show();
+    }
+
+    private void translated(String out, boolean hasTitle) {
+        String tTitle = "", tBody = out;
+        if (hasTitle) {
+            int nl = out.indexOf('\n');
+            tTitle = nl < 0 ? out : out.substring(0, nl);
+            tBody = nl < 0 ? "" : out.substring(nl + 1);
+        }
+        final String ft = tTitle, fb = tBody;
+        TextView tv = new TextView(this);
+        tv.setText((ft.isEmpty() ? "" : ft + "\n\n") + fb);
+        tv.setTextIsSelectable(true);
+        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        tv.setTextColor(getColor(R.color.text));
+        int pad = (int) (20 * getResources().getDisplayMetrics().density);
+        tv.setPadding(pad, 0, pad, 0);
+        ScrollView sv = new ScrollView(this);
+        sv.addView(tv);
+        String[] items = {"＋  Add under the note", "📝  Make it a new note", "⧉  Copy"};
+        new Ui.Popup(this).sheet().setTitle("Translation").setView(Ui.capHeight(sv, 0.45f))
+                .setItems(items, (d, w) -> {
+                    if (w == 0) {
+                        Holder last = null;
+                        for (Holder h : holders) if (h.tc != null) last = h;
+                        if (last == null) return;
+                        Editable e = last.tc.et.getText();
+                        e.append(e.length() == 0 ? "" : "\n\n").append(ft.isEmpty() ? "" : ft + "\n").append(fb);
+                        onEdited();
+                    } else if (w == 1) {
+                        Intent i = new Intent(this, EditorActivity.class);
+                        i.putExtra(Intent.EXTRA_TEXT, fb);
+                        i.putExtra(EXTRA_TITLE, ft.isEmpty() ? "Translation" : ft);
+                        startActivity(i);
+                    } else {
+                        android.content.ClipboardManager cm = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                        if (cm != null) cm.setPrimaryClip(ClipData.newPlainText("translation", (ft.isEmpty() ? "" : ft + "\n\n") + fb));
+                        Toast.makeText(this, "Copied", Toast.LENGTH_SHORT).show();
+                    }
+                }).setNegativeButton("Close", null).show();
+    }
+
+    // ---- document wallet
+
+    private void toggleWallet() {
+        saveNow();
+        if (note == null) { Toast.makeText(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
+        boolean in = note.tags().contains(WalletActivity.TAG);
+        Holder last = null;
+        for (Holder h : holders) if (h.tc != null) last = h;
+        if (last == null) return;
+        if (in) {
+            for (Holder h : holders) {
+                if (h.tc == null) continue;
+                Editable e = h.tc.et.getText();
+                java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?i)(^|\\s)#wallet\\b").matcher(e);
+                int shift = 0;
+                List<int[]> cuts = new ArrayList<>();
+                while (m.find()) cuts.add(new int[]{m.start() + m.group(1).length(), m.end()});
+                for (int k = cuts.size() - 1; k >= 0; k--) e.delete(cuts.get(k)[0], cuts.get(k)[1]);
+            }
+            onEdited();
+            Toast.makeText(this, "Back on the home screen (still locked — ⋮ → Remove lock to unlock)", Toast.LENGTH_LONG).show();
+            return;
+        }
+        Runnable go = () -> {
+            Holder l = null;
+            for (Holder h : holders) if (h.tc != null) l = h;
+            if (l == null) return;
+            Editable e = l.tc.et.getText();
+            e.append(e.length() == 0 || e.charAt(e.length() - 1) == '\n' ? "#wallet" : "\n\n#wallet");
+            onEdited();
+            saveNow();
+            if (note != null && !note.locked) {
+                note.locked = true;
+                store.saveNote(note);
+                Lock.markOpen(note.id);
+            }
+            Toast.makeText(this, "In the document wallet (home ⚙ → Document wallet), locked", Toast.LENGTH_LONG).show();
+        };
+        if (!Lock.hasPin(this)) Lock.verify(this, "Set a PIN for the wallet", ok -> { if (ok) go.run(); });
+        else go.run();
     }
 
     private void openBoard() {
@@ -2912,6 +3156,11 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     @Override
     public void onRequestPermissionsResult(int code, String[] perms, int[] results) {
         super.onRequestPermissionsResult(code, perms, results);
+        if (code == Attachments.REQ_MIC) {
+            if (Attachments.hasMic(this)) recordAudio();
+            else Toast.makeText(this, "Note needs the microphone to record", Toast.LENGTH_LONG).show();
+            return;
+        }
         if (code != REQ_PERMS) return;
         if (CalendarHelper.hasPermission(this)) {
             ReminderSync.runInBackground(() -> ReminderSync.addMissingCalendarEvents(this), this::refreshChips);
