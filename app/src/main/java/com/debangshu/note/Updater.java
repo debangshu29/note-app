@@ -439,20 +439,41 @@ public final class Updater {
         new AlertDialog.Builder(a)
                 .setTitle("Update ready")
                 .setMessage("Note" + name + " is downloaded.\n\n"
-                        + "Tap Install, then tap “" + UPDATE_FILE + "” at the top of your Downloads and choose Update.\n\n"
-                        + "Your notes stay, and Note deletes the file by itself after the update.")
+                        + "Tap Install: the Files app opens your Download folder. Tap “" + UPDATE_FILE
+                        + "” and choose Update.\n(Or pull down your notifications and tap “Note" + name + " update”.)\n\n"
+                        + "Your notes stay, and Note deletes this file by itself after the update.")
                 .setPositiveButton("Install", (d, w) -> openDownloads(a))
                 .setNegativeButton("Later", null)
                 .show();
     }
 
+    /**
+     * Opens the phone's own Files app right at the folder with the update file
+     * (not "view downloads", which some phones send to Google Drive, where installing doesn't work).
+     */
     private static void openDownloads(Activity a) {
-        try {
-            a.startActivity(new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-            Toast.makeText(a, "Tap " + UPDATE_FILE + ", then Update", Toast.LENGTH_LONG).show();
-        } catch (Exception e) {
-            Toast.makeText(a, "Open the Files app → Downloads → " + UPDATE_FILE, Toast.LENGTH_LONG).show();
+        String docId = Build.VERSION.SDK_INT >= 29
+                ? "primary:" + Environment.DIRECTORY_DOWNLOADS
+                : "primary:Android/data/" + a.getPackageName() + "/files/" + Environment.DIRECTORY_DOWNLOADS;
+        Uri dir = android.provider.DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", docId);
+        String[] filesApps = {"com.google.android.documentsui", "com.android.documentsui", null};
+        for (String pkg : filesApps) {
+            try {
+                Intent i = new Intent(Intent.ACTION_VIEW);
+                i.setDataAndType(dir, android.provider.DocumentsContract.Document.MIME_TYPE_DIR);
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                if (pkg != null) i.setPackage(pkg);
+                a.startActivity(i);
+                Toast.makeText(a, "Tap " + UPDATE_FILE + ", then Update", Toast.LENGTH_LONG).show();
+                return;
+            } catch (Exception ignored) { }
         }
+        new AlertDialog.Builder(a)
+                .setTitle("Install the update")
+                .setMessage("Open the Files app → Downloads → tap " + UPDATE_FILE + " → Update.\n\n"
+                        + "Or pull down your notifications and tap “Note update”.")
+                .setPositiveButton("OK", null)
+                .show();
     }
 
     /** True when an update file is downloaded and waiting to be installed. */
@@ -494,7 +515,7 @@ public final class Updater {
         }
         try {
             a.startActivityForResult(i, REQ_CLEANUP);
-            Toast.makeText(a, "Select every Note.apk / Note (1).apk… then tap Select", Toast.LENGTH_LONG).show();
+            Toast.makeText(a, "Long-press to select every old Note….apk, then tap Select", Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             Toast.makeText(a, "Open the Files app → Downloads and delete the Note.apk files", Toast.LENGTH_LONG).show();
         }
@@ -562,9 +583,10 @@ public final class Updater {
             msg.append("The downloaded Note.apk isn't needed any more. Tap “Delete file”, select Note.apk "
                     + "(and any Note (1).apk…) in Downloads, and tap Select.");
         }
-        if (msg.length() == 0) {
-            Toast.makeText(a, "Updated to Note " + currentVersionName(a), Toast.LENGTH_LONG).show();
-            return;
+        if (!offerCleanup) {
+            if (msg.length() > 0) msg.append("\n\n");
+            msg.append("The update file Note downloaded has been deleted automatically. "
+                    + "If your browser or Files app saved older Note.apk files, tap “Clean up old files” to remove them.");
         }
         AlertDialog.Builder b = new AlertDialog.Builder(a)
                 .setTitle("Updated to " + currentVersionName(a))
@@ -573,7 +595,8 @@ public final class Updater {
             b.setPositiveButton("Delete file", (d, w) -> pickOldFilesToDelete(a))
              .setNegativeButton("Not now", (d, w) -> p.edit().remove("cleanupFor").apply());
         } else {
-            b.setPositiveButton("OK", null);
+            b.setPositiveButton("OK", null)
+             .setNeutralButton("Clean up old files", (d, w) -> pickOldFilesToDelete(a));
         }
         b.show();
     }

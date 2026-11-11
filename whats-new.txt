@@ -1,6 +1,2 @@
-• Formatting bar: bold, italic, underline, strikethrough, text size, fonts, colours, highlighter, align left/center/right, bullet & numbered lists, checklists, undo/redo
-• New title section at the top, with reminders shown right under it
-• ＋ Insert: take a photo, pick from gallery, scan documents, add PDF pages, drawings, sticky notes, tables and new pages
-• ⋮ menu: Find & replace, Page sorter, Note style (colour + lined/grid/dotted paper), Page settings (A4/Letter/A5, landscape, margins)
-• PDFs and images you share now keep formatting, pictures, tables and pages
-• Backups now include your pictures
+• Fixed: “Install” now opens the Files app at your Download folder (not Google Drive), so the update installs normally
+• After updating, a “Clean up old files” button removes old Note.apk files your browser saved
