@@ -208,6 +208,8 @@ public final class Store {
         new File(notesFile.getPath() + ".tmp").delete();
         new File(remindersFile.getPath() + ".tmp").delete();
         prefs().edit().clear().apply();
+        app.getSharedPreferences("study", Context.MODE_PRIVATE).edit().clear().apply();
+        Habits.deleteAll(app);
         Media.deleteAll(app);
     }
 
@@ -237,6 +239,9 @@ public final class Store {
         zip.putNextEntry(new java.util.zip.ZipEntry("notes.json"));
         zip.write(json.getBytes(StandardCharsets.UTF_8));
         zip.closeEntry();
+        zip.putNextEntry(new java.util.zip.ZipEntry("habits.json"));
+        zip.write(Habits.exportJson(app).getBytes(StandardCharsets.UTF_8));
+        zip.closeEntry();
         byte[] buf = new byte[16384];
         for (String f : files) {
             File src = Media.file(app, f);
@@ -265,6 +270,8 @@ public final class Store {
                     while ((n = zip.read(buf)) > 0) out.write(buf, 0, n);
                     if ("notes.json".equals(name)) {
                         json = new String(out.toByteArray(), StandardCharsets.UTF_8);
+                    } else if ("habits.json".equals(name)) {
+                        if (Habits.all(app).isEmpty()) Habits.importJson(app, new String(out.toByteArray(), StandardCharsets.UTF_8));
                     } else if (name.startsWith("media/")) {
                         String f = name.substring(6);
                         if (f.isEmpty() || f.contains("/") || f.contains("..")) continue;

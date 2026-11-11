@@ -67,6 +67,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     public static final String EXTRA_IMAGES = "noteImages";   // picture files already in Media (from import)
     public static final String EXTRA_TEMPLATE = "noteTemplate"; // Templates index for a new note
     public static final String EXTRA_NEW_TITLE = "noteNewTitle"; // new note with this title (from a [[link]])
+    public static final String EXTRA_NEW_BODY = "noteNewBody";   // new note starting with this text (calendar: "on 14 Nov 2026 ")
 
     private static final int REQ_PERMS = 41, REQ_CAMERA = 61, REQ_GALLERY = 62, REQ_PDF = 63, REQ_DRAW = 64, REQ_VOICE = 65;
     public static final String EXTRA_QUICK = "quick";   // note / checklist / voice / scan (shortcuts, widgets, tile)
@@ -152,6 +153,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             int tpl = getIntent().getIntExtra(EXTRA_TEMPLATE, -1);
             String newTitle = getIntent().getStringExtra(EXTRA_NEW_TITLE);
             if (newTitle != null) titleEt.setText(newTitle);
+            if (shared == null) shared = getIntent().getStringExtra(EXTRA_NEW_BODY);
             if (tpl >= 0 && tpl < Templates.NAMES.length && shared == null) {
                 shared = Templates.body(tpl);
                 titleEt.setText(Templates.title(tpl));
@@ -165,6 +167,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         renderBlocks(start);
         loading = false;
         if (note == null) focusFirstText();
+        if (note == null && getIntent().getStringExtra(EXTRA_NEW_BODY) != null) focusLastText();
 
         updateMeta();
         updatePin();
@@ -208,6 +211,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         }
         if (getIntent().getIntExtra(EXTRA_TEMPLATE, -1) >= 0) cursorToFirstItem();
         else if (quick == null && note == null && getIntent().getStringExtra(Intent.EXTRA_TEXT) == null
+                && getIntent().getStringExtra(EXTRA_NEW_BODY) == null
                 && getIntent().getStringArrayListExtra(EXTRA_IMAGES) == null) showTemplates();
         refreshChips();
     }
@@ -2146,22 +2150,40 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
     private void moreMenu() {
         boolean locked = note != null && note.locked;
-        String[] items = {"🔍  Find & replace", "🏷  Add a label", "🎨  Note style", "🗂  Outline (headings)",
-                speaking ? "⏹  Stop reading" : "🔊  Read aloud", "📑  Page sorter", "📐  Page settings",
-                locked ? "🔓  Remove lock" : "🔒  Lock this note", "🗑  Delete note"};
-        new Ui.Popup(this).setItems(items, (d, w) -> {
-            switch (w) {
-                case 0: openFind(); break;
-                case 1: addLabelMenu(); break;
-                case 2: noteStyleDialog(); break;
-                case 3: outlineSheet(); break;
-                case 4: if (speaking) stopReading(); else readAloud(); break;
-                case 5: pageSorter(); break;
-                case 6: pageSettingsDialog(); break;
-                case 7: toggleNoteLock(); break;
-                case 8: confirmDelete(); break;
-            }
-        }).show();
+        List<String> items = new ArrayList<>();
+        List<Runnable> acts = new ArrayList<>();
+        items.add("🔍  Find & replace"); acts.add(this::openFind);
+        items.add("🏷  Add a label"); acts.add(this::addLabelMenu);
+        items.add("🎨  Note style"); acts.add(this::noteStyleDialog);
+        items.add("🗂  Outline (headings)"); acts.add(this::outlineSheet);
+        items.add("📋  Board view (To do · Doing · Done)"); acts.add(this::openBoard);
+        if (Cards.parse(titleEt.getText() + "\n" + currentPlain()).size() >= 1) {
+            items.add("🎴  Study these cards"); acts.add(this::openStudy);
+        }
+        items.add(speaking ? "⏹  Stop reading" : "🔊  Read aloud"); acts.add(() -> { if (speaking) stopReading(); else readAloud(); });
+        items.add("📑  Page sorter"); acts.add(this::pageSorter);
+        items.add("📐  Page settings"); acts.add(this::pageSettingsDialog);
+        items.add(locked ? "🔓  Remove lock" : "🔒  Lock this note"); acts.add(this::toggleNoteLock);
+        items.add("🗑  Delete note"); acts.add(this::confirmDelete);
+        new Ui.Popup(this).setItems(items.toArray(new String[0]), (d, w) -> acts.get(w).run()).show();
+    }
+
+    private void openBoard() {
+        saveNow();
+        if (note == null) { Toast.makeText(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
+        Intent i = new Intent(this, BoardActivity.class);
+        i.putExtra(BoardActivity.EXTRA_NOTE, note.id);
+        i.putExtra(BoardActivity.EXTRA_FROM_EDITOR, true);
+        startActivity(i);
+        finish();   // the board changes the note; the editor opens again (fresh) when you go back
+    }
+
+    private void openStudy() {
+        saveNow();
+        if (note == null) return;
+        Intent i = new Intent(this, StudyActivity.class);
+        i.putExtra(StudyActivity.EXTRA_NOTE, note.id);
+        startActivity(i);
     }
 
     private void confirmDelete() {

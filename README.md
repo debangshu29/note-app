@@ -112,6 +112,14 @@ The `Documents/Note` folder stays even if you uninstall the app, so your backups
 - App lock (fingerprint / PIN)
 - More automatic actions: phone numbers → tap to call, amounts → running total, links → open
 
+## New in 3.5
+
+- **Calendar** (`CalendarActivity`): month grid, dots for reminders (repeats expanded with `DateParser.nextAfter`), notes made and habit days; a day's list; ＋ opens a note starting with "on 14 Nov 2026 " so what you type becomes a reminder.
+- **Board view** (`BoardActivity`, `BoardModel`): headings are columns, list lines are cards; drag & drop (`startDragAndDrop`) or the card menu moves the line in the note's text, keeping its formatting; moving into a "Done" column ticks the card.
+- **Habits** (`Habit`, `Habits`, `HabitsActivity`): stored in `habits.json` (also in backups), days of the week, streak / best / 30-day %, inexact daily reminder with a Done action, Today-page card.
+- **Study** (`Cards`, `StudyActivity`): cards from `q :: a`, `Q:`/`A:` pairs and (in #flashcards / #study notes) `term - meaning`; Leitner boxes (1, 2, 4, 8, 16 days) in the "study" prefs; multiple-choice quiz from the deck's other answers.
+- `Screen` is a small base class for these full screens.
+
 ## New in 3.4
 
 - **Money page** (`MoneyActivity`, home ⚙ → Money, also a card on Today): spending per month for the last 6 months (price lists in notes, by the month the note was made; ☑-only in checklists; #budget / #plan notes left out), grouped by label or note title; lend & borrow balances per person (remind me to ask, mark settled, message); bills & subscriptions with a monthly total; the price book.

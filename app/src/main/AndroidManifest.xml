@@ -103,6 +103,11 @@
             android:exported="false"
             android:label="Money" />
 
+        <activity android:name=".CalendarActivity" android:exported="false" android:label="Calendar" />
+        <activity android:name=".HabitsActivity" android:exported="false" android:label="Habits" />
+        <activity android:name=".BoardActivity" android:exported="false" android:label="Board" />
+        <activity android:name=".StudyActivity" android:exported="false" android:label="Study" />
+
         <activity
             android:name=".WidgetSetupActivity"
             android:exported="true"
@@ -157,6 +162,7 @@
             android:permission="android.permission.BIND_JOB_SERVICE" />
         <receiver android:name=".ActionReceiver" android:exported="false" />
         <receiver android:name=".Brief$Receiver" android:exported="false" />
+        <receiver android:name=".Habits$Receiver" android:exported="false" />
         <receiver android:name=".Widgets$Actions" android:exported="false" />
 
         <!-- home-screen widgets -->

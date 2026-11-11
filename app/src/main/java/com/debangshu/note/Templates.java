@@ -15,8 +15,8 @@ public final class Templates {
 
     private Templates() {}
 
-    public static final String[] NAMES = {"Shopping list", "To-do list", "Meeting notes", "Trip packing", "Monthly budget", "Daily journal", "Split with friends", "Bills & subscriptions", "Lend & borrow"};
-    public static final String[] EMOJI = {"🛒", "✅", "🗓", "🧳", "💰", "📔", "🤝", "📅", "💸"};
+    public static final String[] NAMES = {"Shopping list", "To-do list", "Meeting notes", "Trip packing", "Monthly budget", "Daily journal", "Split with friends", "Bills & subscriptions", "Lend & borrow", "Project board", "Flashcards"};
+    public static final String[] EMOJI = {"🛒", "✅", "🗓", "🧳", "💰", "📔", "🤝", "📅", "💸", "📋", "🎴"};
 
     /** Title for template {@code i}. */
     public static String title(int i) {
@@ -33,6 +33,8 @@ public final class Templates {
             case 6: return "Split · " + day;
             case 7: return "Bills & subscriptions";
             case 8: return "Lend & borrow";
+            case 9: return "Project board";
+            case 10: return "Flashcards";
         }
         return "";
     }
@@ -53,6 +55,8 @@ public final class Templates {
             case 7: return "Rent ₹0 /month\nElectricity ₹0 /month\nPhone & internet ₹0 /month\nNetflix ₹0 /month\nInsurance ₹0 /year\n\n"
                     + "(write the amounts; add the day — “on 5th” — to be reminded every month)\n\n#bills";
             case 8: return "☐ gave Rahul 0\n☐ borrowed 0 from mom\n\n(tick a line when it's settled — Money on the home ⚙ menu shows everyone's balance)";
+            case 9: return "# To do\n☐ \n\n# Doing\n\n# Done\n\n(⋮ → Board view shows this as columns — drag cards between them)";
+            case 10: return "#flashcards\n\nCapital of France :: Paris\nH2O :: Water\n\nQ: Who wrote Gitanjali?\nA: Rabindranath Tagore\n\n(⋮ → Study these cards, or home ⚙ → Study)";
         }
         return "";
     }

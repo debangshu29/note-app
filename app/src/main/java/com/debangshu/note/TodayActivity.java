@@ -133,6 +133,39 @@ public class TodayActivity extends Activity {
             }
         }
 
+        // ---- habits for today
+        List<Habit> habits = new ArrayList<>();
+        java.util.Calendar now0 = java.util.Calendar.getInstance();
+        for (Habit h : Habits.all(this)) if (h.onDay(now0)) habits.add(h);
+        if (!habits.isEmpty()) {
+            int did = 0;
+            for (Habit h : habits) if (h.doneOn(now0)) did++;
+            LinearLayout hc = card("✅", "Habits", did + " of " + habits.size() + " done");
+            for (Habit h : habits) {
+                LinearLayout row = new LinearLayout(this);
+                row.setGravity(Gravity.CENTER_VERTICAL);
+                row.setPadding(px(4), px(6), px(4), px(6));
+                row.setBackground(Ui.ripple(Ui.round(0, 12 * dp)));
+                boolean done = h.doneOn(now0);
+                TextView box = text(done ? "☑" : "☐", 20, Ui.REGULAR, Ui.col(this, R.color.accent));
+                box.setGravity(Gravity.CENTER);
+                box.setMinWidth(px(30));
+                row.addView(box);
+                int st = h.streak(now0);
+                TextView t = text(h.emoji + "  " + h.name + (st > 1 ? "   🔥" + st : ""), 15, Ui.REGULAR, getColor(done ? R.color.hint : R.color.text));
+                t.setPadding(px(6), 0, 0, 0);
+                row.addView(t, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+                row.setOnClickListener(v -> { Habits.toggle(this, h.id, java.util.Calendar.getInstance()); build(); });
+                hc.addView(row);
+            }
+        }
+
+        // ---- calendar link
+        TextView cal = text("📅  Open the calendar  ›", 14, Ui.BOLD, Ui.col(this, R.color.accent));
+        cal.setPadding(px(8), px(14), 0, px(4));
+        cal.setOnClickListener(v -> startActivity(new Intent(this, CalendarActivity.class)));
+        body.addView(cal);
+
         // ---- money this month
         List<MoneyActivity.Month> months = MoneyActivity.months(store, 1);
         double spent = months.isEmpty() ? 0 : months.get(0).total;

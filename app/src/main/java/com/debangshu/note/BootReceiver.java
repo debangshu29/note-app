@@ -10,6 +10,7 @@ public class BootReceiver extends BroadcastReceiver {
     public void onReceive(Context ctx, Intent intent) {
         ReminderSync.rescheduleAll(ctx);
         Brief.schedule(ctx);
+        Habits.schedule(ctx);
         Widgets.updateAll(ctx);
         // right after an update: delete the downloaded installer file
         if (Intent.ACTION_MY_PACKAGE_REPLACED.equals(intent.getAction())) Updater.cleanUpAfterUpdate(ctx);

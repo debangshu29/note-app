@@ -53,6 +53,7 @@ public class MainActivity extends Activity {
         Updater.cleanUpAfterUpdate(this);
         ReminderSync.runInBackground(() -> Media.deleteUnused(this, store.usedMedia()), null);
         ReminderSync.runInBackground(() -> store.purgeTrash(), null);   // recycle bin keeps notes 30 days
+        ReminderSync.runInBackground(() -> Habits.schedule(this), null);
         ReminderSync.runInBackground(() -> {
             int n = RollOver.run(this);
             if (n > 0) runOnUiThread(() -> android.widget.Toast.makeText(this,
@@ -136,6 +137,9 @@ public class MainActivity extends Activity {
         if (q == null) return;
         if (q.equals("today")) { startActivity(new Intent(this, TodayActivity.class)); return; }
         if (q.equals("money")) { startActivity(new Intent(this, MoneyActivity.class)); return; }
+        if (q.equals("calendar")) { startActivity(new Intent(this, CalendarActivity.class)); return; }
+        if (q.equals("habits")) { startActivity(new Intent(this, HabitsActivity.class)); return; }
+        if (q.equals("study")) { startActivity(new Intent(this, StudyActivity.class)); return; }
         Intent e = new Intent(this, EditorActivity.class);
         e.putExtra(EditorActivity.EXTRA_QUICK, q);
         startActivity(e);
@@ -272,13 +276,17 @@ public class MainActivity extends Activity {
         for (int i = 0; i < SORT_NAMES.length; i++) items.add((i == sort ? "✓   " : "      ") + "Sort by " + SORT_NAMES[i].toLowerCase(Locale.ROOT));
         items.add("🗑   Recycle bin" + (binCount > 0 ? "  (" + binCount + ")" : ""));
         items.add("📋   New note from a template");
+        items.add("📅   Calendar");
+        items.add("✅   Habits");
+        items.add("🎴   Study (flashcards & quiz)");
         items.add("💰   Money (spending, lend & borrow, bills)");
-        new Ui.Popup(this).setTitle("View & sort").setItems(items.toArray(new CharSequence[0]), (d, w) -> {
+        Class<?>[] screens = {CalendarActivity.class, HabitsActivity.class, StudyActivity.class, MoneyActivity.class};
+        new Ui.Popup(this).setTitle("View & tools").setItems(items.toArray(new CharSequence[0]), (d, w) -> {
             if (w == 0) store.prefs().edit().putBoolean(P_GRID, !gridMode).apply();
             else if (w <= SORT_NAMES.length) store.prefs().edit().putInt(P_SORT, w - 1).apply();
             else if (w == SORT_NAMES.length + 1) { startActivity(new Intent(this, TrashActivity.class)); return; }
             else if (w == SORT_NAMES.length + 2) { Templates.pick(this); return; }
-            else { startActivity(new Intent(this, MoneyActivity.class)); return; }
+            else { startActivity(new Intent(this, screens[w - SORT_NAMES.length - 3])); return; }
             refresh();
         }).show();
     }

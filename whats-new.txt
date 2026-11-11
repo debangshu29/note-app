@@ -1,6 +1,5 @@
-• Money page (home ⚙ → Money): spending for each month, who owes you and whom you owe, bills & subscriptions, and a price book
-• Price memory: on a list, type “milk” and last time's price appears in grey — tap to keep it
-• Split with friends: “Rahul paid 1200”, “I paid 800”, “split between me, Rahul, Amit” → a 🤝 chip shows who pays whom
-• Lend & borrow: “gave Rahul 500”, “borrowed 200 from mom”, “Rahul ko 500 diye” — tick the line when settled; remind me to ask
-• Bills: “Netflix ₹649/month on 5th”, “rent 15000 pm due on 1st” remind you every month and add up to a monthly total
-• Scan a bill: ＋ → Scan a bill turns a shop bill into a price list with its total
+• Calendar (home ⚙ → Calendar): your month with reminders, repeating ones, notes made and habits — tap a day, ＋ plans something for it
+• Board view (⋮ in a note): # To do / # Doing / # Done become columns; drag cards between them
+• Habits (home ⚙ → Habits): tick each day, streaks 🔥, a reminder with a Done button, and today's habits on the Today page
+• Flashcards & quiz: write “question :: answer” in a note, then ⋮ → Study these cards — cards you know come back less often
+• New templates: Project board, Flashcards

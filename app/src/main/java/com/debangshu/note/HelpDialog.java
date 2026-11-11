@@ -34,6 +34,18 @@ public final class HelpDialog {
             {"🧾", "Price lists add up",
                     "Write items with prices, one per line (apple 50 rs, banana 20, milk ₹60, mango 3 x 40). "
                     + "The total appears under the list and keeps itself correct. With ☐ ☑ it shows what's bought and what's left."},
+            {"📅", "Calendar",
+                    "Home → ⚙ → Calendar: a month with dots for reminders (repeating ones on every day they come), notes you made "
+                    + "and days all habits were done. Tap a day to see it; ＋ starts a note for that day."},
+            {"📋", "Board view",
+                    "⋮ → Board view: # headings become columns (To do · Doing · Done) and ☐ lines become cards. "
+                    + "Long-press a card and drag it to another column, or tap it to move, tick, edit or delete."},
+            {"✅", "Habits",
+                    "Home → ⚙ → Habits: tick a habit each day, see your streak 🔥 and the last 7 days, and get a nudge at the time "
+                    + "you pick (the notification has a Done button). Today's habits are on the Today page too."},
+            {"🎴", "Flashcards & quiz",
+                    "Write “question :: answer” (or Q: … then A: …) in any note. Home → ⚙ → Study, or ⋮ → Study these cards: "
+                    + "flip cards (ones you knew come back after 1, 2, 4, 8, 16 days) or take a multiple-choice quiz."},
             {"💰", "Money",
                     "Home → ⚙ → Money: what you spent each month (from the prices in your notes), who owes whom, and bills. "
                     + "“gave Rahul 500”, “borrowed 200 from mom”, “Netflix ₹649/month on 5th” (a reminder every month). "
