@@ -599,6 +599,10 @@
                         <TextView style="@style/SettingsTitle" android:text="Download latest version" />
                         <TextView style="@style/SettingsSub" android:text="Note downloads the newest version (with a progress bar). Tap Install, then Update. The file is deleted automatically afterwards." />
                     </LinearLayout>
+                    <LinearLayout android:id="@+id/row_install_with" style="@style/SettingsRow">
+                        <TextView style="@style/SettingsTitle" android:text="Open updates with" />
+                        <TextView android:id="@+id/txt_install_with" style="@style/SettingsSub" />
+                    </LinearLayout>
                     <LinearLayout android:id="@+id/row_copy_link" style="@style/SettingsRow">
                         <TextView style="@style/SettingsTitle" android:text="Copy download link" />
                         <TextView android:id="@+id/txt_link" style="@style/SettingsSub" android:textIsSelectable="false" />

@@ -20,6 +20,26 @@
     <!-- app lock: unlock with fingerprint / face -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
+    <!-- Android 11+: lets Note list the Files apps that can open the downloaded update -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:mimeType="application/vnd.android.package-archive" />
+        </intent>
+        <package android:name="com.google.android.documentsui" />
+        <package android:name="com.android.documentsui" />
+        <package android:name="com.google.android.apps.nbu.files" />
+        <package android:name="com.sec.android.app.myfiles" />
+        <package android:name="com.mi.android.globalFileexplorer" />
+        <package android:name="com.android.fileexplorer" />
+        <package android:name="com.coloros.filemanager" />
+        <package android:name="com.oneplus.filemanager" />
+        <package android:name="com.vivo.filemanager" />
+        <package android:name="com.huawei.hidisk" />
+        <package android:name="com.motorola.filemanager" />
+        <package android:name="com.asus.filemanager" />
+    </queries>
+
     <application
         android:name=".NoteApp"
         android:allowBackup="false"
@@ -115,6 +135,12 @@
             android:exported="false"
             android:permission="android.permission.BIND_JOB_SERVICE" />
         <receiver android:name=".ActionReceiver" android:exported="false" />
+        <!-- the update finished downloading (sent by the phone's download manager, checked against Note's own download) -->
+        <receiver android:name=".UpdateReadyReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />
+            </intent-filter>
+        </receiver>
         <receiver android:name=".BootReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

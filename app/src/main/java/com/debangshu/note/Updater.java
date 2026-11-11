@@ -176,6 +176,39 @@ public final class Updater {
         showNotification(ctx, i);
     }
 
+    /** The update finished downloading (UpdateReadyReceiver): one notification that opens Note's Install step. */
+    static void onDownloadComplete(Context ctx, long id) {
+        SharedPreferences p = prefs(ctx);
+        if (id != p.getLong("dlId", -1)) return;
+        DownloadManager dm = (DownloadManager) ctx.getSystemService(Context.DOWNLOAD_SERVICE);
+        if (dm == null || downloadStatus(dm, id) != DownloadManager.STATUS_SUCCESSFUL) return;
+        if (!Notifier.canNotify(ctx)) return;
+        NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm == null) return;
+        if (Build.VERSION.SDK_INT >= 26 && nm.getNotificationChannel(CHANNEL) == null) {
+            NotificationChannel ch = new NotificationChannel(CHANNEL, "App updates", NotificationManager.IMPORTANCE_DEFAULT);
+            ch.setDescription("Tells you when a new version of Note is ready");
+            nm.createNotificationChannel(ch);
+        }
+        Info latest = remembered(ctx);
+        Intent open = new Intent(ctx, MainActivity.class);
+        open.putExtra("showUpdate", true);
+        open.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent pi = PendingIntent.getActivity(ctx, NOTIF_ID + 1, open,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        @SuppressWarnings("deprecation")
+        android.app.Notification.Builder b = Build.VERSION.SDK_INT >= 26
+                ? new android.app.Notification.Builder(ctx, CHANNEL)
+                : new android.app.Notification.Builder(ctx);
+        b.setSmallIcon(R.drawable.ic_notify)
+                .setContentTitle("Note" + (latest == null ? "" : " " + latest.versionName) + " is downloaded")
+                .setContentText("Tap to install the update")
+                .setContentIntent(pi)
+                .setAutoCancel(true)
+                .setColor(Ui.col(ctx, R.color.accent));
+        nm.notify(NOTIF_ID, b.build());
+    }
+
     private static void showNotification(Context ctx, Info i) {
         if (!Notifier.canNotify(ctx)) return;
         NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -249,7 +282,8 @@ public final class Updater {
         if (i.notes != null && !i.notes.trim().isEmpty()) msg.append("\n\nWhat's new:\n").append(i.notes.trim());
         msg.append("\n\nHow to update:\n")
            .append("1. Tap Update — Note downloads it (you'll see a progress bar).\n")
-           .append("2. Tap Install, then tap Note-update.apk at the top of Downloads and choose Update.\n")
+           .append("2. Tap Install and pick your phone's Files app (tick “Always use this app” so it's never Drive).\n")
+           .append("   Tap Note-update.apk if it doesn't open by itself, then choose Update.\n")
            .append("3. Done. Your notes stay, and the downloaded file is deleted automatically.\n\n")
            .append("Trouble? Tap Help.");
         new Ui.Popup(a)
@@ -269,6 +303,8 @@ public final class Updater {
         String msg =
                 "• Download fails or says “504” / error\n"
                 + "   GitHub is busy for a moment. Wait a minute and tap Update again.\n\n"
+                + "• It opens in Drive (or the wrong app)\n"
+                + "   Settings → App updates → Open updates with → Ask next time. Then pick your Files app.\n\n"
                 + "• Can't find the file\n"
                 + "   Files app → Downloads → Note-update.apk (newest at the top).\n\n"
                 + "• “Install unknown apps” / install blocked\n"
@@ -353,7 +389,9 @@ public final class Updater {
                     .setTitle("Note" + name + " update")
                     .setDescription("Tap to install")
                     .setMimeType("application/vnd.android.package-archive")
-                    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                    // progress only: when it's done Note shows its own "tap to install" (the phone's
+                    // "download complete" notification may open the file in Drive, where it can't install)
+                    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
             if (Build.VERSION.SDK_INT >= 29) {
                 r.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, UPDATE_FILE);
             } else {
@@ -439,12 +477,212 @@ public final class Updater {
         new Ui.Popup(a)
                 .setTitle("Update ready")
                 .setMessage("Note" + name + " is downloaded.\n\n"
-                        + "Tap Install: the Files app opens your Download folder. Tap “" + UPDATE_FILE
-                        + "” and choose Update.\n(Or pull down your notifications and tap “Note" + name + " update”.)\n\n"
+                        + "Tap Install and pick your Files app. If the file doesn't open by itself, tap “" + UPDATE_FILE
+                        + "” in Downloads and choose Update.\n\n"
                         + "Your notes stay, and Note deletes this file by itself after the update.")
-                .setPositiveButton("Install", (d, w) -> openDownloads(a))
+                .setPositiveButton("Install", (d, w) -> install(a))
                 .setNegativeButton("Later", null)
                 .show();
+    }
+
+    // ------------------------------------------------------------------ choosing the app that opens the update
+
+    public static final String P_INSTALL_WITH = "installWith";
+
+    /** Apps that can't install the update for Note (Drive just stores it; the installer needs a permission Note doesn't ask for). */
+    private static final String[] NOT_INSTALLERS = {"com.google.android.apps.docs", "com.google.android.packageinstaller",
+            "com.android.packageinstaller", "com.samsung.android.packageinstaller", "com.miui.packageinstaller",
+            "com.google.android.apps.photos", "com.dropbox.android", "com.microsoft.skydrive"};
+
+    /** Well-known file managers, opened at Downloads (or just opened) when they don't take the file directly. */
+    private static final String[][] FILE_APPS = {
+            {"com.google.android.documentsui", "Files (Android)"}, {"com.android.documentsui", "Files (Android)"},
+            {"com.google.android.apps.nbu.files", "Files by Google"}, {"com.sec.android.app.myfiles", "My Files (Samsung)"},
+            {"com.mi.android.globalFileexplorer", "File Manager (Xiaomi)"}, {"com.android.fileexplorer", "File Manager"},
+            {"com.coloros.filemanager", "File Manager (Oppo / Realme)"}, {"com.oneplus.filemanager", "File Manager (OnePlus)"},
+            {"com.vivo.filemanager", "File Manager (Vivo)"}, {"com.huawei.hidisk", "Files (Huawei)"},
+            {"com.motorola.filemanager", "Files (Motorola)"}, {"com.asus.filemanager", "File Manager (Asus)"}};
+
+    private static final class Opener {
+        final String pkg, label;
+        final ComponentName component;   // takes the file directly
+        final android.graphics.drawable.Drawable icon;
+        Opener(String pkg, String label, ComponentName c, android.graphics.drawable.Drawable icon) {
+            this.pkg = pkg; this.label = label; this.component = c; this.icon = icon;
+        }
+    }
+
+    private static Uri updateUri(Context ctx) {
+        try {
+            DownloadManager dm = (DownloadManager) ctx.getSystemService(Context.DOWNLOAD_SERVICE);
+            long id = prefs(ctx).getLong("dlId", -1);
+            if (dm != null && id != -1) return dm.getUriForDownloadedFile(id);
+        } catch (Exception ignored) { }
+        return null;
+    }
+
+    private static boolean blocked(String pkg) {
+        for (String b : NOT_INSTALLERS) if (b.equals(pkg)) return true;
+        return false;
+    }
+
+    /** File apps on this phone, best first: the ones that take the update file directly, then other file managers. */
+    private static List<Opener> openers(Context ctx, Uri file) {
+        android.content.pm.PackageManager pm = ctx.getPackageManager();
+        List<Opener> out = new ArrayList<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        if (file != null) {
+            Intent view = new Intent(Intent.ACTION_VIEW);
+            view.setDataAndType(file, "application/vnd.android.package-archive");
+            try {
+                for (android.content.pm.ResolveInfo ri : pm.queryIntentActivities(view, 0)) {
+                    String pkg = ri.activityInfo.packageName;
+                    if (blocked(pkg) || pkg.equals(ctx.getPackageName()) || !seen.add(pkg)) continue;
+                    out.add(new Opener(pkg, String.valueOf(ri.loadLabel(pm)),
+                            new ComponentName(pkg, ri.activityInfo.name), ri.loadIcon(pm)));
+                }
+            } catch (Exception ignored) { }
+        }
+        for (String[] f : FILE_APPS) {
+            if (seen.contains(f[0])) continue;
+            try {
+                android.content.pm.ApplicationInfo ai = pm.getApplicationInfo(f[0], 0);
+                if (!ai.enabled) continue;
+                seen.add(f[0]);
+                String label = String.valueOf(pm.getApplicationLabel(ai));
+                out.add(new Opener(f[0], label.isEmpty() ? f[1] : label, null, pm.getApplicationIcon(ai)));
+            } catch (Exception ignored) { }
+        }
+        return out;
+    }
+
+    /** "Install": opens the update with the app you picked (or asks which app, with "always use this app"). */
+    public static void install(Activity a) {
+        Uri file = updateUri(a);
+        String saved = prefs(a).getString(P_INSTALL_WITH, null);
+        if (saved != null) {
+            for (Opener o : openers(a, file)) {
+                if (o.pkg.equals(saved) && open(a, o, file)) return;
+            }
+            prefs(a).edit().remove(P_INSTALL_WITH).apply();   // that app is gone: ask again
+        }
+        chooseOpener(a, file);
+    }
+
+    private static void chooseOpener(Activity a, Uri file) {
+        List<Opener> list = openers(a, file);
+        if (list.isEmpty()) { openDownloads(a); return; }
+        float dp = a.getResources().getDisplayMetrics().density;
+        LinearLayout box = new LinearLayout(a);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding((int) (12 * dp), 0, (int) (12 * dp), (int) (4 * dp));
+        TextView hint = new TextView(a);
+        hint.setText("Pick your phone's Files app. Then tap “" + UPDATE_FILE + "” (if it doesn't open by itself) and choose Update.");
+        hint.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
+        hint.setTextColor(a.getColor(R.color.text2));
+        hint.setLineSpacing(2 * dp, 1f);
+        hint.setPadding((int) (12 * dp), 0, (int) (12 * dp), (int) (8 * dp));
+        box.addView(hint);
+        android.widget.CheckBox always = new android.widget.CheckBox(a);
+        always.setText("Always use this app");
+        always.setChecked(true);
+        always.setTextColor(a.getColor(R.color.text));
+        always.setPadding((int) (6 * dp), 0, 0, 0);
+        final AlertDialog[] dlg = {null};
+        for (Opener o : list) {
+            LinearLayout row = new LinearLayout(a);
+            row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            row.setPadding((int) (12 * dp), (int) (10 * dp), (int) (12 * dp), (int) (10 * dp));
+            row.setBackground(Ui.ripple(Ui.round(0, 14 * dp)));
+            android.widget.ImageView icon = new android.widget.ImageView(a);
+            icon.setImageDrawable(o.icon);
+            row.addView(icon, new LinearLayout.LayoutParams((int) (40 * dp), (int) (40 * dp)));
+            LinearLayout col = new LinearLayout(a);
+            col.setOrientation(LinearLayout.VERTICAL);
+            col.setPadding((int) (14 * dp), 0, 0, 0);
+            TextView name = new TextView(a);
+            name.setText(o.label);
+            name.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
+            name.setTextColor(a.getColor(R.color.text));
+            name.setTypeface(Ui.face(a, Ui.SEMIBOLD));
+            TextView sub = new TextView(a);
+            sub.setText(o.component != null ? "Opens the update directly" : "Opens the app — go to Downloads");
+            sub.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+            sub.setTextColor(a.getColor(R.color.text2));
+            col.addView(name);
+            col.addView(sub);
+            row.addView(col, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+            row.setOnClickListener(v -> {
+                if (always.isChecked()) prefs(a).edit().putString(P_INSTALL_WITH, o.pkg).apply();
+                if (dlg[0] != null) dlg[0].dismiss();
+                if (!open(a, o, file)) openDownloads(a);
+            });
+            box.addView(row);
+        }
+        box.addView(always);
+        dlg[0] = new Ui.Popup(a).sheet().setTitle("Open the update with")
+                .setView(Ui.capHeight(wrapScroll(a, box), 0.55f))
+                .setNegativeButton("Cancel", null)
+                .create();
+        dlg[0].show();
+    }
+
+    private static android.view.View wrapScroll(Activity a, android.view.View v) {
+        android.widget.ScrollView sv = new android.widget.ScrollView(a);
+        sv.addView(v);
+        return sv;
+    }
+
+    private static boolean open(Activity a, Opener o, Uri file) {
+        try {
+            if (o.component != null && file != null) {
+                Intent i = new Intent(Intent.ACTION_VIEW);
+                i.setDataAndType(file, "application/vnd.android.package-archive");
+                i.setComponent(o.component);
+                i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                a.startActivity(i);
+                return true;
+            }
+            if (o.pkg.endsWith("documentsui")) {
+                String docId = Build.VERSION.SDK_INT >= 29
+                        ? "primary:" + Environment.DIRECTORY_DOWNLOADS
+                        : "primary:Android/data/" + a.getPackageName() + "/files/" + Environment.DIRECTORY_DOWNLOADS;
+                Uri dir = android.provider.DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", docId);
+                Intent i = new Intent(Intent.ACTION_VIEW);
+                i.setDataAndType(dir, android.provider.DocumentsContract.Document.MIME_TYPE_DIR);
+                i.setPackage(o.pkg);
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                try {
+                    a.startActivity(i);
+                    Toast.makeText(a, "Tap " + UPDATE_FILE + ", then Update", Toast.LENGTH_LONG).show();
+                    return true;
+                } catch (Exception ignored) { }
+            }
+            Intent launch = a.getPackageManager().getLaunchIntentForPackage(o.pkg);
+            if (launch == null) return false;
+            launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            a.startActivity(launch);
+            Toast.makeText(a, "Open Downloads → tap " + UPDATE_FILE + " → Update", Toast.LENGTH_LONG).show();
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** Name of the app updates open with, or null when Note asks each time. */
+    public static String installWithLabel(Context ctx) {
+        String pkg = prefs(ctx).getString(P_INSTALL_WITH, null);
+        if (pkg == null) return null;
+        try {
+            android.content.pm.PackageManager pm = ctx.getPackageManager();
+            return String.valueOf(pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)));
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static void forgetInstallApp(Context ctx) {
+        prefs(ctx).edit().remove(P_INSTALL_WITH).apply();
     }
 
     /**

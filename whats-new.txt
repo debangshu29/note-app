@@ -1,7 +1,3 @@
-• Repeating reminders: "gym every Monday at 6 am", "medicine every day at 9 pm", "rent on the 1st of every month", "water every 2 hours", "birthday every year on 12 Nov"
-• Labels: write #work or #shopping in a note (or ⋮ → Add a label); chips on the home screen filter your notes
-• Recycle bin: deleted notes are kept for 30 days and can be restored (home → ⚙ → Recycle bin)
-• Templates: long-press New note for a shopping list, to-do, meeting notes, trip packing, monthly budget or journal
-• Grid view and sorting: home → ⚙ shows notes in 2 columns and sorts by edited, created, title or colour
-• App lock: PIN + fingerprint for the whole app, and locked notes (⋮ → Lock this note)
-• Look & feel: light, dark or pure black (AMOLED), 8 accent colours and 4 text sizes (Settings → Look & feel)
+• Updates now open in your phone's Files app, not Drive: after downloading, tap Install and pick your Files app (tick "Always use this app")
+• When the download finishes, Note shows its own "tap to install" notification
+• To change the app later: Settings → App updates → Open updates with

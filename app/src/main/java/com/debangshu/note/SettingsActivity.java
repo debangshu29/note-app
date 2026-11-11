@@ -54,6 +54,17 @@ public class SettingsActivity extends Activity {
         bindSwitch(R.id.sw_auto_backup, Store.S_AUTO_BACKUP);
         findViewById(R.id.row_download_latest).setOnClickListener(v -> Updater.startUpdate(this));
         findViewById(R.id.row_copy_link).setOnClickListener(v -> Updater.copyLink(this));
+        findViewById(R.id.row_install_with).setOnClickListener(v -> {
+            String app = Updater.installWithLabel(this);
+            if (app == null) {
+                Toast.makeText(this, "Note will ask which app to use when an update is downloaded", Toast.LENGTH_LONG).show();
+                return;
+            }
+            new Ui.Popup(this).setTitle("Open updates with")
+                    .setMessage("Updates open with " + app + ". Ask which app to use next time?")
+                    .setPositiveButton("Ask next time", (d, w) -> { Updater.forgetInstallApp(this); updateTexts(); })
+                    .setNegativeButton("Keep " + app, null).show();
+        });
         findViewById(R.id.row_delete_apks).setOnClickListener(v -> Updater.pickOldFilesToDelete(this));
         findViewById(R.id.row_update_help).setOnClickListener(v -> Updater.showHelp(this));
         findViewById(R.id.row_folder).setOnClickListener(v -> openFolder(null));
@@ -227,6 +238,9 @@ public class SettingsActivity extends Activity {
     }
 
     private void updateTexts() {
+        String installApp = Updater.installWithLabel(this);
+        ((TextView) findViewById(R.id.txt_install_with)).setText(installApp == null
+                ? "Ask each time (pick your phone's Files app — not Drive)" : installApp + " · tap to change");
         ((TextView) findViewById(R.id.txt_theme)).setText(Ui.THEME_NAMES[Math.max(0, Math.min(3, store.prefs().getInt(Ui.P_THEME, 0)))]);
         ((TextView) findViewById(R.id.txt_accent)).setText(Ui.ACCENT_NAMES[Math.max(0, Math.min(Ui.ACCENT_NAMES.length - 1, store.prefs().getInt(Ui.P_ACCENT, 0)))]);
         float sc = store.prefs().getFloat(Ui.P_TEXT, 1f);
