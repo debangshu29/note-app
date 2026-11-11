@@ -23,8 +23,13 @@ public class Block {
     public JSONArray spans = new JSONArray();   // TEXT: formatting (see RichText)
     public String file = "";                    // IMAGE: file name in the media folder
     public String drawing = "";                 // IMAGE from the drawing screen: strokes file, so it can be edited again
-    public float width = 1f;                    // IMAGE: share of the page width (0.25 .. 1)
-    public int color = 0;                       // STICKY: colour index
+    public float width = 1f;                    // IMAGE: share of the page width (0.1 .. 1)
+    public float aspect = 0f;                   // IMAGE: height / width after free resizing; 0 = the picture's own shape
+    public float x = 0.5f;                      // IMAGE: position on the line (0 left, 0.5 centre, 1 right)
+    public String source = "";                  // IMAGE: camera, gallery, scan, pdf, drawing, import
+    public String original = "";                // IMAGE: the picture before black & white, so it can be undone
+    public int color = 0;                       // STICKY: colour index (old colours)
+    public int argb = 0;                        // STICKY: any colour from the colour picker (0 = use the index)
     public List<List<String>> rows = new ArrayList<>(); // TABLE: cells
     public boolean header = true;               // TABLE: first row is a header
 
@@ -63,6 +68,12 @@ public class Block {
     public static Block pageBreak() {
         Block b = new Block();
         b.type = PAGE;
+        return b;
+    }
+
+    public static Block image(String file, String source) {
+        Block b = image(file);
+        b.source = source == null ? "" : source;
         return b;
     }
 
@@ -109,11 +120,16 @@ public class Block {
             case STICKY:
                 o.put("text", text);
                 o.put("color", color);
+                if (argb != 0) o.put("argb", argb);
                 break;
             case IMAGE:
                 o.put("file", file);
                 o.put("width", (double) width);
                 if (drawing != null && !drawing.isEmpty()) o.put("drawing", drawing);
+                if (aspect > 0) o.put("aspect", (double) aspect);
+                if (x != 0.5f) o.put("x", (double) x);
+                if (source != null && !source.isEmpty()) o.put("source", source);
+                if (original != null && !original.isEmpty()) o.put("original", original);
                 break;
             case TABLE: {
                 JSONArray rs = new JSONArray();
@@ -139,7 +155,12 @@ public class Block {
         b.file = o.optString("file", "");
         b.drawing = o.optString("drawing", "");
         b.width = (float) o.optDouble("width", 1.0);
+        b.aspect = (float) o.optDouble("aspect", 0);
+        b.x = (float) o.optDouble("x", 0.5);
+        b.source = o.optString("source", "");
+        b.original = o.optString("original", "");
         b.color = o.optInt("color", 0);
+        b.argb = o.optInt("argb", 0);
         b.header = o.optBoolean("header", true);
         JSONArray rs = o.optJSONArray("rows");
         if (rs != null) {

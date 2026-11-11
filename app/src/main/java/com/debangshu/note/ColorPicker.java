@@ -41,13 +41,28 @@ public final class ColorPicker {
     private static final int[] SOFT = {0xFFFFF59D, 0xFFFFE082, 0xFFC5E1A5, 0xFFB2EBF2, 0xFFB3E5FC,
             0xFFF8BBD0, 0xFFE1BEE7, 0xFFFFCC80, 0xFFD7CCC8, 0xFFEEEEEE};
 
+    /** Sticky-note colours: soft paper colours first, then the full theme palette, standard, recent and any colour. */
+    private static final int[] PAPER = {0xFFFFF4B8, 0xFFFFF59D, 0xFFFFE082, 0xFFFFE3C7, 0xFFFFCC80, 0xFFFBDDE7,
+            0xFFF8BBD0, 0xFFE8DFF7, 0xFFE1BEE7, 0xFFD9ECFA, 0xFFB3E5FC, 0xFFB2EBF2, 0xFFDDF2D5, 0xFFC5E1A5,
+            0xFFE9E8E6, 0xFFD7CCC8, 0xFFFFFFFF, 0xFF4A4320, 0xFF26402A, 0xFF1F3647};
+
+    public static void showFill(Activity a, String title, int current, Listener l) {
+        show(a, title, 2, current, l);
+    }
+
     /**
      * @param highlight true for the highlighter (Word's highlight colours), false for text colour
      */
     public static void show(Activity a, String title, boolean highlight, int current, Listener l) {
+        show(a, title, highlight ? 1 : 0, current, l);
+    }
+
+    /** mode 0 = text colour, 1 = highlighter, 2 = fill (sticky notes). */
+    private static void show(Activity a, String title, int mode, int current, Listener l) {
+        final boolean highlight = mode == 1, fill = mode == 2;
         float dp = a.getResources().getDisplayMetrics().density;
         SharedPreferences p = a.getSharedPreferences("colors", Activity.MODE_PRIVATE);
-        String recentKey = highlight ? "recent_mark" : "recent_ink";
+        String recentKey = fill ? "recent_fill" : highlight ? "recent_mark" : "recent_ink";
         LinearLayout box = new LinearLayout(a);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding((int) (20 * dp), (int) (6 * dp), (int) (20 * dp), (int) (6 * dp));
@@ -65,8 +80,12 @@ public final class ColorPicker {
         none.setPadding(0, (int) (10 * dp), 0, (int) (10 * dp));
         none.setBackgroundResource(R.drawable.bg_tool);
         none.setOnClickListener(v -> pick.picked(0));
-        box.addView(none);
+        if (!fill) box.addView(none);
 
+        if (fill) {
+            box.addView(label(a, "Sticky note colours"));
+            addRows(a, box, PAPER, current, pick, 10);
+        }
         if (highlight) {
             box.addView(label(a, "Highlight colours"));
             addRows(a, box, HIGHLIGHT, current, pick, 8);
@@ -102,7 +121,7 @@ public final class ColorPicker {
         more.setTextColor(a.getColor(R.color.accent));
         more.setPadding(0, (int) (14 * dp), 0, (int) (8 * dp));
         more.setBackgroundResource(R.drawable.bg_tool);
-        more.setOnClickListener(v -> custom(a, current != 0 ? current : (highlight ? 0xFFFFFF00 : 0xFFFF0000), pick));
+        more.setOnClickListener(v -> custom(a, current != 0 ? current : (fill ? 0xFFFFF4B8 : highlight ? 0xFFFFFF00 : 0xFFFF0000), pick));
         box.addView(more);
 
         ScrollView sv = new ScrollView(a);
@@ -233,7 +252,7 @@ public final class ColorPicker {
         return Color.rgb(r, g, b);
     }
 
-    private static double luminance(int c) {
+    public static double luminance(int c) {
         return (0.299 * Color.red(c) + 0.587 * Color.green(c) + 0.114 * Color.blue(c)) / 255.0;
     }
 

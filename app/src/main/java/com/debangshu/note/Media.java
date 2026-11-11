@@ -146,6 +146,119 @@ public final class Media {
         return BitmapFactory.decodeFile(f.getPath(), o);
     }
 
+    /** Turns a picture a quarter turn to the right; returns the new file name. */
+    public static String rotate(Context ctx, String name) throws Exception {
+        Bitmap b = BitmapFactory.decodeFile(file(ctx, name).getPath());
+        if (b == null) throw new Exception("couldn't read the picture");
+        Matrix m = new Matrix();
+        m.postRotate(90);
+        Bitmap r = Bitmap.createBitmap(b, 0, 0, b.getWidth(), b.getHeight(), m, true);
+        if (r != b) b.recycle();
+        boolean png = name.endsWith(".png");
+        String out = newName(png ? "png" : "jpg");
+        save(r, file(ctx, out), png ? Bitmap.CompressFormat.PNG : Bitmap.CompressFormat.JPEG, 90);
+        r.recycle();
+        return out;
+    }
+
+    /** Black & white "document" look: grey, brighter paper, stronger ink. Returns the new file name. */
+    public static String blackAndWhite(Context ctx, String name) throws Exception {
+        Bitmap b = BitmapFactory.decodeFile(file(ctx, name).getPath());
+        if (b == null) throw new Exception("couldn't read the picture");
+        Bitmap out = Bitmap.createBitmap(b.getWidth(), b.getHeight(), Bitmap.Config.ARGB_8888);
+        android.graphics.Canvas c = new android.graphics.Canvas(out);
+        c.drawColor(Color.WHITE);
+        android.graphics.ColorMatrix grey = new android.graphics.ColorMatrix();
+        grey.setSaturation(0);
+        float k = 1.6f, t = -0.25f * 255;   // more contrast, pushes paper to white
+        android.graphics.ColorMatrix contrast = new android.graphics.ColorMatrix(new float[]{
+                k, 0, 0, 0, t + 40,
+                0, k, 0, 0, t + 40,
+                0, 0, k, 0, t + 40,
+                0, 0, 0, 1, 0});
+        grey.postConcat(contrast);
+        android.graphics.Paint p = new android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG);
+        p.setColorFilter(new android.graphics.ColorMatrixColorFilter(grey));
+        c.drawBitmap(b, 0, 0, p);
+        b.recycle();
+        String n = newName("jpg");
+        save(out, file(ctx, n), Bitmap.CompressFormat.JPEG, 90);
+        out.recycle();
+        return n;
+    }
+
+    /** Copies a picture to the phone's gallery (Pictures/Note). */
+    public static boolean saveToGallery(Context ctx, String name) {
+        File f = file(ctx, name);
+        boolean png = name.endsWith(".png");
+        String mime = png ? "image/png" : "image/jpeg";
+        String display = "Note_" + new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.ROOT)
+                .format(new java.util.Date()) + (png ? ".png" : ".jpg");
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= 29) {
+                android.content.ContentValues v = new android.content.ContentValues();
+                v.put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, display);
+                v.put(android.provider.MediaStore.Images.Media.MIME_TYPE, mime);
+                v.put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, "Pictures/Note");
+                Uri u = ctx.getContentResolver().insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, v);
+                if (u == null) return false;
+                try (InputStream in = new java.io.FileInputStream(f);
+                     OutputStream os = ctx.getContentResolver().openOutputStream(u)) {
+                    if (os == null) return false;
+                    copy(in, os);
+                }
+                return true;
+            } else {
+                File dir = new File(android.os.Environment.getExternalStoragePublicDirectory(
+                        android.os.Environment.DIRECTORY_PICTURES), "Note");
+                if (!dir.exists() && !dir.mkdirs()) return false;
+                File out = new File(dir, display);
+                try (InputStream in = new java.io.FileInputStream(f); OutputStream os = new FileOutputStream(out)) {
+                    copy(in, os);
+                }
+                android.media.MediaScannerConnection.scanFile(ctx, new String[]{out.getPath()}, new String[]{mime}, null);
+                return true;
+            }
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /** Copies a picture to the shared folder so other apps can open it. */
+    public static File shareCopy(Context ctx, String name, String as) throws Exception {
+        File out = new File(ShareProvider.dir(ctx), as);
+        try (InputStream in = new java.io.FileInputStream(file(ctx, name)); OutputStream os = new FileOutputStream(out)) {
+            copy(in, os);
+        }
+        return out;
+    }
+
+    /** One A4 PDF page holding the picture (for sharing a scanned page as a document). */
+    public static File pagePdf(Context ctx, String name, String as) throws Exception {
+        Bitmap b = load(ctx, name, 1400);
+        if (b == null) throw new Exception("couldn't read the picture");
+        int pw = 595, ph = 842, m = 24;
+        android.graphics.pdf.PdfDocument doc = new android.graphics.pdf.PdfDocument();
+        android.graphics.pdf.PdfDocument.Page page = doc.startPage(new android.graphics.pdf.PdfDocument.PageInfo.Builder(pw, ph, 1).create());
+        float s = Math.min((pw - 2f * m) / b.getWidth(), (ph - 2f * m) / b.getHeight());
+        float w = b.getWidth() * s, h = b.getHeight() * s;
+        float l = (pw - w) / 2, t = (ph - h) / 2;
+        page.getCanvas().drawBitmap(b, null, new android.graphics.RectF(l, t, l + w, t + h),
+                new android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG));
+        doc.finishPage(page);
+        File out = new File(ShareProvider.dir(ctx), as);
+        try (OutputStream os = new FileOutputStream(out)) { doc.writeTo(os); }
+        doc.close();
+        b.recycle();
+        return out;
+    }
+
+    private static void copy(InputStream in, OutputStream out) throws java.io.IOException {
+        byte[] buf = new byte[16384];
+        int n;
+        while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
+    }
+
     /** Files used by a list of blocks (pictures and drawing strokes). */
     public static Set<String> filesOf(List<Block> blocks) {
         Set<String> s = new HashSet<>();
@@ -153,6 +266,7 @@ public final class Media {
             if (Block.IMAGE.equals(b.type)) {
                 if (b.file != null && !b.file.isEmpty()) s.add(b.file);
                 if (b.drawing != null && !b.drawing.isEmpty()) s.add(b.drawing);
+                if (b.original != null && !b.original.isEmpty()) s.add(b.original);
             }
         }
         return s;

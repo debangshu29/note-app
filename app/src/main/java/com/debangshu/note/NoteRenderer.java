@@ -73,6 +73,7 @@ public final class NoteRenderer {
         int color;                  // STICKY background
         String file;                // IMAGE
         float w, h;                 // IMAGE size on the page; STICKY total height
+        float xf = 0.5f;            // IMAGE position on the line (0 left .. 1 right)
         StaticLayout[][] cells;     // TABLE
         float[] rowH;
         float colW;
@@ -97,16 +98,19 @@ public final class NoteRenderer {
                     if (o.outWidth <= 0) continue;
                     it.kind = T_IMAGE;
                     it.file = b.file;
-                    it.w = cw * Math.max(0.2f, Math.min(1f, b.width));
-                    it.h = it.w * o.outHeight / o.outWidth;
+                    it.w = cw * Math.max(0.1f, Math.min(1f, b.width));
+                    it.h = it.w * (b.aspect > 0 ? b.aspect : (float) o.outHeight / o.outWidth);
+                    it.xf = Math.max(0f, Math.min(1f, b.x));
                     break;
                 }
                 case Block.STICKY: {
                     if (b.text.trim().isEmpty()) continue;
                     it.kind = T_STICKY;
                     it.pad = body * 0.8f;
-                    it.color = NoteStyle.stickyPrintColor(b.color);
-                    it.text = layout(b.text, bp, (int) (cw - 2 * it.pad), 1.3f);
+                    it.color = b.argb != 0 ? b.argb : NoteStyle.stickyPrintColor(b.color);
+                    TextPaint sp = bp;
+                    if (ColorPicker.luminance(it.color) < 0.4) { sp = new TextPaint(bp); sp.setColor(0xFFF2F1F5); }
+                    it.text = layout(b.text, sp, (int) (cw - 2 * it.pad), 1.3f);
                     it.h = it.text.getHeight() + 2 * it.pad;
                     break;
                 }
@@ -161,7 +165,7 @@ public final class NoteRenderer {
     private static void drawImage(Context ctx, Canvas c, Item it, float x, float y, float cw, float w, float h) {
         Bitmap bmp = Media.load(ctx, it.file, (int) Math.min(1600, w * 2));
         if (bmp == null) return;
-        float left = x + (cw - w) / 2;
+        float left = x + (cw - w) * it.xf;
         c.drawBitmap(bmp, null, new RectF(left, y, left + w, y + h), new Paint(Paint.FILTER_BITMAP_FLAG));
         bmp.recycle();
     }

@@ -87,11 +87,13 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         TextBlockController tc;   // TEXT
         EditText sticky;          // STICKY
         TableView table;          // TABLE
-        ImageView image;          // IMAGE
+        PictureView pic;          // IMAGE
         TextView pageLabel;       // PAGE
     }
     private final List<Holder> holders = new ArrayList<>();
     private TextBlockController current;   // text box with the cursor
+    private Holder selectedPic;            // picture with resize handles showing
+    private Holder pendingReplace;         // picture being retaken / replaced / rescanned
 
     // ---- toolbar buttons that show on/off
     private View tBold, tItalic, tUnder, tStrike, tLeft, tCenter, tRight;
@@ -138,7 +140,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         } else {
             start = new ArrayList<>();
             ArrayList<String> imgs = getIntent().getStringArrayListExtra(EXTRA_IMAGES);
-            if (imgs != null) for (String f : imgs) start.add(Block.image(f));
+            if (imgs != null) for (String f : imgs) start.add(Block.image(f, "import"));
             String shared = getIntent().getStringExtra(Intent.EXTRA_TEXT);
             start.add(Block.text(shared == null ? "" : shared));
             String sharedTitle = getIntent().getStringExtra(EXTRA_TITLE);
@@ -203,10 +205,11 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         LayoutInflater inf = LayoutInflater.from(this);
         switch (bl.type) {
             case Block.IMAGE: {
-                View v = inf.inflate(R.layout.item_block_image, blocksBox, false);
-                h.view = v;
-                h.image = v.findViewById(R.id.block_image);
-                h.image.setOnClickListener(x -> imageMenu(h));
+                PictureView pv = new PictureView(this, pictureListener(h));
+                pv.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                pv.setShape(bl.width, bl.aspect, bl.x);
+                h.view = pv;
+                h.pic = pv;
                 loadImage(h);
                 break;
             }
@@ -215,12 +218,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                 h.view = v;
                 h.sticky = v.findViewById(R.id.sticky_text);
                 h.sticky.setText(bl.text);
-                v.findViewById(R.id.sticky_box).getBackground().mutate().setTint(NoteStyle.stickyColor(this, bl.color));
-                if (NoteStyle.dark(this)) {
-                    h.sticky.setTextColor(0xFFECEBF0);
-                    h.sticky.setHintTextColor(0x80FFFFFF);
-                    ((TextView) v.findViewById(R.id.sticky_more)).setTextColor(0x99FFFFFF);
-                }
+                applyStickyColor(h);
                 h.sticky.addTextChangedListener(new SimpleWatcher() {
                     @Override public void afterTextChanged(Editable e) { if (!loading) onEdited(); }
                 });
@@ -273,22 +271,163 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         final int target = getResources().getDisplayMetrics().widthPixels;
         new Thread(() -> {
             Bitmap bmp = Media.load(this, file, target);
-            runOnUiThread(() -> {
-                if (bmp != null) h.image.setImageBitmap(bmp);
-                else h.image.setImageResource(R.drawable.ic_import);
-                applyImageWidth(h);
-            });
+            runOnUiThread(() -> h.pic.setBitmap(bmp));
         }).start();
     }
 
-    private void applyImageWidth(Holder h) {
-        h.view.post(() -> {
-            int w = blocksBox.getWidth();
-            if (w <= 0) return;
-            ViewGroup.LayoutParams lp = h.image.getLayoutParams();
-            lp.width = Math.max(80, Math.round(w * Math.max(0.2f, Math.min(1f, h.block.width))));
-            h.image.setLayoutParams(lp);
+    private void applyStickyColor(Holder h) {
+        int bg = h.block.argb != 0 ? h.block.argb : NoteStyle.stickyColor(this, h.block.color);
+        h.view.findViewById(R.id.sticky_box).getBackground().mutate().setTint(bg);
+        boolean darkBg = ColorPicker.luminance(bg) < 0.4;
+        h.sticky.setTextColor(darkBg ? 0xFFF2F1F5 : 0xFF1D1C21);
+        h.sticky.setHintTextColor(darkBg ? 0x99FFFFFF : 0x80000000);
+        ((TextView) h.view.findViewById(R.id.sticky_more)).setTextColor(darkBg ? 0xB3FFFFFF : 0x99000000);
+    }
+
+    // ---- pictures: select, resize, drag, long-press
+
+    private PictureView.Listener pictureListener(Holder h) {
+        return new PictureView.Listener() {
+            @Override public void onSelect(PictureView v) { selectPicture(h); }
+            @Override public void onLongPress(PictureView v) { selectPicture(h); imageMenu(h); }
+            @Override public void onChanged(PictureView v) {
+                h.block.width = v.widthFrac();
+                h.block.aspect = v.aspect();
+                h.block.x = v.xFrac();
+                onEdited();
+            }
+            @Override public int scrollPage(int dy) {
+                int before = scroll.getScrollY();
+                scroll.scrollBy(0, dy);
+                return scroll.getScrollY() - before;
+            }
+            @Override public void onDrop(PictureView v, float centerY) {
+                h.block.width = v.widthFrac();
+                h.block.aspect = v.aspect();
+                h.block.x = v.xFrac();
+                dropBlock(h, centerY);
+            }
+            @Override public int edgeSpeed(float rawY) {
+                int[] loc = new int[2];
+                scroll.getLocationOnScreen(loc);
+                float edge = 72 * getResources().getDisplayMetrics().density;
+                float top = loc[1] + edge, bottom = loc[1] + scroll.getHeight() - edge;
+                if (rawY < top) return -(int) Math.min(40, 4 + (top - rawY) / 3);
+                if (rawY > bottom) return (int) Math.min(40, 4 + (rawY - bottom) / 3);
+                return 0;
+            }
+        };
+    }
+
+    private void selectPicture(Holder h) {
+        if (selectedPic != null && selectedPic != h && selectedPic.pic != null) selectedPic.pic.setSelectedPicture(false);
+        selectedPic = h;
+        h.pic.setSelectedPicture(true);
+        View f = getCurrentFocus();
+        if (f != null) {
+            f.clearFocus();
+            android.view.inputmethod.InputMethodManager imm =
+                    (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+            if (imm != null) imm.hideSoftInputFromWindow(f.getWindowToken(), 0);
+        }
+        current = null;
+        updateToolbar();
+    }
+
+    private void deselectPicture() {
+        if (selectedPic != null && selectedPic.pic != null) selectedPic.pic.setSelectedPicture(false);
+        selectedPic = null;
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(android.view.MotionEvent ev) {
+        if (ev.getActionMasked() == android.view.MotionEvent.ACTION_DOWN && selectedPic != null) {
+            int[] loc = new int[2];
+            selectedPic.view.getLocationOnScreen(loc);
+            float x = ev.getRawX(), y = ev.getRawY();
+            if (x < loc[0] || x > loc[0] + selectedPic.view.getWidth()
+                    || y < loc[1] || y > loc[1] + selectedPic.view.getHeight()) deselectPicture();
+        }
+        return super.dispatchTouchEvent(ev);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (selectedPic != null) { deselectPicture(); return; }
+        super.onBackPressed();
+    }
+
+    /** Moves a block to where it was dropped: between blocks, or splitting a text box at that line. */
+    private void dropBlock(Holder h, float y) {
+        if (holders.indexOf(h) < 0) return;
+        Holder anchor = null;
+        boolean after = false;
+        int split = -1;
+        for (Holder o : holders) {
+            if (o == h) continue;
+            int top = o.view.getTop(), bottom = o.view.getBottom();
+            if (y < top) { anchor = o; after = false; break; }
+            if (y <= bottom) {
+                anchor = o;
+                if (o.tc != null && o.tc.et.getLayout() != null && o.tc.et.length() > 0) {
+                    android.text.Layout lay = o.tc.et.getLayout();
+                    int line = lay.getLineForVertical((int) (y - top - o.tc.et.getTotalPaddingTop()));
+                    int off = lay.getLineStart(line);
+                    if (line == 0 || off <= 0) after = false;
+                    else if (off >= o.tc.et.length()) after = true;
+                    else split = off;
+                } else {
+                    after = y > (top + bottom) / 2f;
+                }
+                break;
+            }
+            anchor = o;
+            after = true;
+        }
+        if (anchor == null) return;
+        int from = holders.indexOf(h);
+        Holder before = from > 0 ? holders.get(from - 1) : null;
+        Holder behind = from + 1 < holders.size() ? holders.get(from + 1) : null;
+        holders.remove(h);
+        blocksBox.removeView(h.view);
+        int idx;
+        if (split > 0) {
+            Editable e = anchor.tc.et.getText();
+            SpannableStringBuilder tail = new SpannableStringBuilder(e, split, e.length());
+            final int cut = split > 0 && e.charAt(split - 1) == '\n' ? split - 1 : split;
+            anchor.tc.quiet(() -> e.delete(cut, e.length()));
+            idx = holders.indexOf(anchor) + 1;
+            Block t = Block.text(tail.toString());
+            t.spans = RichText.toJson(tail);
+            holders.add(idx, h);
+            blocksBox.addView(h.view, idx);
+            addHolder(idx + 1, t);
+        } else {
+            idx = holders.indexOf(anchor) + (after ? 1 : 0);
+            holders.add(idx, h);
+            blocksBox.addView(h.view, idx);
+        }
+        mergeText(before, behind);
+        ensureTrailingText();
+        refreshBlockDecor();
+        onEdited();
+        if (h.pic != null) selectPicture(h);
+    }
+
+    /** If text boxes a and b are now next to each other (something between them moved away), they become one. */
+    private void mergeText(Holder a, Holder b2) {
+        if (a == null || b2 == null || a.tc == null || b2.tc == null) return;
+        int i = holders.indexOf(a);
+        if (i < 0 || holders.indexOf(b2) != i + 1) return;
+        Editable ea = a.tc.et.getText();
+        CharSequence eb = b2.tc.et.getText();
+        a.tc.quiet(() -> {
+            if (ea.length() > 0 && eb.length() > 0) ea.append("\n");
+            ea.append(new SpannableStringBuilder(eb));
         });
+        if (current == b2.tc) current = null;
+        holders.remove(b2);
+        blocksBox.removeView(b2.view);
     }
 
     /** A text box always follows the last picture / table, so you can keep typing. */
@@ -312,7 +451,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             et.setPadding(et.getPaddingLeft(), et.getPaddingTop(), et.getPaddingRight(), (int) ((h == lastText ? 44 : 8) * d));
         }
         if (firstText != null && holders.size() == 1) {
-            firstText.tc.et.setHint("Start writing…\n\nTry: 120+80\nor: call mom tomorrow at 5pm\nor type [] and a space for a checkbox\n\nUse ＋ below for photos, scans, drawings, sticky notes and tables");
+            firstText.tc.et.setHint("Start writing…\n\nTry: 120+80\nor: call mom tomorrow at 5pm\nor type [] and a space for a checkbox\n\nUse ＋ at the top for photos, scans, drawings, sticky notes and tables");
             firstText.tc.et.setMinHeight((int) (320 * d));
         } else if (firstText != null) {
             firstText.tc.et.setMinHeight(0);
@@ -399,6 +538,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         if (i < 0) return;
         holders.remove(i);
         blocksBox.removeView(h.view);
+        if (h == selectedPic) selectedPic = null;
         if (h == focusedTextHolder()) current = null;
         // join the text boxes on both sides
         if (i > 0 && i < holders.size() && holders.get(i - 1).tc != null && holders.get(i).tc != null) {
@@ -809,13 +949,20 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         String[] items = {"📷  Take photo", "🖼  Photo from gallery", "🧾  Scan document", "📄  PDF pages",
                 "✏️  Drawing", "🗒  Sticky note", "▦  Table", "⤵  New page (page break)"};
         new AlertDialog.Builder(this).setTitle("Insert").setItems(items, (d, w) -> {
+            pendingReplace = null;
             switch (w) {
                 case 0: takePhoto(); break;
                 case 1: pickFromGallery(); break;
                 case 2: DocScan.start(this); break;
                 case 3: pickPdf(); break;
                 case 4: openDrawing(null, -1); break;
-                case 5: pickStickyColor(-1, c -> { List<Block> l = new ArrayList<>(); l.add(Block.sticky(c)); insertBlocks(l); }); break;
+                case 5: pickStickyColor(0, c -> {
+                    Block sb = Block.sticky(0);
+                    sb.argb = c;
+                    List<Block> l = new ArrayList<>();
+                    l.add(sb);
+                    insertBlocks(l);
+                }); break;
                 case 6: pickTableSize(); break;
                 case 7: { List<Block> l = new ArrayList<>(); l.add(Block.pageBreak()); insertBlocks(l); break; }
             }
@@ -867,15 +1014,9 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
     private interface IntPick { void pick(int v); }
 
-    private void pickStickyColor(int currentColor, IntPick p) {
-        CharSequence[] items = new CharSequence[NoteStyle.STICKY_NAMES.length];
-        for (int i = 0; i < items.length; i++) {
-            SpannableString s = new SpannableString("  " + NoteStyle.STICKY_NAMES[i] + (i == currentColor ? "  ✓" : "") + "  ");
-            s.setSpan(new BackgroundColorSpan(NoteStyle.stickyPrintColor(i)), 0, s.length(), 0);
-            s.setSpan(new ForegroundColorSpan(0xFF1D1C21), 0, s.length(), 0);
-            items[i] = s;
-        }
-        new AlertDialog.Builder(this).setTitle("Sticky note colour").setItems(items, (d, w) -> p.pick(w)).show();
+    /** Any colour for a sticky note (Word-style palette); {@code current} is an ARGB colour or 0. */
+    private void pickStickyColor(int current, IntPick p) {
+        ColorPicker.showFill(this, "Sticky note colour", current, c -> { if (c != 0) p.pick(c); });
     }
 
     private void pickTableSize() {
@@ -891,22 +1032,24 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     @Override
     protected void onActivityResult(int req, int res, Intent data) {
         super.onActivityResult(req, res, data);
+        Holder replace = pendingReplace != null && holders.contains(pendingReplace) ? pendingReplace : null;
+        pendingReplace = null;
         if (req == DocScan.REQ_SCAN) {
             List<Uri> pages = DocScan.pages(res, data);
-            if (!pages.isEmpty()) importPictures(pages, true);
+            if (!pages.isEmpty()) importPictures(pages, "scan", replace);
             return;
         }
         if (res != RESULT_OK) return;
         if (req == REQ_CAMERA && pendingCapture != null) {
             List<Uri> l = new ArrayList<>();
             l.add(Uri.fromFile(pendingCapture));
-            importPictures(l, false);
+            importPictures(l, "camera", replace);
         } else if (req == REQ_GALLERY && data != null) {
             List<Uri> l = new ArrayList<>();
             if (data.getClipData() != null)
                 for (int k = 0; k < data.getClipData().getItemCount(); k++) l.add(data.getClipData().getItemAt(k).getUri());
             else if (data.getData() != null) l.add(data.getData());
-            importPictures(l, false);
+            importPictures(l, "gallery", replace);
         } else if (req == REQ_PDF && data != null && data.getData() != null) {
             importPdf(data.getData());
         } else if (req == REQ_DRAW && data != null) {
@@ -914,14 +1057,14 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             String strokes = data.getStringExtra(DrawingActivity.RESULT_STROKES);
             int index = data.getIntExtra(DrawingActivity.EXTRA_INDEX, -1);
             if (img == null) return;
-            if (index >= 0 && index < holders.size() && holders.get(index).image != null) {
+            if (index >= 0 && index < holders.size() && holders.get(index).pic != null) {
                 Holder h = holders.get(index);
                 h.block.file = img;
                 h.block.drawing = strokes;
                 loadImage(h);
                 onEdited();
             } else {
-                Block b = Block.image(img);
+                Block b = Block.image(img, "drawing");
                 b.drawing = strokes;
                 List<Block> l = new ArrayList<>();
                 l.add(b);
@@ -930,7 +1073,8 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         }
     }
 
-    private void importPictures(List<Uri> uris, boolean scanned) {
+    private void importPictures(List<Uri> uris, String source, Holder replace) {
+        final boolean scanned = "scan".equals(source);
         Toast.makeText(this, uris.size() == 1 ? "Adding the picture…" : "Adding " + uris.size() + " pictures…", Toast.LENGTH_SHORT).show();
         new Thread(() -> {
             List<Block> blocks = new ArrayList<>();
@@ -940,7 +1084,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                 try {
                     String f = Media.importImage(this, u);
                     files.add(f);
-                    blocks.add(Block.image(f));
+                    blocks.add(Block.image(f, source));
                 } catch (Exception e) {
                     error = e.getMessage();
                 }
@@ -950,6 +1094,21 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             runOnUiThread(() -> {
                 if (blocks.isEmpty()) {
                     Toast.makeText(this, "Couldn't add the picture" + (err != null ? ": " + err : ""), Toast.LENGTH_LONG).show();
+                    return;
+                }
+                if (replace != null) {
+                    Block first = blocks.remove(0);
+                    replace.block.file = first.file;
+                    replace.block.aspect = 0f;
+                    replace.block.original = "";
+                    replace.pic.setShape(replace.block.width, 0f, replace.block.x);
+                    loadImage(replace);
+                    int at = holders.indexOf(replace) + 1;
+                    for (Block extra : blocks) addHolder(at++, extra);
+                    ensureTrailingText();
+                    refreshBlockDecor();
+                    onEdited();
+                    Toast.makeText(this, "Picture replaced", Toast.LENGTH_SHORT).show();
                     return;
                 }
                 insertBlocks(blocks);
@@ -975,7 +1134,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                 List<Block> blocks = new ArrayList<>();
                 String error = null;
                 try {
-                    if (w == 0 || w == 2) for (String f : Media.importPdfPages(this, uri, 30)) blocks.add(Block.image(f));
+                    if (w == 0 || w == 2) for (String f : Media.importPdfPages(this, uri, 30)) blocks.add(Block.image(f, "pdf"));
                     if (w == 1 || w == 2) {
                         TextImporter.Result r = TextImporter.read(this, uri, "application/pdf");
                         if (!r.text.isEmpty()) blocks.add(Block.text(r.text));
@@ -993,7 +1152,10 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     }
 
     /** Reads the text in pictures (on the phone) and adds it after them. */
-    private void ocrIntoNote(List<String> files) {
+    private void ocrIntoNote(List<String> files) { ocrAfter(null, files); }
+
+    /** Reads the text in pictures and puts it right under {@code after} (or at the cursor when null). */
+    private void ocrAfter(Holder after, List<String> files) {
         Toast.makeText(this, "Reading the text…", Toast.LENGTH_SHORT).show();
         new Thread(() -> {
             StringBuilder sb = new StringBuilder();
@@ -1012,6 +1174,16 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                     Toast.makeText(this, err != null ? err : "No text found in the picture", Toast.LENGTH_LONG).show();
                     return;
                 }
+                if (after != null && holders.contains(after)) {
+                    int at = holders.indexOf(after) + 1;
+                    Holder t = addHolder(at, Block.text(sb.toString()));
+                    if (at + 1 < holders.size()) mergeText(t, holders.get(at + 1));
+                    ensureTrailingText();
+                    refreshBlockDecor();
+                    onEdited();
+                    Toast.makeText(this, "Text added under the picture", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 List<Block> l = new ArrayList<>();
                 l.add(Block.text(sb.toString()));
                 insertBlocks(l);
@@ -1021,28 +1193,88 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
     // ======================================================================================= block menus
 
+    /**
+     * Long-press menu for a picture. Every picture has the same basics (full screen, text, full width,
+     * delete); the extra options depend on where it came from.
+     */
     private void imageMenu(Holder h) {
+        final Block b = h.block;
+        String src = b.drawing != null && !b.drawing.isEmpty() ? "drawing" : b.source == null ? "" : b.source;
+        final String FULL = "🔍  Full screen", OCR = "🔤  Get text from picture", WIDE = "↔  Full width",
+                SHAPE = "◻  Original shape", CENTER = "⇔  Centre on the line",
+                ROTATE = "🔄  Rotate", RETAKE = "📷  Retake photo", REPLACE = "🖼  Replace with another picture",
+                BW = "⚫  Black & white (clearer text)", COLOUR = "🎨  Back to original colours",
+                RESCAN = "🧾  Rescan this page", PDF = "📤  Share as PDF", SHARE = "📤  Share picture",
+                GALLERY = "💾  Save to phone gallery", EDIT = "✏️  Edit drawing", DUP = "⧉  Duplicate",
+                DEL = "🗑  Delete";
         List<String> items = new ArrayList<>();
-        final String S = "Small", M = "Medium", L = "Large", F = "Full width", EDIT = "✏️ Edit drawing",
-                OCR = "🔤 Get the text from this picture", OPEN = "🔍 Open full screen",
-                UP = "↑ Move up", DOWN = "↓ Move down", DEL = "🗑 Delete picture";
-        items.add(S); items.add(M); items.add(L); items.add(F);
-        if (h.block.drawing != null && !h.block.drawing.isEmpty()) items.add(EDIT);
-        items.add(OCR); items.add(OPEN); items.add(UP); items.add(DOWN); items.add(DEL);
-        new AlertDialog.Builder(this).setTitle("Picture").setItems(items.toArray(new String[0]), (d, w) -> {
-            String p = items.get(w);
-            switch (p) {
-                case S: setImageWidth(h, 0.35f); break;
-                case M: setImageWidth(h, 0.55f); break;
-                case L: setImageWidth(h, 0.78f); break;
-                case F: setImageWidth(h, 1f); break;
-                case EDIT: openDrawing(h.block.drawing, holders.indexOf(h)); break;
-                case OCR: { List<String> f = new ArrayList<>(); f.add(h.block.file); ocrIntoNote(f); break; }
-                case OPEN: openFullScreen(h.block.file); break;
-                case UP: moveHolder(h, -1); break;
-                case DOWN: moveHolder(h, 1); break;
+        items.add(FULL);
+        items.add(OCR);
+        if (b.width < 0.999f) items.add(WIDE);
+        if (b.aspect > 0) items.add(SHAPE);
+        if (b.width < 0.999f && Math.abs(b.x - 0.5f) > 0.01f) items.add(CENTER);
+        String title;
+        switch (src) {
+            case "camera":
+                title = "Photo";
+                items.add(ROTATE); items.add(RETAKE); items.add(GALLERY); items.add(SHARE);
+                break;
+            case "gallery":
+                title = "Picture from gallery";
+                items.add(ROTATE); items.add(REPLACE); items.add(SHARE);
+                break;
+            case "scan":
+                title = "Scanned page";
+                items.add(ROTATE); items.add(b.original != null && !b.original.isEmpty() ? COLOUR : BW);
+                items.add(RESCAN); items.add(PDF);
+                break;
+            case "pdf":
+                title = "PDF page";
+                items.add(ROTATE); items.add(b.original != null && !b.original.isEmpty() ? COLOUR : BW);
+                items.add(SHARE);
+                break;
+            case "drawing":
+                title = "Drawing";
+                items.add(EDIT); items.add(DUP); items.add(GALLERY); items.add(SHARE);
+                break;
+            default:
+                title = "Picture";
+                items.add(ROTATE); items.add(GALLERY); items.add(SHARE);
+                break;
+        }
+        items.add(DEL);
+        new AlertDialog.Builder(this).setTitle(title).setItems(items.toArray(new String[0]), (d, w) -> {
+            switch (items.get(w)) {
+                case FULL: PhotoViewer.show(this, b.file); break;
+                case OCR: { List<String> f = new ArrayList<>(); f.add(b.file); ocrAfter(h, f); break; }
+                case WIDE: setShape(h, 1f, b.aspect, 0.5f); break;
+                case SHAPE: setShape(h, b.width, 0f, b.x); break;
+                case CENTER: setShape(h, b.width, b.aspect, 0.5f); break;
+                case ROTATE: editPicture(h, false); break;
+                case BW: editPicture(h, true); break;
+                case COLOUR:
+                    b.file = b.original;
+                    b.original = "";
+                    loadImage(h);
+                    onEdited();
+                    break;
+                case RETAKE: pendingReplace = h; takePhoto(); break;
+                case REPLACE: pendingReplace = h; pickFromGallery(); break;
+                case RESCAN: pendingReplace = h; DocScan.start(this); break;
+                case PDF: sharePicture(b.file, true); break;
+                case SHARE: sharePicture(b.file, false); break;
+                case GALLERY: saveToGallery(b.file); break;
+                case EDIT: openDrawing(b.drawing, holders.indexOf(h)); break;
+                case DUP: {
+                    int at = holders.indexOf(h) + 1;
+                    addHolder(at, b.copy());
+                    ensureTrailingText();
+                    refreshBlockDecor();
+                    onEdited();
+                    break;
+                }
                 case DEL:
-                    new AlertDialog.Builder(this).setMessage("Delete this picture?")
+                    new AlertDialog.Builder(this).setMessage("Delete this " + title.toLowerCase(Locale.ROOT) + "?")
                             .setPositiveButton("Delete", (dd, ww) -> removeHolder(h))
                             .setNegativeButton("Cancel", null).show();
                     break;
@@ -1050,38 +1282,73 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         }).show();
     }
 
-    private void setImageWidth(Holder h, float w) {
-        h.block.width = w;
-        applyImageWidth(h);
+    private void setShape(Holder h, float width, float aspect, float x) {
+        h.block.width = width;
+        h.block.aspect = aspect;
+        h.block.x = x;
+        h.pic.setShape(width, aspect, x);
         onEdited();
     }
 
-    private void openFullScreen(String file) {
+    /** Rotate a quarter turn, or make a black & white copy (the original is kept so it can be undone). */
+    private void editPicture(Holder h, boolean blackWhite) {
+        final String file = h.block.file;
+        new Thread(() -> {
+            String out = null;
+            try { out = blackWhite ? Media.blackAndWhite(this, file) : Media.rotate(this, file); }
+            catch (Exception ignored) { }
+            final String done = out;
+            runOnUiThread(() -> {
+                if (done == null) { Toast.makeText(this, "Couldn't change the picture", Toast.LENGTH_LONG).show(); return; }
+                if (blackWhite) h.block.original = file;
+                else {
+                    h.block.original = "";
+                    if (h.block.aspect > 0) h.block.aspect = 1f / h.block.aspect;
+                    h.pic.setShape(h.block.width, h.block.aspect, h.block.x);
+                }
+                h.block.file = done;
+                loadImage(h);
+                onEdited();
+            });
+        }).start();
+    }
+
+    private void sharePicture(String file, boolean asPdf) {
         try {
-            File f = Media.file(this, file);
-            File copy = new File(ShareProvider.dir(this), "view_" + file);
-            try (java.io.InputStream in = new java.io.FileInputStream(f);
-                 java.io.OutputStream out = new java.io.FileOutputStream(copy)) {
-                byte[] buf = new byte[16384];
-                int n;
-                while ((n = in.read(buf)) > 0) out.write(buf, 0, n);
-            }
-            Uri u = ShareProvider.uriFor(copy);
-            Intent i = new Intent(Intent.ACTION_VIEW);
-            i.setDataAndType(u, file.endsWith(".png") ? "image/png" : "image/jpeg");
+            String stamp = new java.text.SimpleDateFormat("yyyy-MM-dd HHmm", Locale.ROOT).format(new java.util.Date());
+            File f = asPdf ? Media.pagePdf(this, file, "Scan " + stamp + ".pdf")
+                    : Media.shareCopy(this, file, "Picture " + stamp + (file.endsWith(".png") ? ".png" : ".jpg"));
+            Intent i = new Intent(Intent.ACTION_SEND);
+            i.setType(asPdf ? "application/pdf" : file.endsWith(".png") ? "image/png" : "image/jpeg");
+            Uri u = ShareProvider.uriFor(f);
+            i.putExtra(Intent.EXTRA_STREAM, u);
+            i.setClipData(ClipData.newRawUri("", u));
             i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            startActivity(i);
+            startActivity(Intent.createChooser(i, asPdf ? "Share scan as PDF" : "Share picture"));
         } catch (Exception e) {
-            Toast.makeText(this, "No app found to show pictures", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Couldn't share: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
+    }
+
+    private void saveToGallery(String file) {
+        if (!AppFolder.canWrite(this)) {
+            AppFolder.askPermissionIfNeeded(this, REQ_PERMS);
+            Toast.makeText(this, "Allow storage, then tap Save again", Toast.LENGTH_LONG).show();
+            return;
+        }
+        new Thread(() -> {
+            boolean ok = Media.saveToGallery(this, file);
+            runOnUiThread(() -> Toast.makeText(this, ok ? "Saved to Pictures/Note in your gallery" : "Couldn't save the picture",
+                    Toast.LENGTH_LONG).show());
+        }).start();
     }
 
     private void stickyMenu(Holder h) {
         String[] items = {"🎨 Colour", "↑ Move up", "↓ Move down", "🗑 Delete sticky note"};
         new AlertDialog.Builder(this).setTitle("Sticky note").setItems(items, (d, w) -> {
-            if (w == 0) pickStickyColor(h.block.color, c -> {
-                h.block.color = c;
-                h.view.findViewById(R.id.sticky_box).getBackground().mutate().setTint(NoteStyle.stickyColor(this, c));
+            if (w == 0) pickStickyColor(h.block.argb != 0 ? h.block.argb : NoteStyle.stickyPrintColor(h.block.color), c -> {
+                h.block.argb = c;
+                applyStickyColor(h);
                 onEdited();
             });
             else if (w == 1) moveHolder(h, -1);
