@@ -1,2 +1,6 @@
-• Fixed: “Install” now opens the Files app at your Download folder (not Google Drive), so the update installs normally
-• After updating, a “Clean up old files” button removes old Note.apk files your browser saved
+• Font size in numbers like Word (8 – 72, or type any size); the button shows the current size
+• 32 font styles: Android fonts plus Poppins, Lora, Playfair, Pacifico, Dancing Script, Caveat, Kalam and more
+• Word-style colour picker for font colour and highlighter: theme colours with shades, standard and recent colours, and "More colours…" for any colour
+• The colour buttons show the colour you picked
+• Long-press any icon to see what it does
+• ＋ (insert) is now at the top, next to Share

@@ -95,6 +95,8 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
     // ---- toolbar buttons that show on/off
     private View tBold, tItalic, tUnder, tStrike, tLeft, tCenter, tRight;
+    private TextView tSize;
+    private View inkBar, markBar;
 
     // ---- camera
     private File pendingCapture;
@@ -157,6 +159,8 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         pinBtn.setOnClickListener(v -> togglePin());
         findViewById(R.id.btn_share).setOnClickListener(v -> share());
         findViewById(R.id.btn_more).setOnClickListener(v -> moreMenu());
+        findViewById(R.id.btn_insert).setOnClickListener(v -> insertMenu());
+        Tips.applyAll(findViewById(R.id.editor_root));
         findViewById(R.id.tap_end).setOnClickListener(v -> focusLastText());
         titleEt.addTextChangedListener(new SimpleWatcher() {
             @Override public void afterTextChanged(Editable e) { if (!loading) onEdited(); }
@@ -557,11 +561,61 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         v.setBackgroundResource(R.drawable.bg_tool);
         v.setContentDescription(desc);
         v.setOnClickListener(l);
-        v.setOnLongClickListener(x -> { Toast.makeText(this, desc, Toast.LENGTH_SHORT).show(); return true; });
+        Tips.set(v, desc);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams((int) (42 * d), (int) (42 * d));
         lp.setMargins((int) (1 * d), 0, (int) (1 * d), 0);
         bar.addView(v, lp);
         return v;
+    }
+
+    /** "A" / highlighter icon with a coloured bar under it (shows the colour you last picked). */
+    private View colorTool(LinearLayout bar, String label, int icon, String desc, View.OnClickListener l, View[] barOut) {
+        float d = getResources().getDisplayMetrics().density;
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setGravity(Gravity.CENTER);
+        if (icon != 0) {
+            ImageView iv = new ImageView(this);
+            iv.setImageResource(icon);
+            iv.setImageTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.text)));
+            box.addView(iv, new LinearLayout.LayoutParams((int) (20 * d), (int) (20 * d)));
+        } else {
+            TextView t = new TextView(this);
+            t.setText(label);
+            t.setTypeface(null, Typeface.BOLD);
+            t.setTextColor(getColor(R.color.text));
+            t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17);
+            t.setGravity(Gravity.CENTER);
+            t.setIncludeFontPadding(false);
+            box.addView(t);
+        }
+        View strip = new View(this);
+        LinearLayout.LayoutParams sl = new LinearLayout.LayoutParams((int) (22 * d), (int) (5 * d));
+        sl.topMargin = (int) (2 * d);
+        box.addView(strip, sl);
+        barOut[0] = strip;
+        box.setBackgroundResource(R.drawable.bg_tool);
+        box.setContentDescription(desc);
+        box.setOnClickListener(l);
+        Tips.set(box, desc);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams((int) (42 * d), (int) (42 * d));
+        lp.setMargins((int) d, 0, (int) d, 0);
+        bar.addView(box, lp);
+        return box;
+    }
+
+    private void paintBars() {
+        if (inkBar == null) return;
+        int ink = store.prefs().getInt("lastInk", 0);
+        int mark = store.prefs().getInt("lastMark", 0xFFFFFF00);
+        inkBar.setBackgroundColor(ink == 0 ? getColor(R.color.text) : ink);
+        if (mark == 0) {
+            android.graphics.drawable.GradientDrawable g = new android.graphics.drawable.GradientDrawable();
+            g.setStroke((int) getResources().getDisplayMetrics().density, getColor(R.color.hint));
+            markBar.setBackground(g);
+        } else {
+            markBar.setBackgroundColor(mark);
+        }
     }
 
     private void separator(LinearLayout bar) {
@@ -576,10 +630,6 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     private void buildToolbar() {
         LinearLayout bar = findViewById(R.id.format_bar);
         bar.removeAllViews();
-        View plus = tool(bar, "＋", 0, "Insert: photo, scan, PDF, drawing, sticky note, table, page", v -> insertMenu());
-        ((TextView) plus).setTextColor(getColor(R.color.accent));
-        ((TextView) plus).setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
-        separator(bar);
         tBold = tool(bar, "B", 0, "Bold", v -> fmt(c -> c.toggle(RichText.Bold.class)));
         ((TextView) tBold).setTypeface(null, Typeface.BOLD);
         tItalic = tool(bar, "I", 0, "Italic", v -> fmt(c -> c.toggle(RichText.Italic.class)));
@@ -589,13 +639,17 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         tStrike = tool(bar, "S", 0, "Strikethrough", v -> fmt(c -> c.toggle(RichText.Strike.class)));
         ((TextView) tStrike).setPaintFlags(((TextView) tStrike).getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
         separator(bar);
-        tool(bar, "Aa", 0, "Text size", v -> pickSize());
-        View font = tool(bar, "F", 0, "Font", v -> pickFont());
-        ((TextView) font).setTypeface(Typeface.SERIF);
-        View ink = tool(bar, "A", 0, "Text colour", v -> pickInk());
-        ((TextView) ink).setTextColor(0xFFD32F2F);
-        ((TextView) ink).setTypeface(null, Typeface.BOLD);
-        tool(bar, "🖍", 0, "Highlighter", v -> pickMark());
+        tSize = (TextView) tool(bar, "17", 0, "Font size", v -> pickSize());
+        tSize.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        tSize.setTypeface(null, Typeface.BOLD);
+        View font = tool(bar, "F", 0, "Font style", v -> pickFont());
+        ((TextView) font).setTypeface(Typeface.SERIF, Typeface.BOLD_ITALIC);
+        View[] out = new View[1];
+        colorTool(bar, "A", 0, "Font colour", v -> pickInk(), out);
+        inkBar = out[0];
+        colorTool(bar, null, R.drawable.ic_highlighter, "Highlighter colour", v -> pickMark(), out);
+        markBar = out[0];
+        paintBars();
         separator(bar);
         tLeft = tool(bar, null, R.drawable.ic_align_left, "Align left", v -> fmt(c -> c.align("l")));
         tCenter = tool(bar, null, R.drawable.ic_align_center, "Center", v -> fmt(c -> c.align("c")));
@@ -640,55 +694,93 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         tLeft.setSelected(on && "l".equals(a));
         tCenter.setSelected(on && "c".equals(a));
         tRight.setSelected(on && "r".equals(a));
+        if (tSize != null) tSize.setText(String.valueOf(on ? c.sizeNow() : RichText.NORMAL_SIZE));
     }
 
     private void pickSize() {
-        CharSequence[] items = new CharSequence[RichText.SIZES.length];
-        for (int i = 0; i < items.length; i++) {
-            SpannableString s = new SpannableString(RichText.SIZE_NAMES[i]);
-            s.setSpan(new android.text.style.AbsoluteSizeSpan(Math.min(RichText.SIZES[i], 26), true), 0, s.length(), 0);
+        int now = current != null ? current.sizeNow() : RichText.NORMAL_SIZE;
+        CharSequence[] items = new CharSequence[RichText.SIZES.length + 1];
+        for (int i = 0; i < RichText.SIZES.length; i++) {
+            int sp = RichText.SIZES[i];
+            String t = sp + (sp == RichText.NORMAL_SIZE ? "   (normal)" : "") + (sp == now ? "   ✓" : "");
+            SpannableString s = new SpannableString(t);
+            s.setSpan(new android.text.style.AbsoluteSizeSpan(Math.min(sp, 30), true), 0, String.valueOf(sp).length(), 0);
             items[i] = s;
         }
-        new AlertDialog.Builder(this).setTitle("Text size").setItems(items, (d, w) -> {
-            int sp = RichText.SIZES[w];
-            fmt(c -> c.setValue(RichText.Size.class, sp == RichText.NORMAL_SIZE ? null : sp));
+        items[RichText.SIZES.length] = "Custom size…";
+        new AlertDialog.Builder(this).setTitle("Font size").setItems(items, (d, w) -> {
+            if (w == RichText.SIZES.length) { customSize(now); return; }
+            applySize(RichText.SIZES[w]);
         }).show();
     }
 
+    private void customSize(int now) {
+        EditText in = new EditText(this);
+        in.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        in.setText(String.valueOf(now));
+        in.setSelectAllOnFocus(true);
+        int p = (int) (24 * getResources().getDisplayMetrics().density);
+        LinearLayout box = new LinearLayout(this);
+        box.setPadding(p, p / 2, p, 0);
+        box.addView(in, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        new AlertDialog.Builder(this).setTitle("Font size (6 – 120)").setView(box)
+                .setPositiveButton("OK", (d, w) -> {
+                    try {
+                        int sp = Integer.parseInt(in.getText().toString().trim());
+                        applySize(Math.max(6, Math.min(120, sp)));
+                    } catch (NumberFormatException ignored) { }
+                })
+                .setNegativeButton("Cancel", null).show();
+    }
+
+    private void applySize(int sp) {
+        fmt(c -> c.setValue(RichText.Size.class, sp == RichText.NORMAL_SIZE ? null : sp));
+        if (tSize != null) tSize.setText(String.valueOf(sp));
+    }
+
     private void pickFont() {
-        CharSequence[] items = new CharSequence[RichText.FONTS.length];
-        for (int i = 0; i < items.length; i++) {
-            SpannableString s = new SpannableString(RichText.FONT_NAMES[i]);
-            s.setSpan(new android.text.style.TypefaceSpan(RichText.FONTS[i]), 0, s.length(), 0);
-            items[i] = s;
+        String now = current != null ? current.fontNow() : "sans-serif";
+        List<CharSequence> items = new ArrayList<>();
+        List<String> ids = new ArrayList<>();
+        int sec = 0;
+        for (int i = 0; i < Fonts.IDS.length; i++) {
+            if (sec < Fonts.SECTION_AT.length && Fonts.SECTION_AT[sec] == i) {
+                SpannableString h = new SpannableString("— " + Fonts.SECTION_NAMES[sec] + " —");
+                h.setSpan(new ForegroundColorSpan(getColor(R.color.accent)), 0, h.length(), 0);
+                h.setSpan(new android.text.style.RelativeSizeSpan(0.8f), 0, h.length(), 0);
+                items.add(h);
+                ids.add(null);
+                sec++;
+            }
+            SpannableString s = new SpannableString(Fonts.LABELS[i] + (Fonts.IDS[i].equals(now) ? "   ✓" : ""));
+            s.setSpan(new RichText.Font(Fonts.IDS[i]), 0, Fonts.LABELS[i].length(), 0);
+            s.setSpan(new android.text.style.AbsoluteSizeSpan(19, true), 0, Fonts.LABELS[i].length(), 0);
+            items.add(s);
+            ids.add(Fonts.IDS[i]);
         }
-        new AlertDialog.Builder(this).setTitle("Font").setItems(items, (d, w) ->
-                fmt(c -> c.setValue(RichText.Font.class, w == 0 ? null : RichText.FONTS[w]))).show();
+        new AlertDialog.Builder(this).setTitle("Font style").setItems(items.toArray(new CharSequence[0]), (d, w) -> {
+            String id = ids.get(w);
+            if (id == null) { pickFont(); return; }      // tapped a section title
+            fmt(c -> c.setValue(RichText.Font.class, "sans-serif".equals(id) ? null : id));
+        }).show();
     }
 
     private void pickInk() {
-        CharSequence[] items = new CharSequence[RichText.INKS.length];
-        for (int i = 0; i < items.length; i++) {
-            SpannableString s = new SpannableString("●   " + RichText.INK_NAMES[i]);
-            if (RichText.INKS[i] != 0) s.setSpan(new ForegroundColorSpan(RichText.INKS[i]), 0, 1, 0);
-            items[i] = s;
-        }
-        new AlertDialog.Builder(this).setTitle("Text colour").setItems(items, (d, w) ->
-                fmt(c -> c.setValue(RichText.Ink.class, RichText.INKS[w] == 0 ? null : RichText.INKS[w]))).show();
+        int cur = current != null ? current.colorNow(RichText.Ink.class) : 0;
+        ColorPicker.show(this, "Font colour", false, cur != 0 ? cur : store.prefs().getInt("lastInk", 0), c -> {
+            store.prefs().edit().putInt("lastInk", c).apply();
+            paintBars();
+            fmt(tc -> tc.setValue(RichText.Ink.class, c == 0 ? null : c));
+        });
     }
 
     private void pickMark() {
-        CharSequence[] items = new CharSequence[RichText.MARKS.length];
-        for (int i = 0; i < items.length; i++) {
-            SpannableString s = new SpannableString("  " + RichText.MARK_NAMES[i] + "  ");
-            if (RichText.MARKS[i] != 0) {
-                s.setSpan(new BackgroundColorSpan(RichText.MARKS[i]), 0, s.length(), 0);
-                s.setSpan(new ForegroundColorSpan(0xFF1D1C21), 0, s.length(), 0);
-            }
-            items[i] = s;
-        }
-        new AlertDialog.Builder(this).setTitle("Highlighter").setItems(items, (d, w) ->
-                fmt(c -> c.setValue(RichText.Mark.class, RichText.MARKS[w] == 0 ? null : RichText.MARKS[w]))).show();
+        int cur = current != null ? current.colorNow(RichText.Mark.class) : 0;
+        ColorPicker.show(this, "Highlighter", true, cur != 0 ? cur : store.prefs().getInt("lastMark", 0xFFFFFF00), c -> {
+            store.prefs().edit().putInt("lastMark", c).apply();
+            paintBars();
+            fmt(tc -> tc.setValue(RichText.Mark.class, c == 0 ? null : c));
+        });
     }
 
     private void pickDateTime() {

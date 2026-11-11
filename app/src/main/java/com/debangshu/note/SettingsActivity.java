@@ -35,6 +35,7 @@ public class SettingsActivity extends Activity {
     protected void onCreate(Bundle b) {
         super.onCreate(b);
         setContentView(R.layout.activity_settings);
+        Tips.applyAll(findViewById(android.R.id.content));
         store = Store.get(this);
 
         findViewById(R.id.btn_back).setOnClickListener(v -> finish());

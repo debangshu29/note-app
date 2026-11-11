@@ -9,9 +9,9 @@ The only thing the app downloads from the internet is its own updates (from this
 | Feature | How it works |
 |---|---|
 | **All notes in one place** | Home screen lists every note (pinned ones first). Search box looks through notes and reminders. |
-| **Formatting bar** | Above the keyboard: **B** *I* U ~~S~~, text size, 6 fonts (sans, serif, mono, casual, handwriting, narrow), text colour, highlighter, align left / center / right, bullet & numbered lists, checklist, date/time, clear formatting, undo / redo. Select text to format it, or press a button and keep typing. |
+| **Formatting bar** | Above the keyboard: **B** *I* U ~~S~~, **font size in numbers** (8 – 72 or any size; the button shows the current size), **32 font styles** (Android fonts + bundled Google Fonts: Poppins, Nunito, Comfortaa, Oswald, Bebas Neue, Lora, Playfair Display, Roboto Slab, Courier Prime, Dancing Script, Great Vibes, Pacifico, Lobster, Caveat, Indie Flower, Patrick Hand, Kalam, Shadows Into Light, Permanent Marker), **font colour and highlighter with a Word-style colour picker** (theme colours + shades, standard, recent, *More colours…* with any colour / hex code — the button's bar shows the colour you picked), align left / center / right, bullet & numbered lists, checklist, date/time, clear formatting, undo / redo. Long-press any icon to see its name. |
 | **Title section** | Big title at the top, edit time and the note's reminder chips right under it. |
-| **＋ Insert** | 📷 take photo · 🖼 gallery (several at once) · 🧾 scan documents (Google ML Kit: edges, crop, clean-up, many pages; optional text recognition) · 📄 PDF pages as pictures and/or editable text · ✏️ drawing (pen, marker, highlighter, eraser, colours, sizes, undo — editable later) · 🗒 sticky notes (6 colours) · ▦ tables (add/delete rows & columns, header row) · ⤵ new page. Tap a picture for size (S/M/L/full), get text, full screen, move, delete. |
+| **＋ Insert** (top bar, next to Share) | 📷 take photo · 🖼 gallery (several at once) · 🧾 scan documents (Google ML Kit: edges, crop, clean-up, many pages; optional text recognition) · 📄 PDF pages as pictures and/or editable text · ✏️ drawing (pen, marker, highlighter, eraser, colours, sizes, undo — editable later) · 🗒 sticky notes (6 colours) · ▦ tables (add/delete rows & columns, header row) · ⤵ new page. Tap a picture for size (S/M/L/full), get text, full screen, move, delete. |
 | **⋮ menu** | 🔍 **Find & replace** (highlights every match, ↑ ↓ with "3 of 12", replace one / all — in text, sticky notes and tables) · 📑 **Page sorter** (reorder / delete pages) · 🎨 **Note style** (note colour — also on the home screen like a sticky note — and plain / lined / grid / dotted paper) · 📐 **Page settings** (Endless / A4 / Letter / A5, portrait / landscape, narrow / normal / wide margins) |
 | **Auto math** | Type `1+1=` and `2` appears by itself. Type `450+120+80` (no `=`) and ` = 650` appears in faded grey right after it, like Gmail suggestions — tap it or swipe it right to keep it. The grey is a light shade of your text colour. Works with `+ - * / x × ÷ ^ % ( ) √`, decimals and `1,000`. |
 | **Price lists add up by themselves** | Write items with prices, one per line (`apple 50 rs`, `banana is 20 rs`, `milk 2 litre ₹60`, `mango 3 x 40`). The total shows in grey under the list — tap or swipe to keep it. Or type `total =` / `total:` and it fills in. Any `Total = …` line updates itself when you change, add or delete an item. With checkboxes it shows `₹165 · bought ₹70 · left ₹95`. A blank line starts a new list. Amounts use Indian grouping (₹1,25,000). |
@@ -110,3 +110,8 @@ The `Documents/Note` folder stays even if you uninstall the app, so your backups
 - Home-screen widget, voice notes, photos in notes
 - App lock (fingerprint / PIN)
 - More automatic actions: phone numbers → tap to call, amounts → running total, links → open
+
+## Fonts
+
+The bundled fonts come from [Google Fonts](https://github.com/google/fonts) and are free to include in apps
+(SIL Open Font License 1.1 / Apache 2.0). Licence texts: `app/src/main/assets/fonts/LICENSES.txt`.

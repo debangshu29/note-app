@@ -50,6 +50,7 @@ public final class Store {
 
     private Store(Context app) {
         this.app = app;
+        Fonts.init(app);
         notesFile = new File(app.getFilesDir(), "notes.json");
         remindersFile = new File(app.getFilesDir(), "reminders.json");
         load();

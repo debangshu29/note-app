@@ -38,6 +38,7 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle b) {
         super.onCreate(b);
         setContentView(R.layout.activity_main);
+        Tips.applyAll(findViewById(android.R.id.content));
         store = Store.get(this);
         Notifier.ensureChannel(this);
         ReminderSync.runInBackground(() -> ReminderSync.rescheduleAll(this), null);

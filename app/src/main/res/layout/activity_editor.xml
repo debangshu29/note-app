@@ -33,6 +33,12 @@
             android:src="@drawable/ic_pin" />
 
         <ImageButton
+            android:id="@+id/btn_insert"
+            style="@style/IconButton"
+            android:contentDescription="Insert: photo, scan, PDF, drawing, sticky note, table, new page"
+            android:src="@drawable/ic_add_box" />
+
+        <ImageButton
             android:id="@+id/btn_share"
             style="@style/IconButton"
             android:contentDescription="Share"

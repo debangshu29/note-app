@@ -202,6 +202,34 @@ public class TextBlockController {
         return RichText.has(et.getText(), Math.min(s, en), Math.max(s, en), cls);
     }
 
+    public int sizeNow() {
+        int s = et.getSelectionStart();
+        if (s < 0) return RichText.NORMAL_SIZE;
+        if (pending.containsKey(RichText.Size.class) && pendingAt == s) {
+            Object v = pending.get(RichText.Size.class);
+            return v instanceof Integer ? (Integer) v : RichText.NORMAL_SIZE;
+        }
+        return RichText.sizeAt(et.getText(), s == et.getSelectionEnd() ? s : s + 1);
+    }
+
+    public String fontNow() {
+        int s = et.getSelectionStart();
+        if (s < 0) return "sans-serif";
+        if (pending.containsKey(RichText.Font.class) && pendingAt == s) {
+            Object v = pending.get(RichText.Font.class);
+            return v instanceof String ? (String) v : "sans-serif";
+        }
+        int p = Math.max(0, (s == et.getSelectionEnd() ? s : s + 1) - 1);
+        for (RichText.Font f : et.getText().getSpans(p, Math.min(et.length(), p + 1), RichText.Font.class)) return f.family;
+        return "sans-serif";
+    }
+
+    public int colorNow(Class<?> cls) {
+        int s = et.getSelectionStart();
+        if (s < 0) return 0;
+        return RichText.colorAt(et.getText(), s == et.getSelectionEnd() ? s : s + 1, cls);
+    }
+
     public String alignment() {
         return RichText.alignAt(et.getText(), Math.max(0, et.getSelectionStart()));
     }

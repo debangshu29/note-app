@@ -12,7 +12,6 @@ import android.text.style.BackgroundColorSpan;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
-import android.text.style.TypefaceSpan;
 import android.text.style.UnderlineSpan;
 
 import org.json.JSONArray;
@@ -34,7 +33,22 @@ public final class RichText {
     public static class Under extends UnderlineSpan { }
     public static class Strike extends StrikethroughSpan { }
     public static class Size extends AbsoluteSizeSpan { public final int sp; public Size(int sp) { super(sp, true); this.sp = sp; } }
-    public static class Font extends TypefaceSpan { public final String family; public Font(String f) { super(f); family = f; } }
+    /** Any font from {@link Fonts}; keeps bold / italic working on top of it. */
+    public static class Font extends android.text.style.MetricAffectingSpan {
+        public final String family;
+        public Font(String f) { family = f; }
+        @Override public void updateMeasureState(android.text.TextPaint p) { apply(p); }
+        @Override public void updateDrawState(android.text.TextPaint p) { apply(p); }
+        private void apply(android.text.TextPaint p) {
+            Typeface old = p.getTypeface();
+            int style = old == null ? Typeface.NORMAL : old.getStyle();
+            Typeface tf = Typeface.create(Fonts.get(family), style);
+            p.setTypeface(tf);
+            int missing = style & ~tf.getStyle();          // font has no bold / italic: fake it
+            if ((missing & Typeface.BOLD) != 0) p.setFakeBoldText(true);
+            if ((missing & Typeface.ITALIC) != 0) p.setTextSkewX(-0.25f);
+        }
+    }
     public static class Ink extends ForegroundColorSpan { public Ink(int c) { super(c); } }
     public static class Mark extends BackgroundColorSpan { public Mark(int c) { super(c); } }
     public static class Align extends AlignmentSpan.Standard {
@@ -52,19 +66,32 @@ public final class RichText {
 
     // ------------------------------------------------------------------ choices offered in the toolbar
 
-    public static final int[] SIZES = {13, 17, 21, 26, 32};
-    public static final String[] SIZE_NAMES = {"Small", "Normal", "Large", "Extra large", "Huge"};
+    /** Word-style sizes. 17 is the normal size of note text. */
+    public static final int[] SIZES = {8, 9, 10, 11, 12, 14, 16, 17, 18, 20, 22, 24, 26, 28, 32, 36, 40, 48, 60, 72};
     public static final int NORMAL_SIZE = 17;
 
-    public static final String[] FONTS = {"sans-serif", "serif", "monospace", "casual", "cursive", "sans-serif-condensed"};
-    public static final String[] FONT_NAMES = {"Normal (Sans)", "Serif (book style)", "Mono (typewriter)",
-            "Casual", "Handwriting", "Narrow"};
+    /** Text size at a position (from the Size spans), or the normal size. */
+    public static int sizeAt(Spanned sp, int pos) {
+        int p = Math.max(0, pos - 1);
+        for (Object o : sp.getSpans(p, Math.min(sp.length(), p + 1), Size.class)) {
+            int a = sp.getSpanStart(o), b = sp.getSpanEnd(o);
+            if (a <= p && b > p) return ((Size) o).sp;
+        }
+        return NORMAL_SIZE;
+    }
 
-    public static final int[] INKS = {0, 0xFFD32F2F, 0xFFEF6C00, 0xFF2E7D32, 0xFF1565C0, 0xFF6A1B9A, 0xFFC2185B, 0xFF5D4037, 0xFF757575};
-    public static final String[] INK_NAMES = {"Default", "Red", "Orange", "Green", "Blue", "Purple", "Pink", "Brown", "Grey"};
-
-    public static final int[] MARKS = {0, 0xFFFFF176, 0xFFC5E1A5, 0xFFB3E5FC, 0xFFF8BBD0, 0xFFFFCC80};
-    public static final String[] MARK_NAMES = {"None", "Yellow", "Green", "Blue", "Pink", "Orange"};
+    /** Value of a colour span (Ink / Mark) at a position, or 0. */
+    public static int colorAt(Spanned sp, int pos, Class<?> cls) {
+        int p = Math.max(0, pos - 1);
+        for (Object o : sp.getSpans(p, Math.min(sp.length(), p + 1), cls)) {
+            int a = sp.getSpanStart(o), b = sp.getSpanEnd(o);
+            if (a <= p && b > p) {
+                if (o instanceof Ink) return ((Ink) o).getForegroundColor();
+                if (o instanceof Mark) return ((Mark) o).getBackgroundColor();
+            }
+        }
+        return 0;
+    }
 
     // ------------------------------------------------------------------ save / load
 
