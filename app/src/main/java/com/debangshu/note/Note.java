@@ -16,6 +16,10 @@ public class Note {
     public long created;
     public long updated;
     public boolean pinned;
+    /** When it was moved to the recycle bin (0 = not deleted). */
+    public long deleted = 0;
+    /** Locked notes need the app PIN / fingerprint to open, and hide their text on the home screen. */
+    public boolean locked = false;
 
     /** The content, top to bottom. Older notes (before 2.0) get one text block made from body. */
     public List<Block> blocks = new ArrayList<>();
@@ -67,6 +71,8 @@ public class Note {
         o.put("created", created);
         o.put("updated", updated);
         o.put("pinned", pinned);
+        if (deleted > 0) o.put("deleted", deleted);
+        if (locked) o.put("locked", true);
         if (blocks != null && !blocks.isEmpty()) {
             JSONArray arr = new JSONArray();
             for (Block b : blocks) arr.put(b.toJson());
@@ -91,6 +97,8 @@ public class Note {
         n.created = o.optLong("created");
         n.updated = o.optLong("updated");
         n.pinned = o.optBoolean("pinned");
+        n.deleted = o.optLong("deleted", 0);
+        n.locked = o.optBoolean("locked", false);
         JSONArray arr = o.optJSONArray("blocks");
         if (arr != null) {
             for (int i = 0; i < arr.length(); i++) {
@@ -121,6 +129,38 @@ public class Note {
         if (count(Block.IMAGE) > 0) return "Picture note";
         if (count(Block.TABLE) > 0) return "Table";
         return "Untitled note";
+    }
+
+    /** #labels written in the note, lower-case, in order of first use. */
+    public java.util.List<String> tags() { return tagsIn(title + "\n" + body); }
+
+    private static final java.util.regex.Pattern TAG =
+            java.util.regex.Pattern.compile("(?<![\\p{L}\\p{M}\\p{N}_&/#])#([\\p{L}_][\\p{L}\\p{M}\\p{N}_\\-]{0,29})");
+
+    /** "#FF0000" is a colour code, not a label. */
+    private static boolean colourCode(String t) {
+        return (t.length() == 3 || t.length() == 6 || t.length() == 8) && t.matches("[0-9a-fA-F]+") && t.matches(".*\\d.*");
+    }
+
+    public static java.util.List<String> tagsIn(String text) {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        if (text == null) return out;
+        java.util.regex.Matcher m = TAG.matcher(text);
+        while (m.find()) {
+            if (colourCode(m.group(1))) continue;
+            String t = m.group(1).toLowerCase(java.util.Locale.ROOT);
+            while (t.endsWith("-") || t.endsWith("_")) t = t.substring(0, t.length() - 1);
+            if (!t.isEmpty() && !out.contains(t)) out.add(t);
+        }
+        return out;
+    }
+
+    /** Where #labels are in a piece of text: start, end pairs. */
+    public static java.util.List<int[]> tagRanges(CharSequence text) {
+        java.util.List<int[]> out = new java.util.ArrayList<>();
+        java.util.regex.Matcher m = TAG.matcher(text);
+        while (m.find()) if (!colourCode(m.group(1))) out.add(new int[]{m.start(), m.end()});
+        return out;
     }
 
     public boolean isEmpty() {

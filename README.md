@@ -112,6 +112,16 @@ The `Documents/Note` folder stays even if you uninstall the app, so your backups
 - App lock (fingerprint / PIN)
 - More automatic actions: phone numbers → tap to call, amounts → running total, links → open
 
+## New in 3.1
+
+- **Repeating reminders**: every day / weekday / Monday… / month on the 5th / year / every N hours. The next one is set after each alert; repeating "calendar" reminders become repeating calendar events.
+- **Labels**: #words in a note; filter chips on the home screen; ⋮ → Add a label.
+- **Recycle bin**: deleted notes are kept 30 days (home → ⚙ → Recycle bin, or Settings → Your data).
+- **Templates**: long-press New note, or the chips in an empty note.
+- **Grid view & sorting**: home → ⚙.
+- **App lock**: Settings → Privacy & lock (4-digit PIN stored as a salted hash, fingerprint / face via Android's biometric prompt). Locked notes: ⋮ → Lock this note.
+- **Look & feel**: Settings → Look & feel: same as phone / light / dark / pure black, 8 accent colours, 4 text sizes.
+
 ## Design (v3.0)
 
 Light and dark themes with soft cool greys, white rounded cards and an indigo → violet accent. The app font is **Plus Jakarta Sans** (bundled, OFL). Popups are rounded cards; menus slide up from the bottom. Settings are grouped into sections that open when tapped.

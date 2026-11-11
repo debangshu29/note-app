@@ -118,7 +118,7 @@ public final class ColorPicker {
         TextView more = new TextView(a);
         more.setText("🎨   More colours…");
         more.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
-        more.setTextColor(a.getColor(R.color.accent));
+        more.setTextColor(Ui.col(a, R.color.accent));
         more.setPadding(0, (int) (14 * dp), 0, (int) (8 * dp));
         more.setBackgroundResource(R.drawable.bg_tool);
         more.setOnClickListener(v -> custom(a, current != 0 ? current : (fill ? 0xFFFFF4B8 : highlight ? 0xFFFFFF00 : 0xFFFF0000), pick));
@@ -153,7 +153,7 @@ public final class ColorPicker {
             g.setColor(c);
             g.setCornerRadius(7 * dp);
             boolean sel = (c | 0xFF000000) == (current | 0xFF000000) && current != 0;
-            g.setStroke((int) ((sel ? 3 : 1) * dp), sel ? a.getColor(R.color.accent) : 0x33000000);
+            g.setStroke((int) ((sel ? 3 : 1) * dp), sel ? Ui.col(a, R.color.accent) : 0x33000000);
             sw.setBackground(g);
             sw.setContentDescription(String.format(Locale.ROOT, "#%06X", c & 0xFFFFFF));
             sw.setOnClickListener(v -> pick.picked(c));

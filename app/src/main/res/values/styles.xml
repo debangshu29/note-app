@@ -1,15 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="AppTheme" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:colorPrimary">@color/accent</item>
-        <item name="android:colorPrimaryDark">@color/bg</item>
-        <item name="android:colorAccent">@color/accent</item>
-        <item name="android:colorControlActivated">@color/accent</item>
+        <item name="nAccent">@color/accent</item>
+        <item name="nAccent2">@color/accent2</item>
+        <item name="nAccentSoft">@color/accent_soft</item>
+        <item name="nBg">@color/bg</item>
+        <item name="nSurface">@color/surface</item>
+        <item name="nSurface2">@color/surface2</item>
+        <item name="nCardStroke">@color/card_stroke</item>
+        <item name="nDivider">@color/divider</item>
+        <item name="android:colorPrimary">?attr/nAccent</item>
+        <item name="android:colorPrimaryDark">?attr/nBg</item>
+        <item name="android:colorAccent">?attr/nAccent</item>
+        <item name="android:colorControlActivated">?attr/nAccent</item>
         <item name="android:colorControlHighlight">#1F7A7F99</item>
-        <item name="android:windowBackground">@color/bg</item>
-        <item name="android:colorBackground">@color/bg</item>
-        <item name="android:statusBarColor">@color/bg</item>
-        <item name="android:navigationBarColor">@color/bg</item>
+        <item name="android:windowBackground">?attr/nBg</item>
+        <item name="android:colorBackground">?attr/nBg</item>
+        <item name="android:statusBarColor">?attr/nBg</item>
+        <item name="android:navigationBarColor">?attr/nBg</item>
         <item name="android:textColorPrimary">@color/text</item>
         <item name="android:textColorSecondary">@color/text2</item>
         <item name="android:textColorHint">@color/hint</item>
@@ -22,9 +30,9 @@
         <item name="android:windowLightStatusBar">true</item>
     </style>
     <style name="DialogTheme" parent="android:Theme.Material.Light.Dialog.Alert">
-        <item name="android:colorAccent">@color/accent</item>
-        <item name="android:colorControlActivated">@color/accent</item>
-        <item name="android:colorBackground">@color/surface</item>
+        <item name="android:colorAccent">?attr/nAccent</item>
+        <item name="android:colorControlActivated">?attr/nAccent</item>
+        <item name="android:colorBackground">?attr/nSurface</item>
         <item name="android:windowBackground">@drawable/bg_dialog</item>
         <item name="android:textColorPrimary">@color/text</item>
         <item name="android:textColorSecondary">@color/text2</item>
@@ -125,5 +133,55 @@
         <item name="android:visibility">gone</item>
         <item name="android:showDividers">middle</item>
         <item name="android:divider">@drawable/divider_inset</item>
+    </style>
+
+    <!-- accent colours you can pick in Settings → Look & feel -->
+    <style name="Accent_Indigo">
+        <item name="nAccent">#FF5B4CF5</item>
+        <item name="nAccent2">#FF8B5CF6</item>
+        <item name="nAccentSoft">#FFECEAFE</item>
+    </style>
+    <style name="Accent_Ocean">
+        <item name="nAccent">#FF2563EB</item>
+        <item name="nAccent2">#FF38BDF8</item>
+        <item name="nAccentSoft">#FFE3EDFF</item>
+    </style>
+    <style name="Accent_Teal">
+        <item name="nAccent">#FF0F9D8E</item>
+        <item name="nAccent2">#FF22C1A8</item>
+        <item name="nAccentSoft">#FFDDF5F1</item>
+    </style>
+    <style name="Accent_Emerald">
+        <item name="nAccent">#FF16A34A</item>
+        <item name="nAccent2">#FF65C466</item>
+        <item name="nAccentSoft">#FFE2F6E7</item>
+    </style>
+    <style name="Accent_Sunset">
+        <item name="nAccent">#FFEA580C</item>
+        <item name="nAccent2">#FFF59E0B</item>
+        <item name="nAccentSoft">#FFFFEDE0</item>
+    </style>
+    <style name="Accent_Rose">
+        <item name="nAccent">#FFE11D74</item>
+        <item name="nAccent2">#FFF472B6</item>
+        <item name="nAccentSoft">#FFFDE6F0</item>
+    </style>
+    <style name="Accent_Grape">
+        <item name="nAccent">#FF9333EA</item>
+        <item name="nAccent2">#FFC026D3</item>
+        <item name="nAccentSoft">#FFF3E5FF</item>
+    </style>
+    <style name="Accent_Graphite">
+        <item name="nAccent">#FF334155</item>
+        <item name="nAccent2">#FF64748B</item>
+        <item name="nAccentSoft">#FFE8ECF2</item>
+    </style>
+    <!-- pure black for AMOLED screens (used only in dark mode) -->
+    <style name="Surface_Black">
+        <item name="nBg">#FF000000</item>
+        <item name="nSurface">#FF0E0E12</item>
+        <item name="nSurface2">#FF1A1B21</item>
+        <item name="nCardStroke">#FF22232B</item>
+        <item name="nDivider">#FF22232B</item>
     </style>
 </resources>

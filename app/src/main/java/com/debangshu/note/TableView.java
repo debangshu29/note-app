@@ -52,7 +52,7 @@ public class TableView extends LinearLayout {
         TextView more = new TextView(ctx);
         more.setText("⋯  rows & columns");
         more.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-        more.setTextColor(ctx.getColor(R.color.accent));
+        more.setTextColor(Ui.col(ctx, R.color.accent));
         more.setPadding((int) (12 * dp), (int) (6 * dp), (int) (4 * dp), (int) (6 * dp));
         more.setOnClickListener(v -> listener.onTableMenu(this));
         top.addView(more, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,

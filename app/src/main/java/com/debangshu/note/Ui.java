@@ -131,7 +131,7 @@ public final class Ui {
 
     /** Call in onCreate before setContentView: every screen and popup made from XML gets the app font. */
     public static void install(Activity a) {
-        bars(a, a.getColor(R.color.bg), !NoteStyle.dark(a));
+        bars(a, Ui.col(a, R.color.bg), !NoteStyle.dark(a));
         LayoutInflater li = a.getLayoutInflater();
         if (li.getFactory2() != null || li.getFactory() != null) return;
         li.setFactory2(new LayoutInflater.Factory2() {
@@ -162,6 +162,76 @@ public final class Ui {
         }
         if (!skip(v)) applyFont(v);
         return v;
+    }
+
+    // ------------------------------------------------------------------ theme: accent colour, light / dark / black, text size
+
+    public static final String P_THEME = "theme_mode", P_ACCENT = "accent", P_TEXT = "text_scale";
+    public static final String[] THEME_NAMES = {"Same as phone", "Light", "Dark", "Black (AMOLED)"};
+    public static final String[] ACCENT_NAMES = {"Indigo", "Ocean", "Teal", "Emerald", "Sunset", "Rose", "Grape", "Graphite"};
+    public static final int[] ACCENT_STYLES = {R.style.Accent_Indigo, R.style.Accent_Ocean, R.style.Accent_Teal,
+            R.style.Accent_Emerald, R.style.Accent_Sunset, R.style.Accent_Rose, R.style.Accent_Grape, R.style.Accent_Graphite};
+    public static final int[] ACCENT_PREVIEW = {0xFF5B4CF5, 0xFF2563EB, 0xFF0F9D8E, 0xFF16A34A, 0xFFEA580C, 0xFFE11D74, 0xFF9333EA, 0xFF334155};
+    public static final String[] TEXT_NAMES = {"Small", "Normal", "Large", "Extra large"};
+    public static final float[] TEXT_SCALES = {0.9f, 1f, 1.12f, 1.25f};
+
+    private static int themeStamp = 0;
+    private static final java.util.WeakHashMap<Activity, Integer> stamps = new java.util.WeakHashMap<>();
+
+    private static android.content.SharedPreferences prefs(Context c) {
+        return c.getSharedPreferences("settings", Context.MODE_PRIVATE);
+    }
+
+    /** Use in every screen's attachBaseContext: light / dark choice and the app's text size. */
+    public static Context wrap(Context base) {
+        android.content.SharedPreferences p = prefs(base);
+        int mode = p.getInt(P_THEME, 0);
+        float scale = p.getFloat(P_TEXT, 1f);
+        if (mode == 0 && scale == 1f) return base;
+        android.content.res.Configuration c = new android.content.res.Configuration(base.getResources().getConfiguration());
+        int night = android.content.res.Configuration.UI_MODE_NIGHT_MASK;
+        if (mode == 1) c.uiMode = (c.uiMode & ~night) | android.content.res.Configuration.UI_MODE_NIGHT_NO;
+        else if (mode >= 2) c.uiMode = (c.uiMode & ~night) | android.content.res.Configuration.UI_MODE_NIGHT_YES;
+        if (scale != 1f) c.fontScale = c.fontScale * scale;
+        return base.createConfigurationContext(c);
+    }
+
+    /** Accent colour and pure black, put on top of the screen's theme (before its views are made). */
+    private static void applyTheme(Activity a) {
+        android.content.SharedPreferences p = prefs(a);
+        int accent = Math.max(0, Math.min(ACCENT_STYLES.length - 1, p.getInt(P_ACCENT, 0)));
+        a.getTheme().applyStyle(ACCENT_STYLES[accent], true);
+        if (p.getInt(P_THEME, 0) == 3 && NoteStyle.dark(a)) a.getTheme().applyStyle(R.style.Surface_Black, true);
+        stamps.put(a, themeStamp);
+    }
+
+    /** Call after changing the theme: open screens rebuild themselves when they come back. */
+    public static void themeChanged() { themeStamp++; }
+
+    /** In onResume: rebuilds the screen if the theme was changed somewhere else. Returns true if it did. */
+    public static boolean refreshTheme(Activity a) {
+        Integer s = stamps.get(a);
+        if (s != null && s != themeStamp) { a.recreate(); return true; }
+        return false;
+    }
+
+    private static final int[][] THEMED = {
+            {R.color.accent, R.attr.nAccent}, {R.color.accent2, R.attr.nAccent2}, {R.color.accent_soft, R.attr.nAccentSoft},
+            {R.color.bg, R.attr.nBg}, {R.color.surface, R.attr.nSurface}, {R.color.surface2, R.attr.nSurface2},
+            {R.color.card_stroke, R.attr.nCardStroke}, {R.color.divider, R.attr.nDivider}};
+
+    /** A colour that follows the theme (accent colour, black mode); other colours come straight from resources. */
+    public static int col(Context c, int colorRes) {
+        for (int[] t : THEMED) {
+            if (t[0] != colorRes) continue;
+            TypedValue tv = new TypedValue();
+            if (c.getTheme().resolveAttribute(t[1], tv, true)) {
+                if (tv.type >= TypedValue.TYPE_FIRST_COLOR_INT && tv.type <= TypedValue.TYPE_LAST_COLOR_INT) return tv.data;
+                if (tv.resourceId != 0) return c.getColor(tv.resourceId);
+            }
+            break;
+        }
+        return c.getColor(colorRes);
     }
 
     // ------------------------------------------------------------------ small helpers
@@ -259,7 +329,7 @@ public final class Ui {
         box.setOrientation(LinearLayout.VERTICAL);
         if (sheet) {
             View handle = new View(c);
-            handle.setBackground(round(c.getColor(R.color.divider), dp(c, 3)));
+            handle.setBackground(round(Ui.col(c, R.color.divider), dp(c, 3)));
             LinearLayout.LayoutParams hl = new LinearLayout.LayoutParams(dp(c, 40), dp(c, 5));
             hl.gravity = Gravity.CENTER_HORIZONTAL;
             hl.topMargin = dp(c, 10);
@@ -308,10 +378,10 @@ public final class Ui {
         if (pos != null) {
             String label = pos.getText() == null ? "" : pos.getText().toString().toLowerCase(java.util.Locale.ROOT);
             boolean danger = label.contains("delete") || label.contains("erase") || label.contains("remove");
-            pill(pos, danger ? c.getColor(R.color.danger) : c.getColor(R.color.accent), c.getColor(R.color.on_accent));
+            pill(pos, danger ? c.getColor(R.color.danger) : Ui.col(c, R.color.accent), c.getColor(R.color.on_accent));
         }
-        if (neg != null) pill(neg, c.getColor(R.color.surface2), c.getColor(R.color.text));
-        if (neu != null) pill(neu, 0, c.getColor(R.color.accent));
+        if (neg != null) pill(neg, Ui.col(c, R.color.surface2), c.getColor(R.color.text));
+        if (neu != null) pill(neu, 0, Ui.col(c, R.color.accent));
         View panel = pos != null ? (View) pos.getParent() : null;
         if (panel != null) panel.setPadding(dp(c, 16), dp(c, 8), dp(c, 16), dp(c, sheet ? 18 : 16));
     }

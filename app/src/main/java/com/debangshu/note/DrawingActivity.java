@@ -33,6 +33,9 @@ import java.util.List;
 /** Drawing screen: pen, marker, highlighter, eraser, colours, sizes, undo / redo. */
 public class DrawingActivity extends Activity {
 
+    @Override
+    protected void attachBaseContext(android.content.Context base) { super.attachBaseContext(Ui.wrap(base)); }
+
     public static final String EXTRA_STROKES = "strokes";   // existing strokes file (to edit a drawing)
     public static final String RESULT_IMAGE = "image";
     public static final String RESULT_STROKES = "strokesOut";
@@ -52,7 +55,7 @@ public class DrawingActivity extends Activity {
         dp = getResources().getDisplayMetrics().density;
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(getColor(R.color.bg));
+        root.setBackgroundColor(Ui.col(this, R.color.bg));
 
         // top: cancel / undo / redo / clear / done
         LinearLayout top = new LinearLayout(this);
@@ -175,7 +178,7 @@ public class DrawingActivity extends Activity {
             GradientDrawable g = new GradientDrawable();
             g.setShape(GradientDrawable.OVAL);
             g.setColor(col);
-            if (col == c) g.setStroke((int) (3 * dp), getColor(R.color.accent));
+            if (col == c) g.setStroke((int) (3 * dp), Ui.col(this, R.color.accent));
             v.setBackground(g);
         }
         if (draw.tool == 3) pickTool(0);

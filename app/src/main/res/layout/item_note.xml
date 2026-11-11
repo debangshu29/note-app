@@ -48,7 +48,7 @@
                 android:contentDescription="Pinned"
                 android:padding="6dp"
                 android:src="@drawable/ic_pin"
-                android:tint="@color/accent"
+                android:tint="?attr/nAccent"
                 android:visibility="gone" />
         </LinearLayout>
 

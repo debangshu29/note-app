@@ -20,8 +20,10 @@ public class ActionReceiver extends BroadcastReceiver {
         if (r == null) return;
         Notifier.cancel(ctx, r);
         if (ACTION_DONE.equals(action)) {
+            if (r.repeats()) return;   // already moved to its next time when it rang
             ReminderSync.setDone(ctx, r, true);
         } else if (ACTION_SNOOZE.equals(action)) {
+            if (r.anchor <= 0) r.anchor = r.time;
             r.time = System.currentTimeMillis() + Math.max(1, minutes) * 60 * 1000L;
             r.hasTime = true;
             s.saveReminder(r);

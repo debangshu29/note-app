@@ -99,7 +99,7 @@ public class PictureView extends FrameLayout {
         image.setBackgroundResource(R.drawable.bg_image);
         image.setContentDescription("Picture. Tap to select, drag to move, long-press for options");
         addView(image, new LayoutParams((int) (100 * dp), (int) (75 * dp)));
-        int accent = ctx.getColor(R.color.accent);
+        int accent = Ui.col(ctx, R.color.accent);
         frame.setStyle(Paint.Style.STROKE);
         frame.setStrokeWidth(2 * dp);
         frame.setColor(accent);

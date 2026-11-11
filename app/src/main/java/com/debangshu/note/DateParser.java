@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
  *   "gym next monday 6:30 am"          -> next Monday 06:30
  *   "pay rent 01/12"                   -> 1 Dec (day/month, Indian style)
  *   "remind me to drink water in 2 hours"
+ *   "gym every monday at 6 am", "pay rent on the 1st of every month", "drink water every 2 hours"  (repeating)
  *
  * Returns null if the line has no date/time, or the time is already over.
  * No Android imports here, so it can be tested on a normal JVM.
@@ -26,6 +27,8 @@ public final class DateParser {
         /** true for "in 20 minutes" / "in 2 hours" style times */
         public boolean relative;
         public String title;
+        /** "" = once. Otherwise see {@link #describe(String)}: D, WD, W2 (Monday), M15, Y, I120 (minutes). */
+        public String repeat = "";
 
         @Override public String toString() {
             Calendar c = Calendar.getInstance();
@@ -69,14 +72,34 @@ public final class DateParser {
     private static final Pattern P_PART_OF_DAY = Pattern.compile(
             "\\b(?:in the\\s+|this\\s+|at\\s+)?(morning|noon|midday|afternoon|evening|night|midnight)\\b");
 
+    // ---- repeating
+    private static final String NUM_WORDS = "(\\d{1,3}|two|three|four|five|six|ten|twelve|fifteen|twenty|thirty)";
+    private static final Pattern P_EVERY_N = Pattern.compile(
+            "\\b(?:every|each)\\s+(?:" + NUM_WORDS + "\\s*)?(minutes?|mins?|hours?|hrs?|days?|weeks?)\\b");
+    private static final Pattern P_DAILY = Pattern.compile(
+            "\\b(?:every\\s*day|everyday|daily|each\\s+day)\\b|\\b(every|each)\\s+(?=(?:morning|afternoon|evening|night)\\b)");
+    private static final Pattern P_WEEKDAYS = Pattern.compile(
+            "\\b(?:every\\s+weekday|(?:on\\s+)?weekdays|every\\s+working\\s+day|mon(?:day)?\\s*(?:-|to)\\s*fri(?:day)?)\\b");
+    private static final Pattern P_EVERY_WEEKDAY = Pattern.compile(
+            "\\b(?:(?:every|each)\\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tues?|wed|thu(?:rs?)?|fri|sat|sun)"
+            + "|(?:on\\s+)?(mondays|tuesdays|wednesdays|thursdays|fridays|saturdays|sundays))\\b");
+    private static final Pattern P_WEEKLY = Pattern.compile("\\b(?:every\\s+week|weekly|each\\s+week)\\b");
+    private static final Pattern P_MONTHLY_DAY = Pattern.compile(
+            "\\b(?:on\\s+)?(?:the\\s+)?(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?(?:every|each)\\s+month\\b"
+            + "|\\b(?:every|each)\\s+month\\s+(?:on\\s+)?(?:the\\s+)?(\\d{1,2})(?:st|nd|rd|th)?\\b"
+            + "|\\bmonthly\\s+(?:on\\s+)?(?:the\\s+)?(\\d{1,2})(?:st|nd|rd|th)?\\b"
+            + "|\\b(?:every|each)\\s+(\\d{1,2})(?:st|nd|rd|th)\\b(?!\\s*" + MONTHS + ")");
+    private static final Pattern P_MONTHLY = Pattern.compile("\\b(?:every\\s+month|monthly|each\\s+month)\\b");
+    private static final Pattern P_YEARLY = Pattern.compile("\\b(?:every\\s+year|yearly|annually|each\\s+year)\\b");
+
     private static final Pattern P_LEADING_FILLER = Pattern.compile(
             "^(?:\\s*(?:[-*•☐☑✓]|\\[\\s?\\]|\\[x\\]|todo:?|to do:?|reminder:?|remind me(?: to)?|remember to|"
             + "don'?t forget to|do not forget to|i need to|need to|i have to|have to|i must|must|i should|"
             + "i will|i'll|please|pls|plz)\\s*)+",
             Pattern.CASE_INSENSITIVE);
     private static final Pattern P_EDGE_WORDS = Pattern.compile(
-            "^(?:(?:on|at|by|in|this|next|the|of|before|until|till|coming|for|and|,)\\s+)+|"
-            + "(?:\\s+(?:on|at|by|in|this|next|the|of|before|until|till|coming|for|and|from))+\\s*$",
+            "^(?:(?:on|at|by|in|this|next|the|of|before|until|till|coming|for|and|every|each|,)\\s+)+|"
+            + "(?:\\s+(?:on|at|by|in|this|next|the|of|before|until|till|coming|for|and|from|every|each))+\\s*$",
             Pattern.CASE_INSENSITIVE);
 
     /** Convenience: uses the real clock and 9:00 as default time. */
@@ -100,9 +123,72 @@ public final class DateParser {
         boolean tonight = false;
         boolean explicitNoYear = false;
 
-        // ---- "in 2 hours" / "in 3 days"
-        Matcher m = P_IN.matcher(new String(masked));
+        // ---- repeating: "every 2 hours", "daily", "every monday", "1st of every month", "every year"
+        String repeat = "";
+        int weeklyDow = 0;
+        Matcher m = P_EVERY_N.matcher(new String(masked));
         if (m.find()) {
+            int n = m.group(1) == null ? 1 : wordNumber(m.group(1));
+            String unit = m.group(2);
+            int mins = unit.startsWith("m") ? n : unit.startsWith("h") ? n * 60 : unit.startsWith("d") ? n * 1440 : n * 10080;
+            if (n > 0 && mins >= 5) {
+                if (unit.startsWith("d") && n == 1) repeat = "D";
+                else if (unit.startsWith("w") && n == 1) repeat = "W";
+                else repeat = "I" + mins;
+                if (mins < 1440) {
+                    Calendar c = (Calendar) now.clone();
+                    c.set(Calendar.SECOND, 0);
+                    c.set(Calendar.MILLISECOND, 0);
+                    c.add(Calendar.MINUTE, mins);
+                    exact = c.getTimeInMillis();
+                } else {
+                    date = dayOffset(now, 0);
+                }
+                mask(masked, removed, m.start(), m.end());
+            }
+        }
+        if (repeat.isEmpty() && (m = P_WEEKDAYS.matcher(new String(masked))).find()) {
+            repeat = "WD";
+            date = dayOffset(now, 0);
+            mask(masked, removed, m.start(), m.end());
+        }
+        if (repeat.isEmpty() && (m = P_EVERY_WEEKDAY.matcher(new String(masked))).find()) {
+            String day = m.group(1) != null ? m.group(1) : m.group(2);
+            weeklyDow = weekdayIndex(day);
+            repeat = "W" + weeklyDow;
+            date = nextWeekday(now, weeklyDow, false);
+            mask(masked, removed, m.start(), m.end());
+        }
+        if (repeat.isEmpty() && (m = P_DAILY.matcher(new String(masked))).find()) {
+            repeat = "D";
+            if (m.group(1) != null) mask(masked, removed, m.start(1), m.end(1));   // keep "morning" for the time
+            else mask(masked, removed, m.start(), m.end());
+        }
+        if (repeat.isEmpty() && (m = P_MONTHLY_DAY.matcher(new String(masked))).find()) {
+            int day = -1;
+            for (int g = 1; g <= 4 && day < 0; g++) if (m.group(g) != null) day = toInt(m.group(g));
+            if (day >= 1 && day <= 31) {
+                repeat = "M" + day;
+                date = monthDay(now, day, 0);
+                mask(masked, removed, m.start(), m.end());
+            }
+        }
+        if (repeat.isEmpty() && (m = P_MONTHLY.matcher(new String(masked))).find()) {
+            repeat = "M";        // day decided below (a date in the line, or today)
+            mask(masked, removed, m.start(), m.end());
+        }
+        if (repeat.isEmpty() && (m = P_YEARLY.matcher(new String(masked))).find()) {
+            repeat = "Y";
+            mask(masked, removed, m.start(), m.end());
+        }
+        if (repeat.isEmpty() && (m = P_WEEKLY.matcher(new String(masked))).find()) {
+            repeat = "W";        // weekday decided below
+            mask(masked, removed, m.start(), m.end());
+        }
+
+        // ---- "in 2 hours" / "in 3 days"
+        m = P_IN.matcher(new String(masked));
+        if (exact == null && date == null && m.find()) {
             int n = wordNumber(m.group(1));
             String unit = m.group(2);
             if (n > 0 || m.group(1).startsWith("half")) {
@@ -232,7 +318,12 @@ public final class DateParser {
             }
         }
 
-        if (date == null && hour == null && exact == null) return null;
+        if (date == null && hour == null && exact == null) {
+            if (repeat.isEmpty()) return null;
+            date = dayOffset(now, 0);                    // "every month", "daily"… without a day: from today
+        }
+        if (repeat.equals("M")) repeat = "M" + (date != null ? date.get(Calendar.DAY_OF_MONTH) : now.get(Calendar.DAY_OF_MONTH));
+        if (repeat.equals("W")) repeat = "W" + (date != null ? date.get(Calendar.DAY_OF_WEEK) : now.get(Calendar.DAY_OF_WEEK));
 
         // ---- build the final time
         Calendar when;
@@ -253,7 +344,15 @@ public final class DateParser {
             when.set(Calendar.SECOND, 0);
             when.set(Calendar.MILLISECOND, 0);
 
-            if (when.before(now)) {
+            if (!repeat.isEmpty()) {
+                if (repeat.equals("WD")) {
+                    while (isWeekend(when)) when.add(Calendar.DAY_OF_MONTH, 1);
+                }
+                if (repeat.startsWith("I")) {
+                    while (!when.after(now)) when.add(Calendar.DAY_OF_MONTH, 1);   // "every 3 days at 7 am"
+                }
+                if (!when.after(now)) when.setTimeInMillis(nextAfter(when.getTimeInMillis(), repeat, now.getTimeInMillis()));
+            } else if (when.before(now)) {
                 if (timeOnly) {
                     when.add(Calendar.DAY_OF_MONTH, 1);          // "at 5pm" when it's 6pm -> tomorrow
                 } else if (explicitNoYear) {
@@ -278,7 +377,83 @@ public final class DateParser {
         r.hasTime = hasTime;
         r.relative = exact != null;
         r.title = cleanTitle(orig, removed);
+        r.repeat = repeat;
         return r;
+    }
+
+    // ------------------------------------------------------------ repeating
+
+    /** First time of the series that is later than {@code now} (stepping from {@code base}). */
+    public static long nextAfter(long base, String repeat, long now) {
+        if (repeat == null || repeat.isEmpty()) return base;
+        if (repeat.startsWith("I")) {
+            long step = Math.max(5, toInt(repeat.substring(1))) * 60_000L;
+            if (base > now) return base;
+            long k = (now - base) / step + 1;
+            return base + k * step;
+        }
+        Calendar c = Calendar.getInstance();
+        c.setTimeInMillis(base);
+        int target = c.get(Calendar.DAY_OF_MONTH);
+        if (repeat.startsWith("M") && repeat.length() > 1) target = toInt(repeat.substring(1));
+        int guard = 0;
+        while (c.getTimeInMillis() <= now && guard++ < 5000) step(c, repeat, target);
+        return c.getTimeInMillis();
+    }
+
+    private static void step(Calendar c, String repeat, int monthDay) {
+        if (repeat.equals("D")) c.add(Calendar.DAY_OF_MONTH, 1);
+        else if (repeat.equals("WD")) {
+            do { c.add(Calendar.DAY_OF_MONTH, 1); } while (isWeekend(c));
+        } else if (repeat.startsWith("W")) c.add(Calendar.DAY_OF_MONTH, 7);
+        else if (repeat.startsWith("M")) {
+            c.set(Calendar.DAY_OF_MONTH, 1);
+            c.add(Calendar.MONTH, 1);
+            c.set(Calendar.DAY_OF_MONTH, Math.min(monthDay, c.getActualMaximum(Calendar.DAY_OF_MONTH)));
+        } else if (repeat.equals("Y")) c.add(Calendar.YEAR, 1);
+        else c.add(Calendar.DAY_OF_MONTH, 1);
+    }
+
+    private static boolean isWeekend(Calendar c) {
+        int d = c.get(Calendar.DAY_OF_WEEK);
+        return d == Calendar.SATURDAY || d == Calendar.SUNDAY;
+    }
+
+    /** This month's day {@code day} (or the last day), or next month's if it has passed. */
+    private static Calendar monthDay(Calendar now, int day, int unused) {
+        Calendar c = dayOffset(now, 0);
+        c.set(Calendar.DAY_OF_MONTH, Math.min(day, c.getActualMaximum(Calendar.DAY_OF_MONTH)));
+        return c;
+    }
+
+    /** "Every day", "Every Monday", "Every month on the 5th"… */
+    public static String describe(String repeat) {
+        if (repeat == null || repeat.isEmpty()) return "";
+        if (repeat.equals("D")) return "Every day";
+        if (repeat.equals("WD")) return "Every weekday";
+        if (repeat.equals("Y")) return "Every year";
+        if (repeat.startsWith("W")) {
+            String[] names = {"", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+            int d = toInt(repeat.substring(1));
+            return d >= 1 && d <= 7 ? "Every " + names[d] : "Every week";
+        }
+        if (repeat.startsWith("M")) {
+            int d = toInt(repeat.substring(1));
+            return "Every month on the " + d + ordinal(d);
+        }
+        if (repeat.startsWith("I")) {
+            int mins = toInt(repeat.substring(1));
+            if (mins % 10080 == 0) return mins == 10080 ? "Every week" : "Every " + mins / 10080 + " weeks";
+            if (mins % 1440 == 0) return mins == 1440 ? "Every day" : "Every " + mins / 1440 + " days";
+            if (mins % 60 == 0) return mins == 60 ? "Every hour" : "Every " + mins / 60 + " hours";
+            return "Every " + mins + " minutes";
+        }
+        return "Repeats";
+    }
+
+    private static String ordinal(int d) {
+        if (d % 100 >= 11 && d % 100 <= 13) return "th";
+        switch (d % 10) { case 1: return "st"; case 2: return "nd"; case 3: return "rd"; default: return "th"; }
     }
 
     // ------------------------------------------------------------ helpers
@@ -371,7 +546,12 @@ public final class DateParser {
             case "three": return 3;
             case "four": return 4;
             case "five": return 5;
+            case "six": return 6;
             case "ten": return 10;
+            case "twelve": return 12;
+            case "fifteen": return 15;
+            case "twenty": return 20;
+            case "thirty": return 30;
         }
         if (s.startsWith("half")) return 0;
         return toInt(s);

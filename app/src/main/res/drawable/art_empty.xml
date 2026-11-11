@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:width="112dp" android:height="112dp">
-        <shape android:shape="oval"><solid android:color="@color/accent_soft" /></shape>
+        <shape android:shape="oval"><solid android:color="?attr/nAccentSoft" /></shape>
     </item>
     <item android:width="112dp" android:height="112dp" android:top="14dp" android:left="14dp" android:right="14dp" android:bottom="14dp">
-        <shape android:shape="oval"><solid android:color="@color/surface" /></shape>
+        <shape android:shape="oval"><solid android:color="?attr/nSurface" /></shape>
     </item>
     <item android:width="40dp" android:height="40dp" android:gravity="center" android:drawable="@drawable/ic_pen_accent" />
 </layer-list>

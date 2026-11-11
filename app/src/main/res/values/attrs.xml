@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- colours that change with the chosen accent colour and the pure-black theme -->
+    <attr name="nAccent" format="color" />
+    <attr name="nAccent2" format="color" />
+    <attr name="nAccentSoft" format="color" />
+    <attr name="nBg" format="color" />
+    <attr name="nSurface" format="color" />
+    <attr name="nSurface2" format="color" />
+    <attr name="nCardStroke" format="color" />
+    <attr name="nDivider" format="color" />
+</resources>

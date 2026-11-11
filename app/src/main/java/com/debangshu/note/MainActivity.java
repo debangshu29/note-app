@@ -14,6 +14,7 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -26,8 +27,13 @@ import java.util.Locale;
 /** Home screen: all notes in one place, plus a "Reminders" tab with everything coming up. */
 public class MainActivity extends Activity {
 
+    @Override
+    protected void attachBaseContext(android.content.Context base) { super.attachBaseContext(Ui.wrap(base)); }
+
     private Store store;
     private ListView list;
+    private android.widget.GridView grid;
+    private String labelFilter = null;          // show only notes with this #label
     private TextView emptyTv, tabNotes, tabReminders;
     private EditText search;
     private boolean remindersTab = false;
@@ -46,14 +52,19 @@ public class MainActivity extends Activity {
         Updater.scheduleBackgroundChecks(this);
         Updater.cleanUpAfterUpdate(this);
         ReminderSync.runInBackground(() -> Media.deleteUnused(this, store.usedMedia()), null);
+        ReminderSync.runInBackground(() -> store.purgeTrash(), null);   // recycle bin keeps notes 30 days
 
         list = findViewById(R.id.list);
+        grid = findViewById(R.id.grid);
         emptyTv = findViewById(R.id.empty);
         search = findViewById(R.id.search);
         tabNotes = findViewById(R.id.tab_notes);
         tabReminders = findViewById(R.id.tab_reminders);
 
         findViewById(R.id.fab).setOnClickListener(v -> startActivity(new Intent(this, EditorActivity.class)));
+        findViewById(R.id.fab).setOnLongClickListener(v -> { Templates.pick(this); return true; });
+        Tips.set(findViewById(R.id.fab), "New note (long-press for templates)");
+        findViewById(R.id.btn_view).setOnClickListener(v -> viewMenu());
         findViewById(R.id.btn_settings).setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
         findViewById(R.id.btn_import).setOnClickListener(v -> pickImport());
         tabNotes.setOnClickListener(v -> { remindersTab = false; refresh(); });
@@ -84,6 +95,8 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        if (Ui.refreshTheme(this)) return;
+        if (Lock.guard(this)) return;
         refresh();
         Updater.maybePrompt(this, false);       // every time Note is opened (at most every 15 min)
         // the editor saves reminders in the background; refresh again shortly
@@ -121,29 +134,118 @@ public class MainActivity extends Activity {
         if (count <= 0) return name;
         android.text.SpannableString s = new android.text.SpannableString(name + "  " + count);
         int at = name.length() + 2;
-        s.setSpan(new android.text.style.ForegroundColorSpan(getColor(R.color.accent)), at, s.length(), 0);
+        s.setSpan(new android.text.style.ForegroundColorSpan(Ui.col(this, R.color.accent)), at, s.length(), 0);
         s.setSpan(new android.text.style.RelativeSizeSpan(0.9f), at, s.length(), 0);
         return s;
     }
 
     // ------------------------------------------------------------------ notes tab
 
+    private static final String P_GRID = "view_grid", P_SORT = "sort_notes";
+    private static final String[] SORT_NAMES = {"Last edited", "Date created", "Title (A–Z)", "Colour"};
+
+    private android.widget.AbsListView notesView() {
+        return store.prefs().getBoolean(P_GRID, false) ? grid : list;
+    }
+
     private void showNotes(String q) {
         List<Note> all = store.notes();
+        List<String[]> labels = store.labels();
+        boolean filterOk = false;
+        for (String[] l : labels) if (l[0].equals(labelFilter)) filterOk = true;
+        if (!filterOk) labelFilter = null;
+        paintLabels(labels);
         List<Note> shown = new ArrayList<>();
         for (Note n : all) {
-            if (q.isEmpty() || (n.title + "\n" + n.body).toLowerCase(Locale.ROOT).contains(q)) shown.add(n);
+            String hay = n.locked ? n.title : n.title + "\n" + n.body;
+            if (!q.isEmpty() && !hay.toLowerCase(Locale.ROOT).contains(q)) continue;
+            if (labelFilter != null && !n.tags().contains(labelFilter)) continue;
+            shown.add(n);
         }
+        sortNotes(shown);
         shownNotes = shown;
-        list.setOnItemLongClickListener(null);
-        list.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);   // long-press = select notes
-        list.setMultiChoiceModeListener(selection);
-        list.setAdapter(new NotesAdapter(shown));
-        list.setOnItemClickListener((p, v, pos, id) -> open(shown.get(pos).id));
+        android.widget.AbsListView v = notesView();
+        android.widget.AbsListView other = v == grid ? list : grid;
+        other.setVisibility(View.GONE);
+        other.setAdapter(null);
+        v.setVisibility(View.VISIBLE);
+        v.setOnItemLongClickListener(null);
+        v.setChoiceMode(android.widget.AbsListView.CHOICE_MODE_MULTIPLE_MODAL);   // long-press = select notes
+        v.setMultiChoiceModeListener(selection);
+        if (v == grid) grid.setAdapter(new NotesAdapter(shown, true));
+        else list.setAdapter(new NotesAdapter(shown, false));
+        v.setOnItemClickListener((p, view, pos, id) -> open(shown.get(pos).id));
         emptyTv.setText(all.isEmpty()
-                ? "Nothing here yet\nTap New note to write your first one."
+                ? "Nothing here yet\nTap New note to write your first one.\nLong-press it for templates."
+                : labelFilter != null && q.isEmpty() ? "No notes with #" + labelFilter
                 : "Nothing matches \"" + q + "\"");
         emptyTv.setVisibility(shown.isEmpty() ? View.VISIBLE : View.GONE);
+    }
+
+    private void sortNotes(List<Note> l) {
+        int sort = store.prefs().getInt(P_SORT, 0);
+        java.util.Collections.sort(l, (a, b) -> {
+            if (a.pinned != b.pinned) return a.pinned ? -1 : 1;
+            switch (sort) {
+                case 1: return Long.compare(b.created, a.created);
+                case 2: return a.displayTitle().compareToIgnoreCase(b.displayTitle());
+                case 3: {
+                    int ka = a.customColor != 0 ? 1000 : a.color, kb = b.customColor != 0 ? 1000 : b.color;
+                    if (ka != kb) return ka == 0 ? 1 : kb == 0 ? -1 : Integer.compare(ka, kb);
+                    return Long.compare(b.updated, a.updated);
+                }
+                default: return Long.compare(b.updated, a.updated);
+            }
+        });
+    }
+
+    /** Chips under the tabs: All, #work 3, #shopping 2 … tap one to see only those notes. */
+    private void paintLabels(List<String[]> labels) {
+        View scroll = findViewById(R.id.label_scroll);
+        LinearLayout row = findViewById(R.id.label_chips);
+        row.removeAllViews();
+        if (labels.isEmpty() || remindersTab) { scroll.setVisibility(View.GONE); return; }
+        scroll.setVisibility(View.VISIBLE);
+        row.addView(labelChip("All", null, labelFilter == null));
+        for (String[] l : labels) row.addView(labelChip("#" + l[0] + "  " + l[1], l[0], l[0].equals(labelFilter)));
+    }
+
+    private View labelChip(String text, String tag, boolean selected) {
+        float d = getResources().getDisplayMetrics().density;
+        TextView t = new TextView(this);
+        t.setText(text);
+        t.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
+        t.setTypeface(Ui.face(this, Ui.SEMIBOLD));
+        t.setGravity(android.view.Gravity.CENTER);
+        t.setPadding((int) (14 * d), 0, (int) (14 * d), 0);
+        android.graphics.drawable.GradientDrawable g = Ui.round(selected ? Ui.col(this, R.color.accent) : Ui.col(this, R.color.surface), 16 * d);
+        if (!selected) g.setStroke((int) Math.max(1, d), Ui.col(this, R.color.divider));
+        t.setBackground(Ui.ripple(g));
+        t.setTextColor(selected ? getColor(R.color.on_accent) : getColor(R.color.text2));
+        t.setOnClickListener(v -> { labelFilter = tag == null || tag.equals(labelFilter) ? null : tag; refresh(); });
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(android.view.ViewGroup.LayoutParams.WRAP_CONTENT, (int) (34 * d));
+        lp.setMargins(0, 0, (int) (8 * d), 0);
+        t.setLayoutParams(lp);
+        return t;
+    }
+
+    /** View (list / grid), sort order and the recycle bin. */
+    private void viewMenu() {
+        boolean gridMode = store.prefs().getBoolean(P_GRID, false);
+        int sort = store.prefs().getInt(P_SORT, 0);
+        int binCount = store.trash().size();
+        List<CharSequence> items = new ArrayList<>();
+        items.add(gridMode ? "☰   Show as a list" : "▦   Show as a grid (2 columns)");
+        for (int i = 0; i < SORT_NAMES.length; i++) items.add((i == sort ? "✓   " : "      ") + "Sort by " + SORT_NAMES[i].toLowerCase(Locale.ROOT));
+        items.add("🗑   Recycle bin" + (binCount > 0 ? "  (" + binCount + ")" : ""));
+        items.add("📋   New note from a template");
+        new Ui.Popup(this).setTitle("View & sort").setItems(items.toArray(new CharSequence[0]), (d, w) -> {
+            if (w == 0) store.prefs().edit().putBoolean(P_GRID, !gridMode).apply();
+            else if (w <= SORT_NAMES.length) store.prefs().edit().putInt(P_SORT, w - 1).apply();
+            else if (w == SORT_NAMES.length + 1) { startActivity(new Intent(this, TrashActivity.class)); return; }
+            else { Templates.pick(this); return; }
+            refresh();
+        }).show();
     }
 
     // ------------------------------------------------------------------ make a note from a file
@@ -179,6 +281,11 @@ public class MainActivity extends Activity {
     }
 
     private void open(long noteId) {
+        Note n = store.note(noteId);
+        if (n != null && n.locked && !Lock.isOpen(noteId)) {
+            Lock.verify(this, "Locked note", ok -> { if (ok) { Lock.markOpen(noteId); open(noteId); } });
+            return;
+        }
         Intent i = new Intent(this, EditorActivity.class);
         i.putExtra(EditorActivity.EXTRA_NOTE_ID, noteId);
         startActivity(i);
@@ -188,7 +295,7 @@ public class MainActivity extends Activity {
 
     private List<Note> selectedNotes() {
         List<Note> out = new ArrayList<>();
-        android.util.SparseBooleanArray checked = list.getCheckedItemPositions();
+        android.util.SparseBooleanArray checked = notesView().getCheckedItemPositions();
         if (checked == null) return out;
         for (int i = 0; i < checked.size(); i++) {
             int pos = checked.keyAt(i);
@@ -243,7 +350,8 @@ public class MainActivity extends Activity {
                     confirmDelete(sel, mode);
                     return true;
                 case M_ALL:
-                    for (int i = 0; i < list.getCount(); i++) list.setItemChecked(i, true);
+                    android.widget.AbsListView v = notesView();
+                    for (int i = 0; i < v.getCount(); i++) v.setItemChecked(i, true);
                     return true;
             }
             return false;
@@ -261,14 +369,14 @@ public class MainActivity extends Activity {
         String what = notes.size() == 1 ? "\"" + notes.get(0).displayTitle() + "\"" : notes.size() + " notes";
         new Ui.Popup(this)
                 .setTitle(notes.size() == 1 ? "Delete this note?" : "Delete " + notes.size() + " notes?")
-                .setMessage(what + " and their reminders will be removed from this phone.")
+                .setMessage(what + " will move to the recycle bin for 30 days. Their reminders stop.")
                 .setPositiveButton("Delete", (d, w) -> {
                     for (Note n : notes) {
-                        store.removeNote(n.id);
+                        store.trashNote(n.id);
                         ReminderSync.syncAsync(this, n.id, null);
                     }
                     if (mode != null) mode.finish();
-                    Toast.makeText(this, notes.size() == 1 ? "Note deleted" : notes.size() + " notes deleted",
+                    Toast.makeText(this, notes.size() == 1 ? "Moved to the recycle bin" : notes.size() + " notes moved to the recycle bin",
                             Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Cancel", null)
@@ -284,7 +392,8 @@ public class MainActivity extends Activity {
 
     private class NotesAdapter extends BaseAdapter {
         final List<Note> items;
-        NotesAdapter(List<Note> items) { this.items = items; }
+        final boolean gridMode;
+        NotesAdapter(List<Note> items, boolean gridMode) { this.items = items; this.gridMode = gridMode; }
         @Override public int getCount() { return items.size(); }
         @Override public Object getItem(int p) { return items.get(p); }
         @Override public long getItemId(int p) { return items.get(p).id; }
@@ -299,11 +408,15 @@ public class MainActivity extends Activity {
                 preview = nl >= 0 ? preview.substring(nl + 1).trim() : "";
             }
             TextView pv = v.findViewById(R.id.note_preview);
+            if (n.locked) preview = "🔒  Locked note";
+            pv.setMaxLines(gridMode ? 9 : 4);
             pv.setText(preview);
             pv.setVisibility(preview.isEmpty() ? View.GONE : View.VISIBLE);
             int rc = reminderCount(n.id);
             String meta = DateUtils.getRelativeTimeSpanString(n.updated, System.currentTimeMillis(),
                     DateUtils.MINUTE_IN_MILLIS).toString();
+            if (gridMode) meta = DateUtils.getRelativeTimeSpanString(n.updated, System.currentTimeMillis(),
+                    DateUtils.MINUTE_IN_MILLIS, DateUtils.FORMAT_ABBREV_ALL).toString();
             if (rc > 0) meta += "  ·  🔔 " + rc;
             int pics = n.count(Block.IMAGE), tables = n.count(Block.TABLE), pages = n.count(Block.PAGE) + 1;
             if (pics > 0) meta += "  ·  🖼 " + pics;
@@ -340,6 +453,10 @@ public class MainActivity extends Activity {
     // ------------------------------------------------------------------ reminders tab
 
     private void showReminders(String q) {
+        grid.setVisibility(View.GONE);
+        grid.setAdapter(null);
+        list.setVisibility(View.VISIBLE);
+        findViewById(R.id.label_scroll).setVisibility(View.GONE);
         list.setChoiceMode(ListView.CHOICE_MODE_NONE);
         long now = System.currentTimeMillis();
         List<Object> rows = new ArrayList<>();
@@ -388,6 +505,19 @@ public class MainActivity extends Activity {
     }
 
     private void reminderMenu(Reminder r) {
+        if (r.repeats()) {
+            String[] items = {"Open note", "Skip the next one", "Stop repeating", "Delete reminder"};
+            new Ui.Popup(this)
+                    .setTitle(r.title + "  ·  🔁 " + DateParser.describe(r.repeat))
+                    .setItems(items, (d, which) -> {
+                        if (which == 0) open(r.noteId);
+                        else if (which == 1) ReminderSync.runInBackground(() -> ReminderSync.skip(this, r), this::refresh);
+                        else if (which == 2) ReminderSync.runInBackground(() -> ReminderSync.stopRepeating(this, r), this::refresh);
+                        else ReminderSync.runInBackground(() -> ReminderSync.ignore(this, r), this::refresh);
+                    })
+                    .show();
+            return;
+        }
         String[] items = {"Open note", r.done ? "Mark as not done" : "Mark as done", "Delete reminder"};
         new Ui.Popup(this)
                 .setTitle(r.title)
@@ -427,6 +557,7 @@ public class MainActivity extends Activity {
             Note n = store.note(r.noteId);
             String when = r.hasTime ? DateUtils.formatDateTime(MainActivity.this, r.time, DateUtils.FORMAT_SHOW_TIME) : "Any time";
             if (r.time < System.currentTimeMillis() || r.done) when = Notifier.formatWhen(MainActivity.this, r);
+            if (r.repeats()) when = "🔁 " + DateParser.describe(r.repeat) + " · next " + Notifier.formatWhen(MainActivity.this, r);
             sub.setText(when + (n != null ? "  ·  " + n.displayTitle() : ""));
             if (r.done) title.setPaintFlags(title.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
             else title.setPaintFlags(title.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
@@ -440,5 +571,11 @@ public class MainActivity extends Activity {
                             MainActivity.this::refresh));
             return v;
         }
+    }
+
+    @Override
+    public void startActivityForResult(Intent intent, int requestCode, Bundle options) {
+        if (intent.getComponent() == null || !getPackageName().equals(intent.getComponent().getPackageName())) Lock.leavingForOtherApp();
+        super.startActivityForResult(intent, requestCode, options);
     }
 }

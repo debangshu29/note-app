@@ -73,7 +73,7 @@ public final class ShareHelper {
         TextView t = new TextView(a);
         t.setText(s);
         t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-        t.setTextColor(a.getColor(R.color.accent));
+        t.setTextColor(Ui.col(a, R.color.accent));
         t.setPadding(0, (int) (14 * a.getResources().getDisplayMetrics().density), 0, 0);
         return t;
     }

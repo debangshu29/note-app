@@ -12,6 +12,9 @@ import java.util.Date;
 /** Full-screen alarm (shown over the lock screen): big Stop and Snooze buttons. */
 public class AlarmActivity extends Activity {
 
+    @Override
+    protected void attachBaseContext(android.content.Context base) { super.attachBaseContext(Ui.wrap(base)); }
+
     private long reminderId;
 
     @Override
@@ -38,7 +41,7 @@ public class AlarmActivity extends Activity {
         if (r == null) { finish(); return; }
 
         ((TextView) findViewById(R.id.alarm_time)).setText(
-                android.text.format.DateFormat.getTimeFormat(this).format(new Date(r.time)));
+                android.text.format.DateFormat.getTimeFormat(this).format(new Date(r.repeats() ? System.currentTimeMillis() : r.time)));
         ((TextView) findViewById(R.id.alarm_title)).setText(r.title);
         ((TextView) findViewById(R.id.alarm_line)).setText(r.sourceLine);
         ((TextView) findViewById(R.id.alarm_snooze)).setText("Snooze " + Notifier.SNOOZE_ALARM_MIN + " min");

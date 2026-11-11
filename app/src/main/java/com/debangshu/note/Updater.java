@@ -199,7 +199,7 @@ public final class Updater {
                 .setContentText("Tap to update — your notes stay as they are")
                 .setContentIntent(pi)
                 .setAutoCancel(true)
-                .setColor(ctx.getColor(R.color.accent));
+                .setColor(Ui.col(ctx, R.color.accent));
         nm.notify(NOTIF_ID, b.build());
     }
 

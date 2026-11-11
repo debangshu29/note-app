@@ -99,12 +99,13 @@ public final class Notifier {
                 .setSmallIcon(R.drawable.ic_notify)
                 .setContentTitle(r.title)
                 .setContentText(when + " · " + r.sourceLine)
+                .setSubText(r.repeats() ? "🔁 " + DateParser.describe(r.repeat) : null)
                 .setStyle(new Notification.BigTextStyle().bigText(r.sourceLine))
                 .setContentIntent(openNote(ctx, r))
                 .setAutoCancel(true)
                 .setOnlyAlertOnce(true)
                 .setCategory(Notification.CATEGORY_REMINDER)
-                .setColor(ctx.getColor(R.color.accent))
+                .setColor(Ui.col(ctx, R.color.accent))
                 .addAction(new Notification.Action.Builder(null, "Done",
                         actionIntent(ctx, r, ActionReceiver.ACTION_DONE, 0)).build())
                 .addAction(new Notification.Action.Builder(null, "In " + SNOOZE_REMINDER_MIN + " min",
@@ -135,7 +136,7 @@ public final class Notifier {
                 .setCategory(Notification.CATEGORY_ALARM)
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
                 .setOngoing(true)
-                .setColor(ctx.getColor(R.color.accent))
+                .setColor(Ui.col(ctx, R.color.accent))
                 .addAction(new Notification.Action.Builder(null, "Stop",
                         actionIntent(ctx, r, ActionReceiver.ACTION_DONE, 0)).build())
                 .addAction(new Notification.Action.Builder(null, "Snooze " + SNOOZE_ALARM_MIN + " min",

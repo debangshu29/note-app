@@ -22,6 +22,11 @@ public class Reminder {
     public int kind = ReminderKind.EVENT;
     /** true once the user picked the type by hand: then the text no longer changes it */
     public boolean kindLocked;
+    /** Repeating pattern ("" = once), see DateParser.describe(); {@code anchor} is the first time of the series. */
+    public String repeat = "";
+    public long anchor;
+
+    public boolean repeats() { return repeat != null && !repeat.isEmpty(); }
 
     public JSONObject toJson() throws JSONException {
         JSONObject o = new JSONObject();
@@ -37,6 +42,7 @@ public class Reminder {
         o.put("calendarEventId", calendarEventId);
         o.put("kind", kind);
         o.put("kindLocked", kindLocked);
+        if (repeats()) { o.put("repeat", repeat); o.put("anchor", anchor); }
         return o;
     }
 
@@ -54,6 +60,8 @@ public class Reminder {
         r.calendarEventId = o.optLong("calendarEventId", -1);
         r.kind = o.optInt("kind", ReminderKind.EVENT);
         r.kindLocked = o.optBoolean("kindLocked");
+        r.repeat = o.optString("repeat", "");
+        r.anchor = o.optLong("anchor", r.time);
         return r;
     }
 

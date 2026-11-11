@@ -28,6 +28,9 @@ import java.util.Locale;
 /** Switches for every smart feature, backup, and "Delete all data". */
 public class SettingsActivity extends Activity {
 
+    @Override
+    protected void attachBaseContext(android.content.Context base) { super.attachBaseContext(Ui.wrap(base)); }
+
     private static final int REQ_EXPORT = 11, REQ_IMPORT = 12, REQ_PERMS = 13, REQ_STORAGE = 14;
     private Store store;
 
@@ -87,11 +90,16 @@ public class SettingsActivity extends Activity {
         findViewById(R.id.row_import).setOnClickListener(v -> startImport());
         findViewById(R.id.row_help).setOnClickListener(v -> HelpDialog.show(this));
         findViewById(R.id.row_delete_all).setOnClickListener(v -> confirmDeleteAll());
+        findViewById(R.id.row_trash).setOnClickListener(v -> startActivity(new Intent(this, TrashActivity.class)));
+        setupLook();
+        setupLock();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        if (Ui.refreshTheme(this)) return;
+        if (Lock.guard(this)) return;
         updateTexts();
     }
 
@@ -108,7 +116,129 @@ public class SettingsActivity extends Activity {
         });
     }
 
+    // ------------------------------------------------------------------ look & feel
+
+    private void setupLook() {
+        findViewById(R.id.row_theme).setOnClickListener(v -> pickChoice("Theme", Ui.THEME_NAMES,
+                store.prefs().getInt(Ui.P_THEME, 0), w -> { store.prefs().edit().putInt(Ui.P_THEME, w).apply(); restyle(); }));
+        findViewById(R.id.row_text_size).setOnClickListener(v -> {
+            float cur = store.prefs().getFloat(Ui.P_TEXT, 1f);
+            int sel = 1;
+            for (int i = 0; i < Ui.TEXT_SCALES.length; i++) if (Math.abs(Ui.TEXT_SCALES[i] - cur) < 0.01f) sel = i;
+            pickChoice("Text size", Ui.TEXT_NAMES, sel, w -> { store.prefs().edit().putFloat(Ui.P_TEXT, Ui.TEXT_SCALES[w]).apply(); restyle(); });
+        });
+        android.widget.LinearLayout row = findViewById(R.id.accent_swatches);
+        row.removeAllViews();
+        float d = getResources().getDisplayMetrics().density;
+        int cur = store.prefs().getInt(Ui.P_ACCENT, 0);
+        for (int i = 0; i < Ui.ACCENT_PREVIEW.length; i++) {
+            final int k = i;
+            android.view.View sw = new android.view.View(this);
+            android.graphics.drawable.GradientDrawable g = new android.graphics.drawable.GradientDrawable();
+            g.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+            g.setColor(Ui.ACCENT_PREVIEW[i]);
+            if (i == cur) g.setStroke((int) (3 * d), getColor(R.color.text));
+            sw.setBackground(Ui.ripple(g));
+            sw.setContentDescription(Ui.ACCENT_NAMES[i]);
+            Tips.set(sw, Ui.ACCENT_NAMES[i]);
+            android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams((int) (36 * d), (int) (36 * d));
+            lp.setMargins(0, 0, (int) (10 * d), 0);
+            sw.setOnClickListener(v -> { store.prefs().edit().putInt(Ui.P_ACCENT, k).apply(); restyle(); });
+            row.addView(sw, lp);
+        }
+    }
+
+    /** Apply a new theme / accent / text size: this screen rebuilds now, the others when you go back. */
+    private void restyle() {
+        Ui.themeChanged();
+        recreate();
+    }
+
+    private interface Pick { void picked(int which); }
+
+    private void pickChoice(String title, String[] names, int selected, Pick p) {
+        CharSequence[] items = new CharSequence[names.length];
+        for (int i = 0; i < names.length; i++) items[i] = (i == selected ? "✓   " : "      ") + names[i];
+        new Ui.Popup(this).setTitle(title).setItems(items, (dd, w) -> p.picked(w)).show();
+    }
+
+    // ------------------------------------------------------------------ privacy & lock
+
+    private boolean settingLock = false;
+
+    private void setupLock() {
+        Switch lockSw = findViewById(R.id.sw_app_lock);
+        lockSw.setChecked(Lock.appLockOn(this));
+        lockSw.setOnCheckedChangeListener((b, on) -> {
+            if (settingLock) return;
+            if (on) {
+                if (Lock.hasPin(this)) {
+                    store.prefs().edit().putBoolean(Lock.P_ON, true).apply();
+                    Lock.markUnlocked();
+                    Toast.makeText(this, "App lock is on", Toast.LENGTH_SHORT).show();
+                    updateTexts();
+                } else {
+                    Lock.showPad(this, Lock.CREATE, "Choose a PIN", ok -> {
+                        if (ok) {
+                            store.prefs().edit().putBoolean(Lock.P_ON, true).apply();
+                            Lock.markUnlocked();
+                            Toast.makeText(this, "App lock is on", Toast.LENGTH_SHORT).show();
+                        } else setSwitch(lockSw, false);
+                        updateTexts();
+                    });
+                }
+            } else {
+                Lock.showPad(this, Lock.VERIFY, "Turn off app lock", ok -> {
+                    if (ok) store.prefs().edit().putBoolean(Lock.P_ON, false).apply();
+                    else setSwitch(lockSw, true);
+                    updateTexts();
+                });
+            }
+        });
+        Switch bio = findViewById(R.id.sw_lock_bio);
+        bio.setChecked(store.prefs().getBoolean(Lock.P_BIO, true));
+        bio.setOnCheckedChangeListener((b, on) -> store.prefs().edit().putBoolean(Lock.P_BIO, on).apply());
+        findViewById(R.id.row_lock_after).setOnClickListener(v -> pickChoice("Lock again", Lock.AFTER_NAMES,
+                Lock.afterIndex(this), w -> { store.prefs().edit().putInt(Lock.P_AFTER, Lock.AFTER_SECONDS[w]).apply(); updateTexts(); }));
+        findViewById(R.id.row_change_pin).setOnClickListener(v -> {
+            if (!Lock.hasPin(this)) {
+                Lock.showPad(this, Lock.CREATE, "Choose a PIN", ok -> updateTexts());
+                return;
+            }
+            Lock.showPad(this, Lock.VERIFY, "Enter your current PIN", ok -> {
+                if (ok) Lock.showPad(this, Lock.CREATE, "Choose a new PIN", ok2 -> {
+                    if (ok2) Toast.makeText(this, "PIN changed", Toast.LENGTH_SHORT).show();
+                    updateTexts();
+                });
+            });
+        });
+    }
+
+    private void setSwitch(Switch s, boolean on) {
+        settingLock = true;
+        s.setChecked(on);
+        settingLock = false;
+    }
+
+    @Override
+    public void startActivityForResult(Intent intent, int requestCode, Bundle options) {
+        if (intent.getComponent() == null || !getPackageName().equals(intent.getComponent().getPackageName())) Lock.leavingForOtherApp();
+        super.startActivityForResult(intent, requestCode, options);
+    }
+
     private void updateTexts() {
+        ((TextView) findViewById(R.id.txt_theme)).setText(Ui.THEME_NAMES[Math.max(0, Math.min(3, store.prefs().getInt(Ui.P_THEME, 0)))]);
+        ((TextView) findViewById(R.id.txt_accent)).setText(Ui.ACCENT_NAMES[Math.max(0, Math.min(Ui.ACCENT_NAMES.length - 1, store.prefs().getInt(Ui.P_ACCENT, 0)))]);
+        float sc = store.prefs().getFloat(Ui.P_TEXT, 1f);
+        String size = "Normal";
+        for (int i = 0; i < Ui.TEXT_SCALES.length; i++) if (Math.abs(Ui.TEXT_SCALES[i] - sc) < 0.01f) size = Ui.TEXT_NAMES[i];
+        ((TextView) findViewById(R.id.txt_text_size)).setText(size);
+        ((TextView) findViewById(R.id.txt_lock_after)).setText(Lock.AFTER_NAMES[Lock.afterIndex(this)] + " after you leave Note");
+        ((TextView) findViewById(R.id.txt_pin)).setText(Lock.hasPin(this) ? "A 4-digit PIN is set" : "No PIN yet — tap to choose one");
+        findViewById(R.id.sw_lock_bio).setVisibility(Lock.bioAvailable(this) ? android.view.View.VISIBLE : android.view.View.GONE);
+        int bin = store.trash().size();
+        ((TextView) findViewById(R.id.txt_trash)).setText(bin == 0 ? "Empty · deleted notes are kept for 30 days"
+                : bin + (bin == 1 ? " note" : " notes") + " · kept for 30 days, then deleted");
         int h = store.defaultHour();
         String t = android.text.format.DateFormat.getTimeFormat(this)
                 .format(new Date(2000, 0, 1, h, 0));
@@ -312,6 +442,8 @@ public class SettingsActivity extends Activity {
 
     // ------------------------------------------------------------------ look
 
+    private static final java.util.Set<Integer> openSections = new java.util.HashSet<>();
+
     /** Each settings section is a card: tap its header to open or close the list under it. */
     private void setupSections() {
         android.widget.LinearLayout list = findViewById(R.id.settings_list);
@@ -327,9 +459,15 @@ public class SettingsActivity extends Activity {
             card.setLayoutTransition(t);
             android.view.View head = card.getChildAt(0), body = card.getChildAt(1);
             android.view.View chevron = head.findViewWithTag("chevron");
+            final int index = i;
+            if (openSections.contains(index)) {
+                body.setVisibility(android.view.View.VISIBLE);
+                if (chevron != null) chevron.setRotation(180f);
+            }
             head.setOnClickListener(v -> {
                 boolean open = body.getVisibility() != android.view.View.VISIBLE;
                 body.setVisibility(open ? android.view.View.VISIBLE : android.view.View.GONE);
+                if (open) openSections.add(index); else openSections.remove(index);
                 if (chevron != null) chevron.animate().rotation(open ? 180f : 0f).setDuration(200).start();
             });
             prettySwitches(body);

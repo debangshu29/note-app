@@ -80,7 +80,7 @@ public final class ReminderSync {
         Note note = s.note(noteId);
         List<Reminder> existing = s.remindersFor(noteId);
 
-        if (note == null) {                       // note was deleted -> remove all of its reminders
+        if (note == null || note.deleted > 0) {   // note was deleted (or is in the bin) -> remove all of its reminders
             for (Reminder r : existing) removeReminder(ctx, r);
             return;
         }
@@ -106,6 +106,8 @@ public final class ReminderSync {
                 r.time = f.result.timeMillis;
                 r.hasTime = f.result.hasTime;
                 r.kind = f.kind;
+                r.repeat = f.result.repeat;
+                r.anchor = r.time;
                 s.saveReminder(r);
                 activate(ctx, r);
             } else if (r.ignored) {
@@ -120,6 +122,13 @@ public final class ReminderSync {
                 r.title = f.result.title;
                 r.time = f.result.timeMillis;
                 r.hasTime = f.result.hasTime;
+                boolean repeatChanged = !f.result.repeat.equals(r.repeat == null ? "" : r.repeat);
+                r.repeat = f.result.repeat;
+                r.anchor = r.time;
+                if (repeatChanged && r.calendarEventId > 0) {
+                    CalendarHelper.delete(ctx, r.calendarEventId);   // a new event with / without repeat
+                    r.calendarEventId = -1;
+                }
                 if (kindChanged) r.kind = f.kind;
                 if (moved) r.done = false;
                 s.saveReminder(r);
@@ -139,7 +148,7 @@ public final class ReminderSync {
             // a reminder whose time is over stops being "detected" but should stay in the list
             boolean lineStillThere = r.sourceLine != null && !r.sourceLine.isEmpty()
                     && fullText.contains(r.sourceLine);
-            if (lineStillThere && (r.time <= now || r.done || r.ignored)) continue;
+            if (lineStillThere && (r.time <= now || r.done || r.ignored || r.repeats())) continue;
             removeReminder(ctx, r);
         }
     }
@@ -187,6 +196,7 @@ public final class ReminderSync {
     }
 
     public static void setDone(Context ctx, Reminder r, boolean done) {
+        if (done && r.repeats()) { skip(ctx, r); return; }   // repeating: this time is done, the next one stays
         r.done = done;
         Store.get(ctx).saveReminder(r);
         if (done) { AlarmScheduler.cancel(ctx, r); Notifier.cancel(ctx, r); }
@@ -211,9 +221,38 @@ public final class ReminderSync {
     /** Re-arm every future alarm (after a reboot, an app update, or app start). */
     public static void rescheduleAll(Context ctx) {
         long now = System.currentTimeMillis();
-        for (Reminder r : Store.get(ctx).reminders()) {
-            if (!r.done && !r.ignored && r.time > now) AlarmScheduler.schedule(ctx, r);
+        Store s = Store.get(ctx);
+        for (Reminder r : s.reminders()) {
+            if (r.done || r.ignored) continue;
+            if (r.repeats() && r.time <= now) {            // missed while the phone was off: go to the next one
+                r.time = DateParser.nextAfter(r.anchor > 0 ? r.anchor : r.time, r.repeat, now);
+                s.saveReminder(r);
+            }
+            if (r.time > now) AlarmScheduler.schedule(ctx, r);
         }
+    }
+
+    /** After a repeating reminder rang: move it to its next time and arm that. */
+    public static void advance(Context ctx, Reminder r) {
+        if (!r.repeats()) return;
+        long now = System.currentTimeMillis();
+        r.time = DateParser.nextAfter(r.anchor > 0 ? r.anchor : r.time, r.repeat, Math.max(now, r.time));
+        Store.get(ctx).saveReminder(r);
+        AlarmScheduler.schedule(ctx, r);
+    }
+
+    /** "Done for now" on a repeating reminder: skip to the next time, the series keeps going. */
+    public static void skip(Context ctx, Reminder r) {
+        AlarmScheduler.cancel(ctx, r);
+        Notifier.cancel(ctx, r);
+        advance(ctx, r);
+    }
+
+    /** Stops a repeating reminder (keeps it as done). */
+    public static void stopRepeating(Context ctx, Reminder r) {
+        r.repeat = "";
+        if (r.calendarEventId > 0) { CalendarHelper.delete(ctx, r.calendarEventId); r.calendarEventId = -1; }
+        setDone(ctx, r, true);
     }
 
     /** Adds calendar events for "calendar" reminders that don't have one yet (after calendar access is allowed). */

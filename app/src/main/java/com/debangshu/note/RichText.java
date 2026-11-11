@@ -63,6 +63,8 @@ public final class RichText {
 
     /** Find-in-note highlight: shown only on screen, never saved. */
     public static class FindMark extends BackgroundColorSpan { public FindMark(int c) { super(c); } }
+    /** #label colour in the editor (never saved). */
+    public static class TagMark extends android.text.style.ForegroundColorSpan { public TagMark(int c) { super(c); } }
 
     // ------------------------------------------------------------------ choices offered in the toolbar
 

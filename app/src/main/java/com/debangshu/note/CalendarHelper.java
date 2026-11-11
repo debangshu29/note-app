@@ -75,6 +75,14 @@ public final class CalendarHelper {
             v.put(CalendarContract.Events.EVENT_TIMEZONE, "UTC");
             v.put(CalendarContract.Events.ALL_DAY, 1);
         }
+        // repeating reminders become repeating calendar events (DURATION instead of DTEND)
+        String rule = rrule(r);
+        if (rule != null) {
+            v.putNull(CalendarContract.Events.DTEND);
+            v.put(CalendarContract.Events.DURATION, r.hasTime ? "PT30M" : "P1D");
+            v.put(CalendarContract.Events.RRULE, rule);
+            if (r.anchor > 0 && r.hasTime) v.put(CalendarContract.Events.DTSTART, Math.min(r.anchor, r.time));
+        }
         // the app shows its own notification, so the calendar event has no extra alarm
         v.put(CalendarContract.Events.HAS_ALARM, 0);
         return v;
@@ -92,6 +100,26 @@ public final class CalendarHelper {
         } catch (Exception e) {
             return -1;
         }
+    }
+
+    private static String rrule(Reminder r) {
+        if (!r.repeats()) return null;
+        String rep = r.repeat;
+        if (rep.equals("D")) return "FREQ=DAILY";
+        if (rep.equals("WD")) return "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR";
+        if (rep.equals("Y")) return "FREQ=YEARLY";
+        if (rep.startsWith("W")) {
+            String[] days = {"", "SU", "MO", "TU", "WE", "TH", "FR", "SA"};
+            try { return "FREQ=WEEKLY;BYDAY=" + days[Integer.parseInt(rep.substring(1))]; }
+            catch (Exception e) { return "FREQ=WEEKLY"; }
+        }
+        if (rep.startsWith("M")) {
+            try {
+                int d = Integer.parseInt(rep.substring(1));
+                return d >= 29 ? "FREQ=MONTHLY;BYMONTHDAY=-1" : "FREQ=MONTHLY;BYMONTHDAY=" + d;
+            } catch (Exception e) { return "FREQ=MONTHLY"; }
+        }
+        return null;   // "every 2 hours" is not a calendar thing
     }
 
     public static boolean update(Context ctx, Reminder r) {

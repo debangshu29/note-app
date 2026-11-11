@@ -19,6 +19,6 @@
         android:paddingTop="7dp"
         android:paddingEnd="12dp"
         android:paddingBottom="7dp"
-        android:textColor="@color/accent"
+        android:textColor="?attr/nAccent"
         android:textSize="13sp" />
 </FrameLayout>

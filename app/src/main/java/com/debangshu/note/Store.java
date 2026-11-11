@@ -79,9 +79,10 @@ public final class Store {
 
     // ------------------------------------------------------------ notes
 
-    /** Pinned first, then most recently edited. */
+    /** Notes that are not in the recycle bin: pinned first, then most recently edited. */
     public synchronized List<Note> notes() {
-        List<Note> copy = new ArrayList<>(notes);
+        List<Note> copy = new ArrayList<>();
+        for (Note n : notes) if (n.deleted <= 0) copy.add(n);
         Collections.sort(copy, (a, b) -> {
             if (a.pinned != b.pinned) return a.pinned ? -1 : 1;
             return Long.compare(b.updated, a.updated);
@@ -99,6 +100,55 @@ public final class Store {
         saveNotes();
     }
 
+    /** Notes in the recycle bin, most recently deleted first. */
+    public synchronized List<Note> trash() {
+        List<Note> copy = new ArrayList<>();
+        for (Note n : notes) if (n.deleted > 0) copy.add(n);
+        Collections.sort(copy, (a, b) -> Long.compare(b.deleted, a.deleted));
+        return copy;
+    }
+
+    public static final long TRASH_DAYS = 30;
+
+    /** Moves a note to the recycle bin (kept for 30 days). */
+    public synchronized void trashNote(long id) {
+        Note n = note(id);
+        if (n == null) return;
+        n.deleted = System.currentTimeMillis();
+        n.pinned = false;
+        saveNotes();
+    }
+
+    public synchronized void restoreNote(long id) {
+        Note n = note(id);
+        if (n == null) return;
+        n.deleted = 0;
+        n.updated = System.currentTimeMillis();
+        saveNotes();
+    }
+
+    /** Deletes notes that have been in the bin for more than 30 days. Returns how many. */
+    public synchronized int purgeTrash() {
+        long limit = System.currentTimeMillis() - TRASH_DAYS * 24L * 60 * 60 * 1000;
+        int n = 0;
+        for (Note x : new ArrayList<>(notes)) if (x.deleted > 0 && x.deleted < limit) { removeNote(x.id); n++; }
+        return n;
+    }
+
+    /** Every #label in use, with how many notes have it, most used first. */
+    public synchronized List<String[]> labels() {
+        java.util.Map<String, Integer> count = new java.util.LinkedHashMap<>();
+        for (Note n : notes) {
+            if (n.deleted > 0) continue;
+            for (String t : n.tags()) count.put(t, count.containsKey(t) ? count.get(t) + 1 : 1);
+        }
+        List<String[]> out = new ArrayList<>();
+        for (java.util.Map.Entry<String, Integer> e : count.entrySet()) out.add(new String[]{e.getKey(), String.valueOf(e.getValue())});
+        Collections.sort(out, (a, b) -> Integer.parseInt(b[1]) - Integer.parseInt(a[1]));
+        return out;
+    }
+
+    /** Deletes a note for good (with its pictures). */
     public synchronized void removeNote(long id) {
         for (int i = notes.size() - 1; i >= 0; i--) {
             Note n = notes.get(i);

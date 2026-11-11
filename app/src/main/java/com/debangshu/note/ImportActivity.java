@@ -17,6 +17,9 @@ import java.util.List;
 public class ImportActivity extends Activity {
 
     @Override
+    protected void attachBaseContext(android.content.Context base) { super.attachBaseContext(Ui.wrap(base)); }
+
+    @Override
     @SuppressWarnings("deprecation")
     protected void onCreate(Bundle b) {
         super.onCreate(b);

@@ -2,7 +2,7 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg">
+    android:background="?attr/nBg">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -43,6 +43,14 @@
                     android:textColor="@color/text"
                     android:textSize="32sp" />
             </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/btn_view"
+                style="@style/CircleButton"
+                android:layout_marginEnd="8dp"
+                android:contentDescription="View, sort and recycle bin"
+                android:elevation="1dp"
+                android:src="@drawable/ic_tune" />
 
             <ImageButton
                 android:id="@+id/btn_import"
@@ -120,10 +128,46 @@
                 android:textSize="14sp" />
         </LinearLayout>
 
+        <!-- #labels -->
+        <HorizontalScrollView
+            android:id="@+id/label_scroll"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:clipToPadding="false"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:scrollbars="none"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:id="@+id/label_chips"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
+
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1">
+
+            <GridView
+                android:id="@+id/grid"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:horizontalSpacing="10dp"
+                android:listSelector="@android:color/transparent"
+                android:numColumns="2"
+                android:paddingStart="16dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="112dp"
+                android:scrollbarStyle="outsideOverlay"
+                android:stretchMode="columnWidth"
+                android:verticalSpacing="0dp"
+                android:visibility="gone" />
 
             <ListView
                 android:id="@+id/list"

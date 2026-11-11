@@ -2,7 +2,7 @@
 <ripple xmlns:android="http://schemas.android.com/apk/res/android" android:color="#1F7A7F99">
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="@color/accent_soft" />
+            <solid android:color="?attr/nAccentSoft" />
             <corners android:radius="14dp" />
         </shape>
     </item>

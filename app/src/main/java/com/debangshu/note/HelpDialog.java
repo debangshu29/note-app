@@ -34,6 +34,21 @@ public final class HelpDialog {
             {"⏰", "Reminders that fit the note",
                     "“wake me up at 6 am tomorrow” → a real alarm. “call mom at 5 pm on 12 Nov” → your calendar + one notification. "
                     + "“buy milk at 8 pm” → just one notification. Tap the chip under the note to change it."},
+            {"🔁", "Repeating reminders",
+                    "“gym every Monday at 6 am”, “take medicine every day at 9 pm”, “pay rent on the 1st of every month”, "
+                    + "“drink water every 2 hours”, “birthday every year on 12 Nov”. After each one rings, the next is set by itself."},
+            {"🏷", "Labels",
+                    "Write #work, #shopping… anywhere in a note (or ⋮ → Add a label). Chips on the home screen show only those notes."},
+            {"📋", "Templates",
+                    "Long-press New note (or use the chips in an empty note) for a shopping list, to-do, meeting notes, "
+                    + "trip packing, monthly budget or daily journal."},
+            {"🗑", "Recycle bin",
+                    "Deleted notes wait 30 days in the recycle bin (home → ⚙ View & sort → Recycle bin), so you can bring them back."},
+            {"🔒", "App lock & locked notes",
+                    "Settings → Privacy & lock: a PIN and fingerprint for the whole app. Or lock single notes: ⋮ → Lock this note."},
+            {"🎨", "Look & feel",
+                    "Settings → Look & feel: light, dark or pure black, 8 accent colours, and the text size. "
+                    + "Home → ⚙ switches between list and grid and changes the sort order."},
             {"☑️", "Checklists",
                     "Type [] and a space for a checkbox, tap the box to tick it. Lists continue when you press Enter."},
             {"📤", "Sharing",
@@ -66,12 +81,12 @@ public final class HelpDialog {
             LinearLayout row = new LinearLayout(ctx);
             row.setOrientation(LinearLayout.HORIZONTAL);
             row.setPadding((int) (12 * d), (int) (12 * d), (int) (12 * d), (int) (12 * d));
-            row.setBackground(Ui.round(ctx.getColor(R.color.surface2), 18 * d));
+            row.setBackground(Ui.round(Ui.col(ctx, R.color.surface2), 18 * d));
             TextView icon = new TextView(ctx);
             icon.setText(t[0]);
             icon.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
             icon.setGravity(Gravity.CENTER);
-            icon.setBackground(Ui.round(ctx.getColor(R.color.surface), 14 * d));
+            icon.setBackground(Ui.round(Ui.col(ctx, R.color.surface), 14 * d));
             row.addView(icon, new LinearLayout.LayoutParams((int) (44 * d), (int) (44 * d)));
             LinearLayout col = new LinearLayout(ctx);
             col.setOrientation(LinearLayout.VERTICAL);

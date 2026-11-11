@@ -39,7 +39,9 @@ public final class ReminderKind {
         String l = line == null ? "" : line.toLowerCase(Locale.ROOT);
         if (r.hasTime && ALARM_WORDS.matcher(l).find()) return ALARM;
         if (EVENT_WORDS.matcher(l).find()) return EVENT;
-        if (r.relative) return NOTIFY;                         // "in 20 minutes"
+        if (r.relative) return NOTIFY;
+        // daily habits, weekday routines and "every 2 hours" don't belong in the calendar
+        if (r.repeat != null && (r.repeat.equals("D") || r.repeat.equals("WD") || r.repeat.startsWith("I"))) return NOTIFY;                         // "in 20 minutes"
         if (r.timeMillis - now < TWELVE_HOURS && r.hasTime) return NOTIFY; // quick same-day things
         return EVENT;                                           // planned for a later day
     }

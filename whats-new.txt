@@ -1,7 +1,7 @@
-• A brand-new look: the whole app has been redesigned, with a fresh colour scheme in light and dark mode, rounded cards and the new Plus Jakarta Sans font
-• Home: greeting with today's date, a cleaner search bar, Notes / Reminders tabs with counts, and a "New note" button
-• Popups are rounded cards, and menus slide up from the bottom
-• Editor: round buttons, ＋ next to Share, and a floating formatting bar
-• Settings are now short: tap a section (Smart writing, Reminders, Your data, App updates, About) to open its options
-• Note style has many more options: 24 colours and gradients plus any colour, 12 papers (lined, legal pad, grid, small grid, engineering, dotted, crosses, isometric, music, Cornell…), paper line colours, and a font for the whole note, all with a live preview
-• New alarm screen, welcome guide and app icon
+• Repeating reminders: "gym every Monday at 6 am", "medicine every day at 9 pm", "rent on the 1st of every month", "water every 2 hours", "birthday every year on 12 Nov"
+• Labels: write #work or #shopping in a note (or ⋮ → Add a label); chips on the home screen filter your notes
+• Recycle bin: deleted notes are kept for 30 days and can be restored (home → ⚙ → Recycle bin)
+• Templates: long-press New note for a shopping list, to-do, meeting notes, trip packing, monthly budget or journal
+• Grid view and sorting: home → ⚙ shows notes in 2 columns and sorts by edited, created, title or colour
+• App lock: PIN + fingerprint for the whole app, and locked notes (⋮ → Lock this note)
+• Look & feel: light, dark or pure black (AMOLED), 8 accent colours and 4 text sizes (Settings → Look & feel)

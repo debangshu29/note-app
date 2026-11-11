@@ -3,7 +3,7 @@
     android:id="@+id/editor_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg"
+    android:background="?attr/nBg"
     android:orientation="vertical">
 
     <!-- top bar -->
@@ -259,6 +259,23 @@
                     android:id="@+id/chips_row"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
+
+            <!-- templates for a new, empty note -->
+            <HorizontalScrollView
+                android:id="@+id/templates_scroll"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:scrollbars="none"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:id="@+id/templates_row"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
                     android:orientation="horizontal" />
             </HorizontalScrollView>
 

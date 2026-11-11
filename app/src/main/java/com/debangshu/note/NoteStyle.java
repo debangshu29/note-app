@@ -72,7 +72,7 @@ public final class NoteStyle {
     /** Colour swatch for the style picker (two colours for gradients). */
     public static int[] swatch(Context ctx, int index) {
         boolean d = dark(ctx);
-        int a = index == 0 ? ctx.getColor(R.color.bg) : (d ? DARK : LIGHT)[index];
+        int a = index == 0 ? Ui.col(ctx, R.color.bg) : (d ? DARK : LIGHT)[index];
         int b = isGradient(index) ? (d ? DARK2 : LIGHT2)[index] : a;
         return new int[]{a, b};
     }

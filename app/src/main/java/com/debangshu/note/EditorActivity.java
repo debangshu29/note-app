@@ -59,9 +59,13 @@ import java.util.Map;
  */
 public class EditorActivity extends Activity implements TextBlockController.Host, TableView.Listener {
 
+    @Override
+    protected void attachBaseContext(android.content.Context base) { super.attachBaseContext(Ui.wrap(base)); }
+
     public static final String EXTRA_NOTE_ID = "noteId";
     public static final String EXTRA_TITLE = "noteTitle";
     public static final String EXTRA_IMAGES = "noteImages";   // picture files already in Media (from import)
+    public static final String EXTRA_TEMPLATE = "noteTemplate"; // Templates index for a new note
 
     private static final int REQ_PERMS = 41, REQ_CAMERA = 61, REQ_GALLERY = 62, REQ_PDF = 63, REQ_DRAW = 64;
 
@@ -143,6 +147,11 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             ArrayList<String> imgs = getIntent().getStringArrayListExtra(EXTRA_IMAGES);
             if (imgs != null) for (String f : imgs) start.add(Block.image(f, "import"));
             String shared = getIntent().getStringExtra(Intent.EXTRA_TEXT);
+            int tpl = getIntent().getIntExtra(EXTRA_TEMPLATE, -1);
+            if (tpl >= 0 && tpl < Templates.NAMES.length && shared == null) {
+                shared = Templates.body(tpl);
+                titleEt.setText(Templates.title(tpl));
+            }
             start.add(Block.text(shared == null ? "" : shared));
             String sharedTitle = getIntent().getStringExtra(EXTRA_TITLE);
             if (sharedTitle != null) titleEt.setText(sharedTitle);
@@ -171,8 +180,207 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         setupFind();
 
         if (note == null && (getIntent().getStringExtra(Intent.EXTRA_TEXT) != null
-                || getIntent().getStringArrayListExtra(EXTRA_IMAGES) != null)) onEdited();
+                || getIntent().getStringArrayListExtra(EXTRA_IMAGES) != null
+                || getIntent().getIntExtra(EXTRA_TEMPLATE, -1) >= 0)) onEdited();
+        if (getIntent().getIntExtra(EXTRA_TEMPLATE, -1) >= 0) cursorToFirstItem();
+        else if (note == null && getIntent().getStringExtra(Intent.EXTRA_TEXT) == null
+                && getIntent().getStringArrayListExtra(EXTRA_IMAGES) == null) showTemplates();
         refreshChips();
+    }
+
+    // ---- templates (new, empty note)
+
+    private boolean templatesShown = false;
+
+    private void showTemplates() {
+        LinearLayout row = findViewById(R.id.templates_row);
+        row.removeAllViews();
+        float d = getResources().getDisplayMetrics().density;
+        TextView lead = new TextView(this);
+        lead.setText("Start from");
+        lead.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        lead.setTextColor(getColor(R.color.text2));
+        lead.setTypeface(Ui.face(this, Ui.SEMIBOLD));
+        lead.setPadding(0, 0, (int) (10 * d), 0);
+        row.addView(lead);
+        for (int i = 0; i < Templates.NAMES.length; i++) {
+            final int k = i;
+            TextView t = new TextView(this);
+            t.setText(Templates.EMOJI[i] + "  " + Templates.NAMES[i]);
+            t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+            t.setTypeface(Ui.face(this, Ui.SEMIBOLD));
+            t.setTextColor(getColor(R.color.text));
+            t.setGravity(Gravity.CENTER);
+            t.setPadding((int) (12 * d), 0, (int) (12 * d), 0);
+            android.graphics.drawable.GradientDrawable g = Ui.round(Ui.col(this, R.color.surface), 16 * d);
+            g.setStroke((int) Math.max(1, d), Ui.col(this, R.color.divider));
+            t.setBackground(Ui.ripple(g));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, (int) (34 * d));
+            lp.setMargins(0, 0, (int) (8 * d), 0);
+            t.setOnClickListener(v -> applyTemplate(k));
+            row.addView(t, lp);
+        }
+        findViewById(R.id.templates_scroll).setVisibility(View.VISIBLE);
+        templatesShown = true;
+    }
+
+    private void hideTemplates() {
+        if (!templatesShown) return;
+        templatesShown = false;
+        findViewById(R.id.templates_scroll).setVisibility(View.GONE);
+    }
+
+    private void applyTemplate(int i) {
+        hideTemplates();
+        loading = true;
+        titleEt.setText(Templates.title(i));
+        List<Block> l = new ArrayList<>();
+        l.add(Block.text(Templates.body(i)));
+        renderBlocks(l);
+        loading = false;
+        onEdited();
+        cursorToFirstItem();
+    }
+
+    /** Puts the cursor on the first empty "☐ " / "• " / "Who: " line of a template. */
+    private void cursorToFirstItem() {
+        for (Holder h : holders) {
+            if (h.tc == null) continue;
+            String t = h.tc.et.getText().toString();
+            int at = -1;
+            for (String key : new String[]{"☐ \n", "• \n", ": \n", "☐ "}) {
+                int i = t.indexOf(key);
+                if (i >= 0) { at = key.endsWith("\n") ? i + key.length() - 1 : i + key.length(); break; }
+            }
+            h.tc.et.requestFocus();
+            h.tc.et.setSelection(at >= 0 ? Math.min(at, t.length()) : 0);
+            return;
+        }
+    }
+
+    // ---- #labels
+
+    /** Colours every #label in the text (only on screen, not saved). */
+    private void highlightTags() {
+        int c = Ui.col(this, R.color.accent);
+        for (Holder h : holders) {
+            if (h.tc == null) continue;
+            Editable e = h.tc.et.getText();
+            for (RichText.TagMark m : e.getSpans(0, e.length(), RichText.TagMark.class)) e.removeSpan(m);
+            for (int[] r : Note.tagRanges(e)) e.setSpan(new RichText.TagMark(c), r[0], r[1], Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+    }
+
+    private void addLabelMenu() {
+        List<String[]> labels = store.labels();
+        List<String> names = new ArrayList<>();
+        for (String[] l : labels) names.add(l[0]);
+        CharSequence[] items = new CharSequence[names.size() + 1];
+        items[0] = "＋   New label…";
+        for (int i = 0; i < names.size(); i++) items[i + 1] = "#" + names.get(i);
+        new Ui.Popup(this).setTitle("Add a label").setItems(items, (d, w) -> {
+            if (w == 0) newLabelDialog();
+            else addLabel(names.get(w - 1));
+        }).show();
+    }
+
+    private void newLabelDialog() {
+        float d = getResources().getDisplayMetrics().density;
+        EditText in = new EditText(this);
+        in.setHint("e.g. work, shopping, ideas");
+        in.setSingleLine(true);
+        in.setBackgroundResource(R.drawable.bg_field);
+        in.setPadding((int) (14 * d), (int) (12 * d), (int) (14 * d), (int) (12 * d));
+        LinearLayout box = new LinearLayout(this);
+        box.setPadding((int) (24 * d), (int) (6 * d), (int) (24 * d), 0);
+        box.addView(in, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        new Ui.Popup(this).setTitle("New label").setView(box)
+                .setPositiveButton("Add", (dd, w) -> {
+                    String t = in.getText().toString().trim().replaceAll("^#+", "").replaceAll("\\s+", "-");
+                    if (!t.isEmpty()) addLabel(t);
+                })
+                .setNegativeButton("Cancel", null).show();
+        in.requestFocus();
+    }
+
+    /** Adds "#label" on a labels line at the end of the note. */
+    private void addLabel(String label) {
+        Holder last = null;
+        for (Holder h : holders) if (h.tc != null) last = h;
+        if (last == null) return;
+        Editable e = last.tc.et.getText();
+        String text = e.toString();
+        if (Note.tagsIn(text).contains(label.toLowerCase(Locale.ROOT))) {
+            Toast.makeText(this, "Already has #" + label, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        int nl = text.lastIndexOf('\n');
+        String lastLine = text.substring(nl + 1).trim();
+        boolean labelsLine = !lastLine.isEmpty() && lastLine.replaceAll("#[^\\s#]+", "").trim().isEmpty();
+        String add = labelsLine ? " #" + label : (text.isEmpty() ? "" : text.endsWith("\n") ? "\n" : "\n\n") + "#" + label;
+        e.append(add);
+        onEdited();
+        highlightTags();
+        Toast.makeText(this, "Label #" + label + " added", Toast.LENGTH_SHORT).show();
+    }
+
+    // ---- locks
+
+    private boolean askingNoteLock = false;
+
+    private void checkLock() {
+        if (Lock.guard(this)) return;
+        if (note != null && note.locked && !Lock.isOpen(note.id) && !askingNoteLock) {
+            askingNoteLock = true;
+            scroll.setVisibility(View.INVISIBLE);
+            Lock.verify(this, "Locked note", ok -> {
+                askingNoteLock = false;
+                if (!ok) { finish(); return; }
+                Lock.markOpen(note.id);
+                scroll.setVisibility(View.VISIBLE);
+            });
+        }
+    }
+
+    private void toggleNoteLock() {
+        saveNow();
+        if (note == null) { Toast.makeText(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
+        if (note.locked) {
+            note.locked = false;
+            store.saveNote(note);
+            Toast.makeText(this, "Lock removed", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Runnable lockIt = () -> {
+            note.locked = true;
+            store.saveNote(note);
+            Lock.markOpen(note.id);
+            Toast.makeText(this, "Note locked — it needs your PIN or fingerprint to open", Toast.LENGTH_LONG).show();
+        };
+        if (Lock.hasPin(this)) lockIt.run();
+        else Lock.showPad(this, Lock.CREATE, "Set a PIN for locked notes", ok -> { if (ok) lockIt.run(); });
+    }
+
+    @Override
+    public void startActivityForResult(Intent intent, int requestCode, Bundle options) {
+        if (intent.getComponent() == null || !getPackageName().equals(intent.getComponent().getPackageName())) Lock.leavingForOtherApp();
+        super.startActivityForResult(intent, requestCode, options);
+    }
+
+    @Override
+    public void startIntentSenderForResult(android.content.IntentSender intent, int requestCode, Intent fillInIntent,
+                                           int flagsMask, int flagsValues, int extraFlags, Bundle options)
+            throws android.content.IntentSender.SendIntentException {
+        Lock.leavingForOtherApp();
+        super.startIntentSenderForResult(intent, requestCode, fillInIntent, flagsMask, flagsValues, extraFlags, options);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (note != null) getIntent().putExtra(EXTRA_NOTE_ID, note.id);
+        if (Ui.refreshTheme(this)) return;
+        checkLock();
     }
 
     @Override
@@ -602,6 +810,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     // ======================================================================================= saving
 
     private void onEdited() {
+        if (templatesShown && !loading) hideTemplates();
         handler.removeCallbacks(saveTask);
         handler.postDelayed(saveTask, 800);
         handler.removeCallbacks(chipsTask);
@@ -771,7 +980,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     private void separator(LinearLayout bar) {
         float d = getResources().getDisplayMetrics().density;
         View s = new View(this);
-        s.setBackgroundColor(getColor(R.color.divider));
+        s.setBackgroundColor(Ui.col(this, R.color.divider));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams((int) Math.max(1, d), (int) (22 * d));
         lp.setMargins((int) (6 * d), 0, (int) (6 * d), 0);
         bar.addView(s, lp);
@@ -899,7 +1108,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         for (int i = 0; i < Fonts.IDS.length; i++) {
             if (sec < Fonts.SECTION_AT.length && Fonts.SECTION_AT[sec] == i) {
                 SpannableString h = new SpannableString("— " + Fonts.SECTION_NAMES[sec] + " —");
-                h.setSpan(new ForegroundColorSpan(getColor(R.color.accent)), 0, h.length(), 0);
+                h.setSpan(new ForegroundColorSpan(Ui.col(this, R.color.accent)), 0, h.length(), 0);
                 h.setSpan(new android.text.style.RelativeSizeSpan(0.8f), 0, h.length(), 0);
                 items.add(h);
                 ids.add(null);
@@ -1421,14 +1630,18 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     // ======================================================================================= ⋮ menu
 
     private void moreMenu() {
-        String[] items = {"🔍  Find & replace", "📑  Page sorter", "🎨  Note style", "📐  Page settings", "🗑  Delete note"};
+        boolean locked = note != null && note.locked;
+        String[] items = {"🔍  Find & replace", "🏷  Add a label", "🎨  Note style", "📑  Page sorter", "📐  Page settings",
+                locked ? "🔓  Remove lock" : "🔒  Lock this note", "🗑  Delete note"};
         new Ui.Popup(this).setItems(items, (d, w) -> {
             switch (w) {
                 case 0: openFind(); break;
-                case 1: pageSorter(); break;
+                case 1: addLabelMenu(); break;
                 case 2: noteStyleDialog(); break;
-                case 3: pageSettingsDialog(); break;
-                case 4: confirmDelete(); break;
+                case 3: pageSorter(); break;
+                case 4: pageSettingsDialog(); break;
+                case 5: toggleNoteLock(); break;
+                case 6: confirmDelete(); break;
             }
         }).show();
     }
@@ -1436,13 +1649,15 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     private void confirmDelete() {
         new Ui.Popup(this)
                 .setTitle("Delete this note?")
-                .setMessage("The note, its pictures and its reminders will be removed from this phone.")
+                .setMessage("It moves to the recycle bin for 30 days (home → ⚙ View & sort → Recycle bin). Its reminders stop.")
                 .setPositiveButton("Delete", (d, w) -> {
                     handler.removeCallbacks(saveTask);
+                    saveNow();
                     if (note != null) {
                         long id = note.id;
-                        store.removeNote(id);
+                        store.trashNote(id);
                         ReminderSync.syncAsync(this, id, null);
+                        Toast.makeText(this, "Moved to the recycle bin", Toast.LENGTH_SHORT).show();
                     }
                     note = null;
                     loading = true;
@@ -1461,7 +1676,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
     private void applyStyle() {
         int base = NoteStyle.noteColor(this, note);
-        int color = base != 0 ? base : getColor(R.color.bg);
+        int color = base != 0 ? base : Ui.col(this, R.color.bg);
         int second = NoteStyle.noteColor2(this, note);
         View root = findViewById(R.id.editor_root);
         android.graphics.drawable.Drawable bg = NoteStyle.background(this, note, 0);
@@ -1536,7 +1751,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                         g.setGradientType(android.graphics.drawable.GradientDrawable.SWEEP_GRADIENT);
                         g.setColors(new int[]{0xFFFF5F6D, 0xFFFFC371, 0xFFFFF176, 0xFF7CF29C, 0xFF64B5F6, 0xFFB388FF, 0xFFFF5F6D});
                     }
-                    g.setStroke((int) ((note.customColor != 0 ? 3 : 1) * d), note.customColor != 0 ? getColor(R.color.accent) : getColor(R.color.divider));
+                    g.setStroke((int) ((note.customColor != 0 ? 3 : 1) * d), note.customColor != 0 ? Ui.col(this, R.color.accent) : Ui.col(this, R.color.divider));
                     sw.setBackground(g);
                 });
                 sw.setOnClickListener(v -> ColorPicker.showFill(this, "Any colour", note.customColor, col -> {
@@ -1576,10 +1791,10 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             row.addView(tile, lp);
             refresh.add(() -> {
                 int base = NoteStyle.noteColor(this, note);
-                int fill = base != 0 ? base : getColor(R.color.surface);
+                int fill = base != 0 ? base : Ui.col(this, R.color.surface);
                 boolean sel = note.paper == kind;
                 android.graphics.drawable.GradientDrawable g = Ui.round(fill, 12 * d);
-                g.setStroke((int) ((sel ? 3 : 1) * d), sel ? getColor(R.color.accent) : getColor(R.color.divider));
+                g.setStroke((int) ((sel ? 3 : 1) * d), sel ? Ui.col(this, R.color.accent) : Ui.col(this, R.color.divider));
                 prev.setBackground(g);
                 int inkNow = ColorPicker.luminance(fill) > 0.5 ? 0xFF14151A : 0xFFF2F3F7;
                 lines.setBackground(new NoteStyle.Paper(kind, 11 * d, 9 * d, NoteStyle.lineColor(this, note, inkNow)));
@@ -1606,7 +1821,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams((int) (34 * d), (int) (34 * d));
             lp.setMargins((int) (3 * d), (int) (3 * d), (int) (6 * d), (int) (3 * d));
             lineRow.addView(sw, lp);
-            refresh.add(() -> sw.setBackground(swatch(lc == 0 ? getColor(R.color.surface2) : lc, lc == 0 ? getColor(R.color.surface2) : lc,
+            refresh.add(() -> sw.setBackground(swatch(lc == 0 ? Ui.col(this, R.color.surface2) : lc, lc == 0 ? Ui.col(this, R.color.surface2) : lc,
                     note.lineColor == lc)));
             sw.setOnClickListener(v -> { note.lineColor = lc; changed.run(); });
             Tips.set(sw, NoteStyle.LINE_NAMES[i] + " lines");
@@ -1651,7 +1866,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             refresh.add(() -> {
                 boolean sel = id.equals(note.font == null ? "" : note.font);
                 android.graphics.drawable.GradientDrawable g = Ui.round(getColor(sel ? R.color.accent_soft : R.color.surface2), 14 * d);
-                if (sel) g.setStroke((int) (2 * d), getColor(R.color.accent));
+                if (sel) g.setStroke((int) (2 * d), Ui.col(this, R.color.accent));
                 chip.setBackground(Ui.ripple(g));
             });
             chip.setOnClickListener(v -> { note.font = id; changed.run(); });
@@ -1706,7 +1921,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                 : new android.graphics.drawable.GradientDrawable(android.graphics.drawable.GradientDrawable.Orientation.TL_BR, new int[]{a, b});
         if (a == b) g.setColor(a);
         g.setShape(android.graphics.drawable.GradientDrawable.OVAL);
-        g.setStroke((int) ((selected ? 3 : 1) * d), selected ? getColor(R.color.accent) : getColor(R.color.divider));
+        g.setStroke((int) ((selected ? 3 : 1) * d), selected ? Ui.col(this, R.color.accent) : Ui.col(this, R.color.divider));
         return Ui.ripple(g);
     }
 
@@ -1865,7 +2080,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         TextView t = new TextView(this);
         t.setText(s);
         t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-        t.setTextColor(getColor(R.color.accent));
+        t.setTextColor(Ui.col(this, R.color.accent));
         t.setPadding(0, (int) (14 * getResources().getDisplayMetrics().density), 0, 0);
         return t;
     }
@@ -2044,6 +2259,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     }
 
     private void refreshChips() {
+        highlightTags();
         List<ReminderSync.Found> found = ReminderSync.detect(this, titleEt.getText().toString(), currentPlain());
         Map<String, Reminder> stored = new HashMap<>();
         if (note != null) for (Reminder r : store.remindersFor(note.id)) stored.put(r.key, r);
@@ -2059,7 +2275,8 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             int kind = r != null && (same || r.kindLocked) ? r.kind : f.kind;
             View chip = inf.inflate(R.layout.item_chip, chipsRow, false);
             TextView tv = chip.findViewById(R.id.chip_text);
-            tv.setText(ReminderKind.emoji(kind) + " " + f.result.title + " · " + friendlyWhen(time, hasTime));
+            String rep = f.result.repeat == null || f.result.repeat.isEmpty() ? "" : "  🔁 " + DateParser.describe(f.result.repeat);
+            tv.setText(ReminderKind.emoji(kind) + " " + f.result.title + " · " + friendlyWhen(time, hasTime) + rep);
             if (r != null && (r.ignored || r.done)) {
                 tv.setPaintFlags(tv.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
                 chip.setAlpha(0.5f);
