@@ -110,6 +110,7 @@ public final class ReminderSync {
                 r.kind = f.kind;
                 r.repeat = f.result.repeat;
                 r.anchor = r.time;
+                r.important = Nagger.markedImportant(f.line);
                 s.saveReminder(r);
                 activate(ctx, r);
             } else if (r.ignored) {
@@ -133,6 +134,7 @@ public final class ReminderSync {
                 }
                 if (kindChanged) r.kind = f.kind;
                 if (moved) r.done = false;
+                if (Nagger.markedImportant(f.line)) r.important = true;
                 s.saveReminder(r);
                 if (!r.done) activate(ctx, r);
             }
@@ -191,6 +193,7 @@ public final class ReminderSync {
     }
 
     public static void removeReminder(Context ctx, Reminder r) {
+        Nagger.cancelAlarm(ctx, r);
         AlarmScheduler.cancel(ctx, r);
         Notifier.cancel(ctx, r);
         if (r.calendarEventId > 0) CalendarHelper.delete(ctx, r.calendarEventId);
@@ -198,6 +201,7 @@ public final class ReminderSync {
     }
 
     public static void setDone(Context ctx, Reminder r, boolean done) {
+        if (done) Nagger.stop(ctx, r);
         if (done && r.repeats()) { skip(ctx, r); return; }   // repeating: this time is done, the next one stays
         r.done = done;
         Store.get(ctx).saveReminder(r);
@@ -208,6 +212,8 @@ public final class ReminderSync {
     /** User tapped "don't remind" on a detected line. */
     public static void ignore(Context ctx, Reminder r) {
         r.ignored = true;
+        r.nagging = false;
+        Nagger.cancelAlarm(ctx, r);
         AlarmScheduler.cancel(ctx, r);
         Notifier.cancel(ctx, r);
         if (r.calendarEventId > 0) { CalendarHelper.delete(ctx, r.calendarEventId); r.calendarEventId = -1; }

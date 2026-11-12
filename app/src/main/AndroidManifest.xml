@@ -113,6 +113,8 @@
         <activity android:name=".BoardActivity" android:exported="false" android:label="Board" />
         <activity android:name=".StudyActivity" android:exported="false" android:label="Study" />
         <activity android:name=".FeaturesActivity" android:exported="false" android:label="Features" />
+        <activity android:name=".ArchiveActivity" android:exported="false" android:label="Archived" />
+        <activity android:name=".WeekActivity" android:exported="false" android:label="Your week" />
         <activity android:name=".WalletActivity" android:exported="false" android:label="Document wallet" />
         <activity android:name=".PlacesActivity" android:exported="false" android:label="Places" />
 
@@ -172,6 +174,9 @@
         <receiver android:name=".Brief$Receiver" android:exported="false" />
         <receiver android:name=".Habits$Receiver" android:exported="false" />
         <receiver android:name=".Geo$Receiver" android:exported="false" />
+        <receiver android:name=".BarPins$Receiver" android:exported="false" />
+        <receiver android:name=".Nagger$Receiver" android:exported="false" />
+        <receiver android:name=".Weekly$Receiver" android:exported="false" />
         <receiver android:name=".Widgets$Actions" android:exported="false" />
 
         <!-- home-screen widgets -->

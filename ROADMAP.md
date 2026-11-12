@@ -17,3 +17,4 @@ Built one version at a time; each version is checked on the phone before the nex
 
 3.6.1 (12 Nov 2026): ✨ Features page — every feature by category, with a short description and a way to open it.
 3.6.2 (12 Nov 2026): Settings → Share Note with friends & family (copies the link, opens the share sheet).
+3.7 (12 Nov 2026): daily helpers — pin a note to the notification bar, Archive, ⭐ important reminders that repeat until Done, Sunday summary. ✅ built — waiting for your check.

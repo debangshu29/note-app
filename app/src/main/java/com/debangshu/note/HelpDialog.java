@@ -13,6 +13,17 @@ public final class HelpDialog {
     private HelpDialog() {}
 
     private static final String[][] TOPICS = {
+            {"📌", "Pin to the notification bar",
+                    "⋮ → Pin to notification bar keeps the note one swipe away; tick ☐ items right in the notification. "
+                    + "Unpin with the button on the notification or ⋮ → Unpin."},
+            {"📦", "Archive",
+                    "⋮ → Archive (or long-press notes on the home screen → Archive) hides a note without deleting it. "
+                    + "Find it under 📦 Archived at the top of your notes, or by search."},
+            {"⭐", "Important reminders",
+                    "Tap a reminder chip → ⭐ Important, or write !! / important / zaruri in the line. When it rings it comes back "
+                    + "every 10 minutes until you tap Done (or Snooze)."},
+            {"📊", "Sunday summary",
+                    "Every Sunday evening one notification sums up your week. Change the time in Settings → Reminders."},
             {"✨", "Features page",
                     "Tap ✨ Features on the home screen: everything Note can do, in four groups — Smart text, Money, "
                     + "Views & study, Media & privacy — with a short line on each. Tap one to open it or try it."},

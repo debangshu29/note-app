@@ -305,6 +305,11 @@
 (the calendar never alerts twice)" />
                     <Switch android:id="@+id/sw_brief" style="@style/SettingsSwitch" android:text="Morning brief\n(one quiet notification with today's plan — only when there is something)" />
                     <Switch android:id="@+id/sw_rollover" style="@style/SettingsSwitch" android:text="Carry over unfinished to-dos\n(each morning, unticked ☐ from older #todo notes move to today's To-do note)" />
+                    <Switch android:id="@+id/sw_weekly" style="@style/SettingsSwitch" android:text="Sunday summary\n(one notification each Sunday: spending, reminders, habits, next week's bills)" />
+                    <LinearLayout android:id="@+id/row_weekly_time" style="@style/SettingsRow">
+                        <TextView style="@style/SettingsTitle" android:text="Sunday summary time" />
+                        <TextView android:id="@+id/txt_weekly_time" style="@style/SettingsSub" />
+                    </LinearLayout>
                     <LinearLayout android:id="@+id/row_places" style="@style/SettingsRow">
                         <TextView style="@style/SettingsTitle" android:text="📍  Places" />
                         <TextView style="@style/SettingsSub" android:text="Save home, office… for “when I reach office” reminders" />

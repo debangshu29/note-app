@@ -19,6 +19,7 @@ public class ActionReceiver extends BroadcastReceiver {
         Reminder r = s.reminder(reminderId);
         if (r == null) return;
         Notifier.cancel(ctx, r);
+        Nagger.stop(ctx, r);   // answered: an important reminder stops repeating
         if (ACTION_DONE.equals(action)) {
             if (r.repeats()) return;   // already moved to its next time when it rang
             ReminderSync.setDone(ctx, r, true);

@@ -92,18 +92,20 @@ public final class Notifier {
         NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
 
-        String when = r.hasTime
-                ? android.text.format.DateFormat.getTimeFormat(ctx).format(new Date(r.time))
+        String when = r.nagging && r.nagCount > 0 ? "Still to do"
+                : r.hasTime ? android.text.format.DateFormat.getTimeFormat(ctx).format(new Date(r.time))
                 : "Today";
+        String sub = r.important ? "⭐ Important · reminds every " + Nagger.EVERY_MIN + " min until Done"
+                : r.repeats() ? "🔁 " + DateParser.describe(r.repeat) : null;
         Notification.Builder b = builder(ctx, CHANNEL, false)
                 .setSmallIcon(R.drawable.ic_notify)
-                .setContentTitle(r.title)
+                .setContentTitle((r.important ? "⭐ " : "") + r.title)
                 .setContentText(when + " · " + r.sourceLine)
-                .setSubText(r.repeats() ? "🔁 " + DateParser.describe(r.repeat) : null)
+                .setSubText(sub)
                 .setStyle(new Notification.BigTextStyle().bigText(r.sourceLine))
                 .setContentIntent(openNote(ctx, r))
                 .setAutoCancel(true)
-                .setOnlyAlertOnce(true)
+                .setOnlyAlertOnce(!r.important)   // an important one sounds again every time it comes back
                 .setCategory(Notification.CATEGORY_REMINDER)
                 .setColor(Ui.col(ctx, R.color.accent))
                 .addAction(new Notification.Action.Builder(null, "Done",

@@ -16,6 +16,8 @@ public class Note {
     public long created;
     public long updated;
     public boolean pinned;
+    /** Archived: off the home list (like WhatsApp's Archived chats), still found by search. */
+    public boolean archived;
     /** When it was moved to the recycle bin (0 = not deleted). */
     public long deleted = 0;
     /** Locked notes need the app PIN / fingerprint to open, and hide their text on the home screen. */
@@ -71,6 +73,7 @@ public class Note {
         o.put("created", created);
         o.put("updated", updated);
         o.put("pinned", pinned);
+        if (archived) o.put("archived", true);
         if (deleted > 0) o.put("deleted", deleted);
         if (locked) o.put("locked", true);
         if (blocks != null && !blocks.isEmpty()) {
@@ -97,6 +100,7 @@ public class Note {
         n.created = o.optLong("created");
         n.updated = o.optLong("updated");
         n.pinned = o.optBoolean("pinned");
+        n.archived = o.optBoolean("archived");
         n.deleted = o.optLong("deleted", 0);
         n.locked = o.optBoolean("locked", false);
         JSONArray arr = o.optJSONArray("blocks");

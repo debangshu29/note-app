@@ -97,6 +97,7 @@ public final class Widgets {
             for (int id : m.getAppWidgetIds(new ComponentName(c, ChecklistProvider.class))) m.updateAppWidget(id, checklist(c, id));
             for (int id : m.getAppWidgetIds(new ComponentName(c, CountdownProvider.class))) m.updateAppWidget(id, countdown(c, id));
         } catch (Exception ignored) { }
+        try { BarPins.refreshAll(c); } catch (Exception ignored) { }   // notes pinned to the notification bar
     }
 
     // ------------------------------------------------------------------ taps

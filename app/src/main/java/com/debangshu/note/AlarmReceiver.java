@@ -13,6 +13,7 @@ public class AlarmReceiver extends BroadcastReceiver {
         if (r == null || r.done || r.ignored) return;
         if (r.kind == ReminderKind.ALARM) Notifier.showAlarm(ctx, r);
         else Notifier.show(ctx, r);
+        if (r.important && r.kind != ReminderKind.ALARM) Nagger.start(ctx, r);   // alarms already ring until stopped
         if (r.repeats()) ReminderSync.advance(ctx, r);   // arm the next one right away
     }
 }

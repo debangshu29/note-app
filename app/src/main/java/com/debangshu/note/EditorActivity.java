@@ -1693,6 +1693,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             case "file": pickAnyFile(); break;
             case "draw": openDrawing(null, -1); break;
             case "translate": translateMenu(); break;
+            case "barpin": if (note != null && !BarPins.isPinned(this, note.id)) toggleBarPin(); break;
             case "qr":
                 saveNow();
                 if (note != null) QrShare.show(this, note.title, note.body);
@@ -2289,6 +2290,10 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         if (Cards.parse(titleEt.getText() + "\n" + currentPlain()).size() >= 1) {
             items.add("🎴  Study these cards"); acts.add(this::openStudy);
         }
+        boolean onBar = note != null && BarPins.isPinned(this, note.id);
+        items.add(onBar ? "📌  Unpin from notification bar" : "📌  Pin to notification bar"); acts.add(this::toggleBarPin);
+        boolean archived = note != null && note.archived;
+        items.add(archived ? "↩  Unarchive (back to home screen)" : "📦  Archive"); acts.add(this::toggleArchive);
         items.add("🌐  Translate (English · हिन्दी · বাংলা)"); acts.add(this::translateMenu);
         boolean inWallet = note != null && note.tags().contains(WalletActivity.TAG);
         items.add(inWallet ? "🗂  Take out of document wallet" : "🗂  Move to document wallet"); acts.add(this::toggleWallet);
@@ -2391,6 +2396,34 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                         Toast.makeText(this, "Copied", Toast.LENGTH_SHORT).show();
                     }
                 }).setNegativeButton("Close", null).show();
+    }
+
+    // ---- notification bar / archive
+
+    private void toggleBarPin() {
+        saveNow();
+        if (note == null) { Toast.makeText(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
+        if (BarPins.isPinned(this, note.id)) {
+            BarPins.unpin(this, note.id);
+            Toast.makeText(this, "Unpinned from the notification bar", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!Notifier.canNotify(this) && Build.VERSION.SDK_INT >= 33) {
+            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQ_PERMS);
+        }
+        BarPins.pin(this, note.id);
+        Toast.makeText(this, "Pinned to the notification bar — pull it down to see it. Unpin there or here.", Toast.LENGTH_LONG).show();
+    }
+
+    private void toggleArchive() {
+        saveNow();
+        if (note == null) { Toast.makeText(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
+        note.archived = !note.archived;
+        store.saveNote(note);
+        if (note.archived) {
+            Toast.makeText(this, "Archived — find it under 📦 Archived on the home screen, or by search", Toast.LENGTH_LONG).show();
+            finish();
+        } else Toast.makeText(this, "Back on the home screen", Toast.LENGTH_SHORT).show();
     }
 
     // ---- document wallet
@@ -3083,7 +3116,8 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             View chip = inf.inflate(R.layout.item_chip, chipsRow, false);
             TextView tv = chip.findViewById(R.id.chip_text);
             String rep = f.result.repeat == null || f.result.repeat.isEmpty() ? "" : "  🔁 " + DateParser.describe(f.result.repeat);
-            tv.setText(ReminderKind.emoji(kind) + " " + f.result.title + " · " + friendlyWhen(time, hasTime) + rep);
+            boolean imp = r != null ? r.important : Nagger.markedImportant(f.line);
+            tv.setText((imp ? "⭐" : "") + ReminderKind.emoji(kind) + " " + f.result.title + " · " + friendlyWhen(time, hasTime) + rep);
             if (r != null && (r.ignored || r.done)) {
                 tv.setPaintFlags(tv.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
                 chip.setAlpha(0.5f);
@@ -3118,7 +3152,9 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             return;
         }
         final String OFF = "Don't remind me", ON = "Turn reminder back on",
-                DONE = "Mark as done", UNDONE = "Mark as not done", CAL = "Open in phone calendar";
+                DONE = "Mark as done", UNDONE = "Mark as not done", CAL = "Open in phone calendar",
+                IMP_ON = "⭐  Important — keep reminding every 10 min until Done",
+                IMP_OFF = "☆  Not important (remind once)";
         final String[] KIND_ITEMS = {"⏰  Alarm (rings, no calendar)", "📅  Calendar + one notification", "🔔  Just one notification"};
         final int[] KINDS = {ReminderKind.ALARM, ReminderKind.EVENT, ReminderKind.NOTIFY};
         List<String> items = new ArrayList<>();
@@ -3128,6 +3164,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                 items.add((r.kind == KINDS[i] ? "✓ " : "    ") + KIND_ITEMS[i]);
             }
         }
+        if (!r.ignored && r.kind != ReminderKind.ALARM) items.add(r.important ? IMP_OFF : IMP_ON);
         items.add(r.ignored ? ON : OFF);
         if (!r.ignored) items.add(r.done ? UNDONE : DONE);
         if (r.calendarEventId > 0) items.add(CAL);
@@ -3153,6 +3190,11 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                         else if (pick.equals(ON)) ReminderSync.unignore(this, r);
                         else if (pick.equals(DONE)) ReminderSync.setDone(this, r, true);
                         else if (pick.equals(UNDONE)) ReminderSync.setDone(this, r, false);
+                        else if (pick.equals(IMP_ON) || pick.equals(IMP_OFF)) {
+                            r.important = pick.equals(IMP_ON);
+                            if (!r.important) Nagger.stop(this, r);
+                            store.saveReminder(r);
+                        }
                     }, this::refreshChips);
                 })
                 .show();

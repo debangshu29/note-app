@@ -24,6 +24,11 @@ public class Reminder {
     public boolean kindLocked;
     /** Repeating pattern ("" = once), see DateParser.describe(); {@code anchor} is the first time of the series. */
     public String repeat = "";
+    /** ⭐ Important: when it rings it keeps reminding every 10 minutes until you tap Done. */
+    public boolean important;
+    /** Ringing and not answered yet (important reminders only). */
+    public boolean nagging;
+    public int nagCount;
     public long anchor;
 
     public boolean repeats() { return repeat != null && !repeat.isEmpty(); }
@@ -43,6 +48,8 @@ public class Reminder {
         o.put("kind", kind);
         o.put("kindLocked", kindLocked);
         if (repeats()) { o.put("repeat", repeat); o.put("anchor", anchor); }
+        if (important) o.put("important", true);
+        if (nagging) { o.put("nagging", true); o.put("nagCount", nagCount); }
         return o;
     }
 
@@ -62,6 +69,9 @@ public class Reminder {
         r.kindLocked = o.optBoolean("kindLocked");
         r.repeat = o.optString("repeat", "");
         r.anchor = o.optLong("anchor", r.time);
+        r.important = o.optBoolean("important");
+        r.nagging = o.optBoolean("nagging");
+        r.nagCount = o.optInt("nagCount");
         return r;
     }
 

@@ -69,6 +69,20 @@ public class FeaturesActivity extends Screen {
                         "Each morning, unticked ☐ in older #todo notes move to today's To-do note, so nothing is forgotten.",
                         RollOver.on(this) ? "On" : "Off", this::rollOverSwitch)));
 
+        cats.add(new Category("🌅", "Daily helpers", "Small things you'll use every day")
+                .add(new Feature("📌", "Pin to notification bar",
+                        "Keep a list or note in the notification bar; tick ☐ items right there. Unpin from the notification or in the note.",
+                        "Pick a note", () -> pickNote("Pin which note?", "barpin")))
+                .add(new Feature("📦", "Archive",
+                        "Hide finished notes from the home screen without deleting them — they wait under 📦 Archived and search still finds them.",
+                        "Open", () -> open(ArchiveActivity.class)))
+                .add(new Feature("⭐", "Important reminders",
+                        "Tap a reminder chip → ⭐ Important, or write !! or “important” in the line. It reminds you every 10 minutes until you tap Done.",
+                        "Try it", () -> example("Important reminder", "Pay electricity bill tomorrow at 10 am !!\n")))
+                .add(new Feature("📊", "Sunday summary",
+                        "Every Sunday evening: what you spent, reminders done, habit streaks and next week's bills. See it any day here.",
+                        "Open", () -> open(WeekActivity.class))));
+
         cats.add(new Category("💰", "Money", "Spending, splitting and bills — from your notes")
                 .add(new Feature("🧾", "Money page",
                         "What you spent each month (from the prices in your notes), who owes whom, bills and the price book.",

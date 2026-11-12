@@ -612,6 +612,9 @@ public final class DateParser {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < orig.length(); i++) sb.append(removed[i] ? ' ' : orig.charAt(i));
         String s = sb.toString();
+        // ⭐ importance marks ("!!", "important", "zaruri") are for the reminder, not part of its name
+        s = s.replaceAll("\\s*!{2,}\\s*", " ").replace("⭐", " ")
+                .replaceAll("(?i)\\s*[(\\[]?\\b(?:important|urgent|zaruri|jaruri|zaroori|jaroori|joruri)\\b[)\\]]?\\s*$", "");
         // remove little words that were only there for the date ("on", "at", "by" ...)
         s = s.replaceAll("(?i)\\b(on|at|by|this|next|the|of|before|until|till|coming|around)\\s+(?=(\\s|$))", " ");
         s = s.replaceAll("[ \\t]{2,}", " ").trim();

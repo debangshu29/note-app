@@ -53,7 +53,7 @@ public class MainActivity extends Activity {
         Updater.cleanUpAfterUpdate(this);
         ReminderSync.runInBackground(() -> Media.deleteUnused(this, store.usedMedia()), null);
         ReminderSync.runInBackground(() -> store.purgeTrash(), null);   // recycle bin keeps notes 30 days
-        ReminderSync.runInBackground(() -> Habits.schedule(this), null);
+        ReminderSync.runInBackground(() -> { Habits.schedule(this); Weekly.schedule(this); BarPins.refreshAll(this); }, null);
         PhotoText.indexAsync(this);
         Geo.syncAsync(this);
         ReminderSync.runInBackground(() -> {
@@ -208,8 +208,15 @@ public class MainActivity extends Activity {
         if (!filterOk) labelFilter = null;
         paintLabels(labels);
         List<Note> shown = new ArrayList<>();
+        int archivedCount = 0;
+        for (Note n : all) if (n.archived && !n.tags().contains(WalletActivity.TAG)) archivedCount++;
+        View archRow = findViewById(R.id.archived_row);
+        archRow.setVisibility(archivedCount > 0 && q.isEmpty() && labelFilter == null ? View.VISIBLE : View.GONE);
+        ((TextView) findViewById(R.id.archived_count)).setText(String.valueOf(archivedCount));
+        archRow.setOnClickListener(v -> startActivity(new Intent(this, ArchiveActivity.class)));
         for (Note n : all) {
             if (n.tags().contains(WalletActivity.TAG)) continue;   // documents live in the wallet
+            if (n.archived && q.isEmpty()) continue;               // archived: only in Archived and in search
             String hay = n.locked ? n.title : n.title + "\n" + n.body;
             if (!q.isEmpty() && !hay.toLowerCase(Locale.ROOT).contains(q)
                     && (n.locked || !PhotoText.forNote(this, n).contains(q))) continue;
@@ -370,7 +377,7 @@ public class MainActivity extends Activity {
         return out;
     }
 
-    private static final int M_SHARE = 1, M_PIN = 2, M_DELETE = 3, M_ALL = 4;
+    private static final int M_SHARE = 1, M_PIN = 2, M_DELETE = 3, M_ALL = 4, M_ARCHIVE = 5, M_BAR = 6;
 
     private final android.widget.AbsListView.MultiChoiceModeListener selection =
             new android.widget.AbsListView.MultiChoiceModeListener() {
@@ -380,6 +387,8 @@ public class MainActivity extends Activity {
             menu.add(0, M_SHARE, 0, "Share").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_ALWAYS);
             menu.add(0, M_PIN, 1, "Pin").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_IF_ROOM);
             menu.add(0, M_DELETE, 2, "Delete").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_IF_ROOM);
+            menu.add(0, M_ARCHIVE, 2, "Archive").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_IF_ROOM);
+            menu.add(0, M_BAR, 3, "Pin to notification bar").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
             menu.add(0, M_ALL, 3, "Select all").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
             return true;
         }
@@ -395,6 +404,12 @@ public class MainActivity extends Activity {
             for (Note n : sel) if (!n.pinned) allPinned = false;
             android.view.MenuItem pin = mode.getMenu().findItem(M_PIN);
             if (pin != null) pin.setTitle(allPinned ? "Unpin" : "Pin");
+            boolean allArch = !sel.isEmpty(), allBar = !sel.isEmpty();
+            for (Note n : sel) { if (!n.archived) allArch = false; if (!BarPins.isPinned(MainActivity.this, n.id)) allBar = false; }
+            android.view.MenuItem ar = mode.getMenu().findItem(M_ARCHIVE);
+            if (ar != null) ar.setTitle(allArch ? "Unarchive" : "Archive");
+            android.view.MenuItem bar = mode.getMenu().findItem(M_BAR);
+            if (bar != null) bar.setTitle(allBar ? "Unpin from notification bar" : "Pin to notification bar");
         }
 
         @Override
@@ -415,6 +430,27 @@ public class MainActivity extends Activity {
                 case M_DELETE:
                     confirmDelete(sel, mode);
                     return true;
+                case M_ARCHIVE: {
+                    boolean allArchived = true;
+                    for (Note n : sel) if (!n.archived) allArchived = false;
+                    for (Note n : sel) { n.archived = !allArchived; store.saveNote(n); }
+                    Toast.makeText(MainActivity.this, allArchived ? "Back on the home screen"
+                            : (sel.size() == 1 ? "Archived" : sel.size() + " notes archived") + " — see them under 📦 Archived",
+                            Toast.LENGTH_SHORT).show();
+                    mode.finish();
+                    return true;
+                }
+                case M_BAR: {
+                    boolean allOn = true;
+                    for (Note n : sel) if (!BarPins.isPinned(MainActivity.this, n.id)) allOn = false;
+                    for (Note n : sel) { if (allOn) BarPins.unpin(MainActivity.this, n.id); else BarPins.pin(MainActivity.this, n.id); }
+                    if (!allOn && !Notifier.canNotify(MainActivity.this) && android.os.Build.VERSION.SDK_INT >= 33)
+                        requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 9);
+                    Toast.makeText(MainActivity.this, allOn ? "Unpinned from the notification bar" : "Pinned to the notification bar",
+                            Toast.LENGTH_SHORT).show();
+                    mode.finish();
+                    return true;
+                }
                 case M_ALL:
                     android.widget.AbsListView v = notesView();
                     for (int i = 0; i < v.getCount(); i++) v.setItemChecked(i, true);
@@ -484,6 +520,8 @@ public class MainActivity extends Activity {
             if (gridMode) meta = DateUtils.getRelativeTimeSpanString(n.updated, System.currentTimeMillis(),
                     DateUtils.MINUTE_IN_MILLIS, DateUtils.FORMAT_ABBREV_ALL).toString();
             if (rc > 0) meta += "  ·  🔔 " + rc;
+            if (n.archived) meta = "📦 Archived  ·  " + meta;
+            if (BarPins.isPinned(MainActivity.this, n.id)) meta = "📌 " + meta;
             int pics = n.count(Block.IMAGE), tables = n.count(Block.TABLE), pages = n.count(Block.PAGE) + 1;
             if (pics > 0) meta += "  ·  🖼 " + pics;
             if (tables > 0) meta += "  ·  ▦ " + tables;
@@ -519,6 +557,7 @@ public class MainActivity extends Activity {
     // ------------------------------------------------------------------ reminders tab
 
     private void showReminders(String q) {
+        findViewById(R.id.archived_row).setVisibility(View.GONE);
         grid.setVisibility(View.GONE);
         grid.setAdapter(null);
         list.setVisibility(View.VISIBLE);

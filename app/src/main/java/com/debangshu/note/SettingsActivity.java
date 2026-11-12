@@ -199,6 +199,17 @@ public class SettingsActivity extends Activity {
             store.prefs().edit().putBoolean(Brief.P_ON, on).apply();
             Brief.schedule(this);
         });
+        Switch wk = findViewById(R.id.sw_weekly);
+        wk.setChecked(Weekly.on(this));
+        wk.setOnCheckedChangeListener((x, on) -> {
+            store.prefs().edit().putBoolean(Weekly.P_ON, on).apply();
+            Weekly.schedule(this);
+        });
+        findViewById(R.id.row_weekly_time).setOnClickListener(v -> new TimePickerDialog(this, (tp, h, m) -> {
+            store.prefs().edit().putInt(Weekly.P_HOUR, h).putInt(Weekly.P_MIN, m).apply();
+            Weekly.schedule(this);
+            updateTexts();
+        }, Weekly.hour(this), Weekly.minute(this), android.text.format.DateFormat.is24HourFormat(this)).show());
         Switch ro = findViewById(R.id.sw_rollover);
         ro.setChecked(RollOver.on(this));
         ro.setOnCheckedChangeListener((x, on) -> {
@@ -286,6 +297,11 @@ public class SettingsActivity extends Activity {
     }
 
     private void updateTexts() {
+        java.util.Calendar wt = java.util.Calendar.getInstance();
+        wt.set(java.util.Calendar.HOUR_OF_DAY, Weekly.hour(this));
+        wt.set(java.util.Calendar.MINUTE, Weekly.minute(this));
+        ((TextView) findViewById(R.id.txt_weekly_time)).setText("Sundays at " + android.text.format.DateFormat.getTimeFormat(this).format(wt.getTime())
+                + "  ·  open it any time: ✨ Features → Daily helpers");
         ((TextView) findViewById(R.id.txt_backup_pw)).setText(store.backupProtected()
                 ? "On — backups (.note files) open only with your password"
                 : "Off — anyone with a backup file can read it. Tap to set a password.");

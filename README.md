@@ -112,6 +112,14 @@ The `Documents/Note` folder stays even if you uninstall the app, so your backups
 - App lock (fingerprint / PIN)
 - More automatic actions: phone numbers → tap to call, amounts → running total, links → open
 
+## New in 3.7
+
+- **Pin to the notification bar** (`BarPins`): an ongoing custom notification per note with tappable ☐ rows (`Checklist.toggle`), Unpin action; refreshed with the widgets, restored after restarts; swiping it away also unpins.
+- **Archive** (`Note.archived`, `ArchiveActivity`): archived notes leave the home list (an "📦 Archived · N" row opens them) but search still shows them, marked "📦 Archived". Selection mode and ⋮ have Archive / Unarchive.
+- **Important reminders** (`Reminder.important`, `Nagger`): set from the chip menu or by "!!", "important", "zaruri" in the line; after ringing it re-notifies every 10 min (sound each time) until Done / Snooze / ticked, for up to 6 hours. The marks are removed from reminder titles.
+- **Sunday summary** (`Weekly`, `WeekActivity`): weekly notification (default Sunday 6 pm, Settings → Reminders) and a page with spending vs the week before, reminders done / not ticked, habits, next week's reminders and bills.
+- Features page has a new group, **Daily helpers**.
+
 ## New in 3.6.1
 
 - **Features page** (`FeaturesActivity`, ✨ chip on the home screen and in the ⚙ menu): all 3.3–3.6 features grouped as Smart text, Money, Views & study, Media & privacy, each with a one-line description and an action (open the screen, start a template, a note with examples, or a note that starts recording / attaching / scanning via `EditorActivity.EXTRA_AUTO`).
