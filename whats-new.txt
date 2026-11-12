@@ -1,2 +1,1 @@
-• New ✨ Features page (on the home screen, next to Today): everything Note can do in four groups — Smart text, Money, Views & study, Media & privacy
-• Each feature has a short description and a button to open it or try it right away
+• Share Note with friends & family: Settings → Share (top of the page) copies the download link and opens WhatsApp, Instagram, Messages, Mail…

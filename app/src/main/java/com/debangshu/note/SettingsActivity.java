@@ -60,6 +60,7 @@ public class SettingsActivity extends Activity {
         bindSwitch(R.id.sw_auto_backup, Store.S_AUTO_BACKUP);
         findViewById(R.id.row_download_latest).setOnClickListener(v -> Updater.startUpdate(this));
         findViewById(R.id.row_copy_link).setOnClickListener(v -> Updater.copyLink(this));
+        findViewById(R.id.row_share_app).setOnClickListener(v -> shareApp());
         findViewById(R.id.row_install_with).setOnClickListener(v -> {
             String app = Updater.installWithLabel(this);
             if (app == null) {
@@ -469,6 +470,24 @@ public class SettingsActivity extends Activity {
                 Toast.makeText(this, "That file is not a Note backup", Toast.LENGTH_LONG).show();
             }
         }
+    }
+
+    /** Copies the download link and opens the share sheet (WhatsApp, Instagram, Messages, Mail…). */
+    private void shareApp() {
+        String msg = "Try Note — the notes app I use. Everything stays on your phone (no account, nothing uploaded): "
+                + "a smart calculator, reminders from what you write, money tracking, habits, flashcards and more.\n\n"
+                + "Download: " + Updater.APK_URL + "\n\n"
+                + "To install: open the link → tap the downloaded Note.apk → if asked, allow “Install unknown apps” → "
+                + "if Play Protect warns, tap More details → Install anyway. New versions come inside the app.";
+        android.content.ClipboardManager cm = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+        if (cm != null) cm.setPrimaryClip(android.content.ClipData.newPlainText("Note download link", Updater.APK_URL));
+        Toast.makeText(this, "Link copied — pick an app to send it", Toast.LENGTH_SHORT).show();
+        Intent i = new Intent(Intent.ACTION_SEND);
+        i.setType("text/plain");
+        i.putExtra(Intent.EXTRA_SUBJECT, "Note — a notes app for your phone");
+        i.putExtra(Intent.EXTRA_TEXT, msg);
+        Lock.leavingForOtherApp();
+        startActivity(Intent.createChooser(i, "Share Note with"));
     }
 
     private void restore(byte[] data) {
