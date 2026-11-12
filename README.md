@@ -112,6 +112,10 @@ The `Documents/Note` folder stays even if you uninstall the app, so your backups
 - App lock (fingerprint / PIN)
 - More automatic actions: phone numbers → tap to call, amounts → running total, links → open
 
+## New in 3.6.1
+
+- **Features page** (`FeaturesActivity`, ✨ chip on the home screen and in the ⚙ menu): all 3.3–3.6 features grouped as Smart text, Money, Views & study, Media & privacy, each with a one-line description and an action (open the screen, start a template, a note with examples, or a note that starts recording / attaching / scanning via `EditorActivity.EXTRA_AUTO`).
+
 ## New in 3.6
 
 - **Recordings & files**: new block types `audio` (AAC .m4a from `MediaRecorder`, played with one shared `MediaPlayer`) and `file` (any file copied into the media folder, opened / shared through `ShareProvider`). `Attachments` draws them; they count as used media, appear in shared PDFs/images as a line, and their names are searchable.

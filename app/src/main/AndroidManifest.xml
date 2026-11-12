@@ -112,6 +112,7 @@
         <activity android:name=".HabitsActivity" android:exported="false" android:label="Habits" />
         <activity android:name=".BoardActivity" android:exported="false" android:label="Board" />
         <activity android:name=".StudyActivity" android:exported="false" android:label="Study" />
+        <activity android:name=".FeaturesActivity" android:exported="false" android:label="Features" />
         <activity android:name=".WalletActivity" android:exported="false" android:label="Document wallet" />
         <activity android:name=".PlacesActivity" android:exported="false" android:label="Places" />
 

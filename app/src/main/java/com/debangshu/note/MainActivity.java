@@ -96,6 +96,7 @@ public class MainActivity extends Activity {
         Brief.schedule(this);
         handleQuick(getIntent());
         findViewById(R.id.today_chip).setOnClickListener(v -> startActivity(new Intent(this, TodayActivity.class)));
+        findViewById(R.id.features_chip).setOnClickListener(v -> startActivity(new Intent(this, FeaturesActivity.class)));
     }
 
     @Override
@@ -138,6 +139,17 @@ public class MainActivity extends Activity {
         if (openId != -1) { open(openId); return; }
         if (q == null) return;
         if (q.equals("today")) { startActivity(new Intent(this, TodayActivity.class)); return; }
+        if (q.equals("features")) { startActivity(new Intent(this, FeaturesActivity.class)); return; }
+        if (q.equals("search")) {
+            EditText s = findViewById(R.id.search);
+            s.requestFocus();
+            s.setHint("Search notes, words in photos, file names…");
+            s.postDelayed(() -> {
+                android.view.inputmethod.InputMethodManager im = (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+                if (im != null) im.showSoftInput(s, 0);
+            }, 250);
+            return;
+        }
         if (q.equals("money")) { startActivity(new Intent(this, MoneyActivity.class)); return; }
         if (q.equals("calendar")) { startActivity(new Intent(this, CalendarActivity.class)); return; }
         if (q.equals("habits")) { startActivity(new Intent(this, HabitsActivity.class)); return; }
@@ -281,6 +293,7 @@ public class MainActivity extends Activity {
         for (int i = 0; i < SORT_NAMES.length; i++) items.add((i == sort ? "✓   " : "      ") + "Sort by " + SORT_NAMES[i].toLowerCase(Locale.ROOT));
         items.add("🗑   Recycle bin" + (binCount > 0 ? "  (" + binCount + ")" : ""));
         items.add("📋   New note from a template");
+        items.add("✨   All features (by category)");
         items.add("📅   Calendar");
         items.add("✅   Habits");
         items.add("🎴   Study (flashcards & quiz)");
@@ -294,7 +307,8 @@ public class MainActivity extends Activity {
             else if (w <= SORT_NAMES.length) store.prefs().edit().putInt(P_SORT, w - 1).apply();
             else if (w == SORT_NAMES.length + 1) { startActivity(new Intent(this, TrashActivity.class)); return; }
             else if (w == SORT_NAMES.length + 2) { Templates.pick(this); return; }
-            else { startActivity(new Intent(this, screens[w - SORT_NAMES.length - 3])); return; }
+            else if (w == SORT_NAMES.length + 3) { startActivity(new Intent(this, FeaturesActivity.class)); return; }
+            else { startActivity(new Intent(this, screens[w - SORT_NAMES.length - 4])); return; }
             refresh();
         }).show();
     }

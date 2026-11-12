@@ -67,7 +67,9 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     public static final String EXTRA_IMAGES = "noteImages";   // picture files already in Media (from import)
     public static final String EXTRA_TEMPLATE = "noteTemplate"; // Templates index for a new note
     public static final String EXTRA_NEW_TITLE = "noteNewTitle"; // new note with this title (from a [[link]])
-    public static final String EXTRA_AUTO_SCAN = "noteAutoScan";  // open the document scanner right away (wallet)
+    public static final String EXTRA_AUTO_SCAN = "noteAutoScan";
+    /** Start with an action (from the Features page): scan, bill, record, file, draw, translate, qr. */
+    public static final String EXTRA_AUTO = "noteAuto";  // open the document scanner right away (wallet)
     public static final String EXTRA_NEW_BODY = "noteNewBody";   // new note starting with this text (calendar: "on 14 Nov 2026 ")
 
     private static final int REQ_PERMS = 41, REQ_CAMERA = 61, REQ_GALLERY = 62, REQ_PDF = 63, REQ_DRAW = 64, REQ_VOICE = 65;
@@ -210,13 +212,18 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                 default: break;
             }
         }
+        String auto = getIntent().getStringExtra(EXTRA_AUTO);
+        if (auto != null) {
+            getIntent().removeExtra(EXTRA_AUTO);
+            scroll.postDelayed(() -> runAuto(auto), 400);
+        }
         if (getIntent().getBooleanExtra(EXTRA_AUTO_SCAN, false)) {
             getIntent().removeExtra(EXTRA_AUTO_SCAN);
             scroll.postDelayed(() -> { billScan = false; DocScan.start(this); }, 350);
         }
         if (getIntent().getIntExtra(EXTRA_TEMPLATE, -1) >= 0) cursorToFirstItem();
         else if (quick == null && note == null && getIntent().getStringExtra(Intent.EXTRA_TEXT) == null
-                && getIntent().getStringExtra(EXTRA_NEW_BODY) == null
+                && getIntent().getStringExtra(EXTRA_NEW_BODY) == null && auto == null
                 && getIntent().getStringArrayListExtra(EXTRA_IMAGES) == null) showTemplates();
         refreshChips();
     }
@@ -1675,6 +1682,22 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             pendingReplace = null;
             acts.get(w).run();
         }).show();
+    }
+
+    private void runAuto(String a) {
+        if (isFinishing()) return;
+        switch (a) {
+            case "scan": billScan = false; DocScan.start(this); break;
+            case "bill": billScan = true; DocScan.start(this); break;
+            case "record": recordAudio(); break;
+            case "file": pickAnyFile(); break;
+            case "draw": openDrawing(null, -1); break;
+            case "translate": translateMenu(); break;
+            case "qr":
+                saveNow();
+                if (note != null) QrShare.show(this, note.title, note.body);
+                break;
+        }
     }
 
     // ---- audio recordings and attached files

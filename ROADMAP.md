@@ -14,3 +14,5 @@ Built one version at a time; each version is checked on the phone before the nex
 ## Not planned (for now)
 - Version history
 - Graph plotting
+
+3.6.1 (12 Nov 2026): ✨ Features page — every feature by category, with a short description and a way to open it.

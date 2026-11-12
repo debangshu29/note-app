@@ -1,6 +1,2 @@
-• Voice recordings and any file (PDF, Excel, Word…) inside a note: ＋ → Record audio / Attach any file
-• Document wallet (home ⚙): scan your ID cards, licence, policies — locked, off the home screen, expiry reminders
-• Place reminders: save home / office in Places, then write “when I reach office call Rahul”
-• Translate a note (English · हिन्दी · বাংলা) and turn handwriting in a drawing into text — on your phone
-• Search finds words inside your photos and scans; share a note to a phone nearby as a QR code
-• Backups can have a password (Settings → Your data → Backup password)
+• New ✨ Features page (on the home screen, next to Today): everything Note can do in four groups — Smart text, Money, Views & study, Media & privacy
+• Each feature has a short description and a button to open it or try it right away

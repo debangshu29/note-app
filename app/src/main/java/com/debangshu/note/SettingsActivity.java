@@ -30,6 +30,10 @@ import java.util.Locale;
 /** Switches for every smart feature, backup, and "Delete all data". */
 public class SettingsActivity extends Activity {
 
+    /** Open with the backup-password box showing (from the Features page). */
+    public static final String EXTRA_BACKUP_PASSWORD = "openBackupPassword";
+
+
     @Override
     protected void attachBaseContext(android.content.Context base) { super.attachBaseContext(Ui.wrap(base)); }
 
@@ -102,6 +106,10 @@ public class SettingsActivity extends Activity {
         findViewById(R.id.row_export).setOnClickListener(v -> startExport());
         findViewById(R.id.row_import).setOnClickListener(v -> startImport());
         findViewById(R.id.row_backup_pw).setOnClickListener(v -> backupPasswordDialog());
+        if (getIntent().getBooleanExtra(EXTRA_BACKUP_PASSWORD, false)) {
+            getIntent().removeExtra(EXTRA_BACKUP_PASSWORD);
+            findViewById(R.id.row_backup_pw).post(this::backupPasswordDialog);
+        }
         findViewById(R.id.row_places).setOnClickListener(v -> startActivity(new Intent(this, PlacesActivity.class)));
         findViewById(R.id.row_help).setOnClickListener(v -> HelpDialog.show(this));
         findViewById(R.id.row_delete_all).setOnClickListener(v -> confirmDeleteAll());

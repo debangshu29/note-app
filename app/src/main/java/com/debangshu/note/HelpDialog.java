@@ -13,6 +13,9 @@ public final class HelpDialog {
     private HelpDialog() {}
 
     private static final String[][] TOPICS = {
+            {"✨", "Features page",
+                    "Tap ✨ Features on the home screen: everything Note can do, in four groups — Smart text, Money, "
+                    + "Views & study, Media & privacy — with a short line on each. Tap one to open it or try it."},
             {"🔒", "Private by design",
                     "Everything you write stays on this phone. No account, no server — your notes are never uploaded. "
                     + "(The app only goes online to download its own updates.)"},
