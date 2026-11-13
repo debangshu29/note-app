@@ -241,7 +241,7 @@ public final class AppFolder {
         try {
             a.startActivity(i);
         } catch (Exception e) {
-            Toast.makeText(a, "Open the Files app → " + displayPath(section), Toast.LENGTH_LONG).show();
+            Ui.toast(a, "Open the Files app → " + displayPath(section), Toast.LENGTH_LONG).show();
         }
     }
 

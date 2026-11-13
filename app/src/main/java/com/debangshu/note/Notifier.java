@@ -35,13 +35,13 @@ public final class Notifier {
         NotificationManager nm = ctx.getSystemService(NotificationManager.class);
         if (nm == null) return;
         if (nm.getNotificationChannel(CHANNEL) == null) {
-            NotificationChannel ch = new NotificationChannel(CHANNEL, "Reminders", NotificationManager.IMPORTANCE_HIGH);
-            ch.setDescription("One notification for each reminder found in your notes");
+            NotificationChannel ch = new NotificationChannel(CHANNEL, L.t("Reminders"), NotificationManager.IMPORTANCE_HIGH);
+            ch.setDescription(L.t("One notification for each reminder found in your notes"));
             nm.createNotificationChannel(ch);
         }
         if (nm.getNotificationChannel(ALARM_CHANNEL) == null) {
-            NotificationChannel ch = new NotificationChannel(ALARM_CHANNEL, "Alarms", NotificationManager.IMPORTANCE_HIGH);
-            ch.setDescription("Notes like \"wake me up at 6 am\" ring like an alarm");
+            NotificationChannel ch = new NotificationChannel(ALARM_CHANNEL, L.t("Alarms"), NotificationManager.IMPORTANCE_HIGH);
+            ch.setDescription(L.t("Notes like \"wake me up at 6 am\" ring like an alarm"));
             Uri sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
             if (sound == null) sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
             ch.setSound(sound, new AudioAttributes.Builder()
@@ -100,20 +100,20 @@ public final class Notifier {
         Notification.Builder b = builder(ctx, CHANNEL, false)
                 .setSmallIcon(R.drawable.ic_notify)
                 .setContentTitle((r.important ? "⭐ " : "") + r.title)
-                .setContentText(when + " · " + r.sourceLine)
-                .setSubText(sub)
+                .setContentText(L.t(when) + " · " + r.sourceLine)
+                .setSubText(L.t(sub))
                 .setStyle(new Notification.BigTextStyle().bigText(r.sourceLine))
                 .setContentIntent(openNote(ctx, r))
                 .setAutoCancel(true)
                 .setOnlyAlertOnce(!r.important)   // an important one sounds again every time it comes back
                 .setCategory(Notification.CATEGORY_REMINDER)
                 .setColor(Ui.col(ctx, R.color.accent))
-                .addAction(new Notification.Action.Builder(null, "Done",
+                .addAction(new Notification.Action.Builder(null, L.t("Done"),
                         actionIntent(ctx, r, ActionReceiver.ACTION_DONE, 0)).build())
-                .addAction(new Notification.Action.Builder(null, "In " + SNOOZE_REMINDER_MIN + " min",
+                .addAction(new Notification.Action.Builder(null, L.t("In " + SNOOZE_REMINDER_MIN + " min"),
                         actionIntent(ctx, r, ActionReceiver.ACTION_SNOOZE, SNOOZE_REMINDER_MIN)).build());
         PendingIntent call = callIntent(ctx, r);
-        if (call != null) b.addAction(new Notification.Action.Builder(null, "📞 Call", call).build());
+        if (call != null) b.addAction(new Notification.Action.Builder(null, L.t("📞 Call"), call).build());
         nm.notify(r.requestCode(), b.build());
     }
 
@@ -169,9 +169,9 @@ public final class Notifier {
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
                 .setOngoing(true)
                 .setColor(Ui.col(ctx, R.color.accent))
-                .addAction(new Notification.Action.Builder(null, "Stop",
+                .addAction(new Notification.Action.Builder(null, L.t("Stop"),
                         actionIntent(ctx, r, ActionReceiver.ACTION_DONE, 0)).build())
-                .addAction(new Notification.Action.Builder(null, "Snooze " + SNOOZE_ALARM_MIN + " min",
+                .addAction(new Notification.Action.Builder(null, L.t("Snooze " + SNOOZE_ALARM_MIN + " min"),
                         actionIntent(ctx, r, ActionReceiver.ACTION_SNOOZE, SNOOZE_ALARM_MIN)).build());
         if (Build.VERSION.SDK_INT >= 26) b.setTimeoutAfter(10 * 60 * 1000L);
         Notification n = b.build();

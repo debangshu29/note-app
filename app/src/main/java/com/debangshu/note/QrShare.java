@@ -63,7 +63,7 @@ public final class QrShare {
         ImageView img = new ImageView(a);
         img.setBackgroundColor(Color.WHITE);
         box.addView(img, new LinearLayout.LayoutParams(size, size));
-        TextView info = new TextView(a);
+        TextView info = new Ui.T(a);
         info.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         info.setTextColor(a.getColor(R.color.text2));
         info.setGravity(Gravity.CENTER);
@@ -111,10 +111,10 @@ public final class QrShare {
             GmsBarcodeScanning.getClient(a, new GmsBarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE).build())
                     .startScan()
                     .addOnSuccessListener(code -> got(a, code == null ? null : code.getRawValue()))
-                    .addOnFailureListener(e -> Toast.makeText(a, "The QR scanner isn't ready (Google Play services is setting it up). Try again in a minute.",
+                    .addOnFailureListener(e -> Ui.toast(a, "The QR scanner isn't ready (Google Play services is setting it up). Try again in a minute.",
                             Toast.LENGTH_LONG).show());
         } catch (Throwable t) {
-            Toast.makeText(a, "This phone can't run the QR scanner", Toast.LENGTH_LONG).show();
+            Ui.toast(a, "This phone can't run the QR scanner", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -123,7 +123,7 @@ public final class QrShare {
         String[] note = collector.add(raw);
         if (note == null) {
             String id = collector.lastId;
-            if (id == null) { Toast.makeText(a, "That QR code couldn't be read", Toast.LENGTH_SHORT).show(); return; }
+            if (id == null) { Ui.toast(a, "That QR code couldn't be read", Toast.LENGTH_SHORT).show(); return; }
             new Ui.Popup(a).setTitle("Got " + collector.have(id) + " of " + collector.total(id))
                     .setMessage("Still needed: code " + android.text.TextUtils.join(", ", collector.missing(id)) + ".")
                     .setPositiveButton("Scan the next", (d, w) -> scan(a))
@@ -134,6 +134,6 @@ public final class QrShare {
         i.putExtra(Intent.EXTRA_TEXT, note[1]);
         if (!note[0].isEmpty()) i.putExtra(EditorActivity.EXTRA_TITLE, note[0]);
         a.startActivity(i);
-        Toast.makeText(a, "Note made from the QR code", Toast.LENGTH_SHORT).show();
+        Ui.toast(a, "Note made from the QR code", Toast.LENGTH_SHORT).show();
     }
 }

@@ -49,6 +49,7 @@ public class MoneyActivity extends Activity {
 
     static final class Month {
         String label;
+        String shortName;
         double total;
         /** category → lines */
         final Map<String, List<Line>> byCat = new LinkedHashMap<>();
@@ -64,7 +65,8 @@ public class MoneyActivity extends Activity {
         starts[0] = Long.MAX_VALUE;
         for (int i = 0; i < count; i++) {
             Month m = new Month();
-            m.label = new SimpleDateFormat("MMM yyyy", Locale.ENGLISH).format(c.getTime());
+            m.label = L.date("MMMM yyyy", c.getTime());
+            m.shortName = L.date("MMM", c.getTime());
             out.add(m);
             starts[i + 1] = c.getTimeInMillis();
             c.add(Calendar.MONTH, -1);
@@ -181,7 +183,7 @@ public class MoneyActivity extends Activity {
         back.setImageTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.text)));
         back.setPadding(px(11), px(11), px(11), px(11));
         back.setElevation(dp);
-        back.setContentDescription("Back");
+        back.setContentDescription(L.t("Back"));
         back.setOnClickListener(v -> finish());
         top.addView(back, new LinearLayout.LayoutParams(px(44), px(44)));
         LinearLayout titles = new LinearLayout(this);
@@ -194,7 +196,7 @@ public class MoneyActivity extends Activity {
         help.setGravity(Gravity.CENTER);
         help.setBackgroundResource(R.drawable.bg_circle);
         help.setElevation(dp);
-        help.setContentDescription("How it works");
+        help.setContentDescription(L.t("How it works"));
         help.setOnClickListener(v -> howItWorks());
         top.addView(help, new LinearLayout.LayoutParams(px(44), px(44)));
         root.addView(top);
@@ -226,7 +228,7 @@ public class MoneyActivity extends Activity {
         String sub;
         if (monthShown == 0 && months.size() > 1 && months.get(1).total > 0) {
             double diff = cur.total - months.get(1).total;
-            sub = ListTotals.money(Math.abs(diff), true) + (diff >= 0 ? " more" : " less") + " than " + months.get(1).label.substring(0, 3);
+            sub = ListTotals.money(Math.abs(diff), true) + (diff >= 0 ? " more" : " less") + " than " + months.get(1).shortName;
         } else sub = cur.total == 0 ? "No spending found" : cur.byCat.size() + (cur.byCat.size() == 1 ? " category" : " categories");
         LinearLayout sc = card("🧾", "Spent in " + cur.label, sub);
         TextView big = text(ListTotals.money(cur.total, true), 30, Ui.EXTRABOLD, Ui.col(this, R.color.accent));
@@ -254,7 +256,7 @@ public class MoneyActivity extends Activity {
             LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(px(26), h);
             blp.topMargin = px(3);
             col.addView(bar, blp);
-            TextView lab = text(m.label.substring(0, 3), 11, sel ? Ui.BOLD : Ui.SEMIBOLD, getColor(sel ? R.color.text : R.color.text2));
+            TextView lab = text(m.shortName, 11, sel ? Ui.BOLD : Ui.SEMIBOLD, getColor(sel ? R.color.text : R.color.text2));
             lab.setPadding(0, px(4), 0, 0);
             col.addView(lab);
             col.setOnClickListener(v -> { monthShown = idx; build(); });
@@ -345,7 +347,7 @@ public class MoneyActivity extends Activity {
                     if (w == 0) {
                         long nid = p.lines.get(p.lines.size() - 1).noteId;
                         appendLine(nid, (theyOwe ? "☐ ask " + p.name + " for " : "☐ pay " + p.name + " ") + money + " tomorrow at 10 am");
-                        Toast.makeText(this, "Reminder set for tomorrow 10 am", Toast.LENGTH_SHORT).show();
+                        Ui.toast(this, "Reminder set for tomorrow 10 am", Toast.LENGTH_SHORT).show();
                     } else if (w == 1) {
                         settleAll(p);
                     } else if (w == 2) {
@@ -353,8 +355,8 @@ public class MoneyActivity extends Activity {
                                 : "Hi " + p.name + ", I'll send the " + money + " I owe you soon 🙂";
                         Intent i = new Intent(Intent.ACTION_SEND);
                         i.setType("text/plain");
-                        i.putExtra(Intent.EXTRA_TEXT, msg);
-                        startActivity(Intent.createChooser(i, "Send with"));
+                        i.putExtra(Intent.EXTRA_TEXT, L.t(msg));
+                        startActivity(Intent.createChooser(i, L.t("Send with")));
                     } else openNote(p.lines.get(w - 3).noteId);
                 }).setNegativeButton("Close", null).show();
     }
@@ -397,7 +399,7 @@ public class MoneyActivity extends Activity {
                 store.saveNote(n);
             }
         }
-        Toast.makeText(this, "Settled with " + p.name, Toast.LENGTH_SHORT).show();
+        Ui.toast(this, "Settled with " + p.name, Toast.LENGTH_SHORT).show();
         build();
     }
 
@@ -422,7 +424,7 @@ public class MoneyActivity extends Activity {
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding(px(16), 0, px(16), px(8));
         android.widget.EditText search = new android.widget.EditText(this);
-        search.setHint("Search (milk, rice…)");
+        search.setHint(L.t("Search (milk, rice…)"));
         search.setSingleLine(true);
         search.setBackground(Ui.round(Ui.col(this, R.color.surface2), 14 * dp));
         search.setPadding(px(14), px(10), px(14), px(10));
@@ -439,7 +441,7 @@ public class MoneyActivity extends Activity {
             for (PriceBook.Entry e : all) {
                 if (!q.isEmpty() && !e.key.contains(q)) continue;
                 if (shown++ > 200) break;
-                String when = new SimpleDateFormat("d MMM", Locale.ENGLISH).format(new Date(e.when));
+                String when = L.date("d MMM", new Date(e.when));
                 String sub = e.line + " · " + when + (e.times > 1 ? " · bought " + e.times + "×" : "")
                         + (e.low < e.price - 0.5 ? " · lowest " + ListTotals.money(e.low, true) : "");
                 list.addView(row(e.name, sub, ListTotals.money(e.price, true), -1, 0, v -> openNote(e.noteId)));
@@ -544,7 +546,7 @@ public class MoneyActivity extends Activity {
     }
 
     private TextView text(String s, int sp, int weight, int color) {
-        TextView t = new TextView(this);
+        TextView t = new Ui.T(this);
         t.setText(s);
         t.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
         t.setTypeface(Ui.face(this, weight));

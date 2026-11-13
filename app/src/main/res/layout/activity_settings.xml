@@ -220,14 +220,10 @@
                 </LinearLayout>
 
                 <LinearLayout style="@style/SectionBody">
-                    <Switch android:id="@+id/sw_auto_math" style="@style/SettingsSwitch" android:text="Auto answer after =
-(1+1= becomes 1+1=2)" />
-                    <Switch android:id="@+id/sw_math_suggest" style="@style/SettingsSwitch" android:text="Show the answer in grey while typing math
-(tap it or swipe it right to add)" />
-                    <Switch android:id="@+id/sw_list_totals" style="@style/SettingsSwitch" android:text="Add up price lists automatically
-(apple 50 rs, banana 20 rs… → Total = ₹70)" />
-                    <Switch android:id="@+id/sw_smart_lists" style="@style/SettingsSwitch" android:text="Smart lists and checkboxes
-(•, 1. and ☐ continue when you press Enter)" />
+                    <Switch android:id="@+id/sw_auto_math" style="@style/SettingsSwitch" android:text="Auto answer after =\n(1+1= becomes 1+1=2)" />
+                    <Switch android:id="@+id/sw_math_suggest" style="@style/SettingsSwitch" android:text="Show the answer in grey while typing math\n(tap it or swipe it right to add)" />
+                    <Switch android:id="@+id/sw_list_totals" style="@style/SettingsSwitch" android:text="Add up price lists automatically\n(apple 50 rs, banana 20 rs… → Total = ₹70)" />
+                    <Switch android:id="@+id/sw_smart_lists" style="@style/SettingsSwitch" android:text="Smart lists and checkboxes\n(•, 1. and ☐ continue when you press Enter)" />
                     <LinearLayout android:id="@+id/row_voice_lang" style="@style/SettingsRow">
                         <TextView style="@style/SettingsTitle" android:text="Voice typing language" />
                         <TextView android:id="@+id/txt_voice_lang" style="@style/SettingsSub" />
@@ -299,10 +295,8 @@
                 </LinearLayout>
 
                 <LinearLayout style="@style/SectionBody">
-                    <Switch android:id="@+id/sw_auto_reminders" style="@style/SettingsSwitch" android:text="Find dates in notes and remind me
-(wake-up lines become alarms)" />
-                    <Switch android:id="@+id/sw_calendar" style="@style/SettingsSwitch" android:text="Add planned things to my phone calendar
-(the calendar never alerts twice)" />
+                    <Switch android:id="@+id/sw_auto_reminders" style="@style/SettingsSwitch" android:text="Find dates in notes and remind me\n(wake-up lines become alarms)" />
+                    <Switch android:id="@+id/sw_calendar" style="@style/SettingsSwitch" android:text="Add planned things to my phone calendar\n(the calendar never alerts twice)" />
                     <Switch android:id="@+id/sw_brief" style="@style/SettingsSwitch" android:text="Morning brief\n(one quiet notification with today's plan — only when there is something)" />
                     <Switch android:id="@+id/sw_rollover" style="@style/SettingsSwitch" android:text="Carry over unfinished to-dos\n(each morning, unticked ☐ from older #todo notes move to today's To-do note)" />
                     <Switch android:id="@+id/sw_weekly" style="@style/SettingsSwitch" android:text="Sunday summary\n(one notification each Sunday: spending, reminders, habits, next week's bills)" />
@@ -401,6 +395,10 @@
                 </LinearLayout>
 
                 <LinearLayout style="@style/SectionBody">
+                    <LinearLayout android:id="@+id/row_language" style="@style/SettingsRow">
+                        <TextView style="@style/SettingsTitle" android:text="🌐  App language / भाषा / ভাষা" />
+                        <TextView android:id="@+id/txt_language" style="@style/SettingsSub" />
+                    </LinearLayout>
                     <LinearLayout android:id="@+id/row_theme" style="@style/SettingsRow">
                         <TextView style="@style/SettingsTitle" android:text="Theme" />
                         <TextView android:id="@+id/txt_theme" style="@style/SettingsSub" />
@@ -482,10 +480,8 @@
                 </LinearLayout>
 
                 <LinearLayout style="@style/SectionBody">
-                    <Switch android:id="@+id/sw_app_lock" style="@style/SettingsSwitch" android:text="App lock
-(ask for your PIN or fingerprint when Note opens)" />
-                    <Switch android:id="@+id/sw_lock_bio" style="@style/SettingsSwitch" android:text="Unlock with fingerprint or face
-(you can always use your PIN too)" />
+                    <Switch android:id="@+id/sw_app_lock" style="@style/SettingsSwitch" android:text="App lock\n(ask for your PIN or fingerprint when Note opens)" />
+                    <Switch android:id="@+id/sw_lock_bio" style="@style/SettingsSwitch" android:text="Unlock with fingerprint or face\n(you can always use your PIN too)" />
                     <LinearLayout android:id="@+id/row_lock_after" style="@style/SettingsRow">
                         <TextView style="@style/SettingsTitle" android:text="Lock again" />
                         <TextView android:id="@+id/txt_lock_after" style="@style/SettingsSub" />
@@ -584,8 +580,7 @@
                         <TextView style="@style/SettingsTitle" android:text="📁  Imports" />
                         <TextView android:id="@+id/txt_imports" style="@style/SettingsSub" />
                     </LinearLayout>
-                    <Switch android:id="@+id/sw_auto_backup" style="@style/SettingsSwitch" android:text="Automatic daily backup to the Backups folder
-(keeps the last 14 days)" />
+                    <Switch android:id="@+id/sw_auto_backup" style="@style/SettingsSwitch" android:text="Automatic daily backup to the Backups folder\n(keeps the last 14 days)" />
                     <LinearLayout android:id="@+id/row_backup_now" style="@style/SettingsRow">
                         <TextView style="@style/SettingsTitle" android:text="Back up now" />
                         <TextView style="@style/SettingsSub" android:text="Save a backup to the Backups folder right away." />
@@ -677,8 +672,7 @@
                 </LinearLayout>
 
                 <LinearLayout style="@style/SectionBody">
-                    <Switch android:id="@+id/sw_auto_update" style="@style/SettingsSwitch" android:text="Check for updates automatically
-(a popup appears when a new version is ready)" />
+                    <Switch android:id="@+id/sw_auto_update" style="@style/SettingsSwitch" android:text="Check for updates automatically\n(a popup appears when a new version is ready)" />
                     <LinearLayout android:id="@+id/row_check_update" style="@style/SettingsRow">
                         <TextView style="@style/SettingsTitle" android:text="Check for updates now" />
                         <TextView android:id="@+id/txt_update" style="@style/SettingsSub" />

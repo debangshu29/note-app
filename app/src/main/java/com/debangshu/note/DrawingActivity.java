@@ -66,12 +66,12 @@ public class DrawingActivity extends Activity {
         top.addView(sp, new LinearLayout.LayoutParams(0, 1, 1));
         TextView undo = button("↶", v -> draw.undo());
         undo.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
-        undo.setContentDescription("Undo");
+        undo.setContentDescription(L.t("Undo"));
         Tips.set(undo, "Undo");
         top.addView(undo);
         TextView redo = button("↷", v -> draw.redo());
         redo.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
-        redo.setContentDescription("Redo");
+        redo.setContentDescription(L.t("Redo"));
         Tips.set(redo, "Redo");
         top.addView(redo);
         top.addView(button("Clear", v -> new Ui.Popup(this).setMessage("Clear the whole drawing?")
@@ -146,7 +146,7 @@ public class DrawingActivity extends Activity {
     }
 
     private TextView button(String text, View.OnClickListener l) {
-        TextView t = new TextView(this);
+        TextView t = new Ui.T(this);
         t.setText(text);
         t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         t.setTextColor(getColor(R.color.text));
@@ -211,7 +211,7 @@ public class DrawingActivity extends Activity {
             setResult(RESULT_OK, r);
             finish();
         } catch (Exception e) {
-            Toast.makeText(this, "Couldn't save the drawing: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Ui.toast(this, "Couldn't save the drawing: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 

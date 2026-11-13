@@ -51,14 +51,14 @@ public class TodayActivity extends Activity {
         back.setImageTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.text)));
         back.setPadding(px(11), px(11), px(11), px(11));
         back.setElevation(dp);
-        back.setContentDescription("Back");
+        back.setContentDescription(L.t("Back"));
         back.setOnClickListener(v -> finish());
         top.addView(back, new LinearLayout.LayoutParams(px(44), px(44)));
         LinearLayout titles = new LinearLayout(this);
         titles.setOrientation(LinearLayout.VERTICAL);
         titles.setPadding(px(14), 0, 0, 0);
         TextView t = text("Today", 24, Ui.EXTRABOLD, getColor(R.color.text));
-        TextView d = text(DateFormat.format("EEEE, d MMMM", new Date()).toString(), 13, Ui.SEMIBOLD, getColor(R.color.text2));
+        TextView d = text(L.date("EEEE, d MMMM", new Date()), 13, Ui.SEMIBOLD, getColor(R.color.text2));
         titles.addView(t);
         titles.addView(d);
         top.addView(titles, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
@@ -66,7 +66,7 @@ public class TodayActivity extends Activity {
         add.setGravity(Gravity.CENTER);
         add.setBackgroundResource(R.drawable.bg_circle_accent);
         add.setElevation(3 * dp);
-        add.setContentDescription("New note");
+        add.setContentDescription(L.t("New note"));
         add.setOnClickListener(v -> startActivity(new Intent(this, EditorActivity.class)));
         top.addView(add, new LinearLayout.LayoutParams(px(44), px(44)));
         root.addView(top);
@@ -276,7 +276,7 @@ public class TodayActivity extends Activity {
     }
 
     private TextView text(String s, int sp, int weight, int color) {
-        TextView t = new TextView(this);
+        TextView t = new Ui.T(this);
         t.setText(s);
         t.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
         t.setTypeface(Ui.face(this, weight));

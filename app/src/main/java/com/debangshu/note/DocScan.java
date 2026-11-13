@@ -37,14 +37,14 @@ public final class DocScan {
                         try {
                             a.startIntentSenderForResult(sender, REQ_SCAN, null, 0, 0, 0);
                         } catch (Exception e) {
-                            Toast.makeText(a, "Couldn't open the scanner", Toast.LENGTH_LONG).show();
+                            Ui.toast(a, "Couldn't open the scanner", Toast.LENGTH_LONG).show();
                         }
                     })
-                    .addOnFailureListener(e -> Toast.makeText(a,
+                    .addOnFailureListener(e -> Ui.toast(a,
                             "The scanner isn't available yet (Google Play services is setting it up). "
                                     + "Try again in a minute, or use Take photo.", Toast.LENGTH_LONG).show());
         } catch (Throwable t) {
-            Toast.makeText(a, "This phone can't run the document scanner. Use Take photo instead.", Toast.LENGTH_LONG).show();
+            Ui.toast(a, "This phone can't run the document scanner. Use Take photo instead.", Toast.LENGTH_LONG).show();
         }
     }
 

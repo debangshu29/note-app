@@ -57,14 +57,14 @@ public class ArchiveActivity extends Screen {
             if (w == 0) {
                 n.archived = false;
                 store.saveNote(n);
-                Toast.makeText(this, "Back on the home screen", Toast.LENGTH_SHORT).show();
+                Ui.toast(this, "Back on the home screen", Toast.LENGTH_SHORT).show();
             } else if (w == 1) {
                 openNote(n.id);
                 return;
             } else {
                 store.trashNote(n.id);
                 ReminderSync.syncAsync(this, n.id, null);
-                Toast.makeText(this, "Moved to the recycle bin", Toast.LENGTH_SHORT).show();
+                Ui.toast(this, "Moved to the recycle bin", Toast.LENGTH_SHORT).show();
             }
             build();
             Ui.fonts(root);

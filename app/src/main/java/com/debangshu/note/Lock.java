@@ -150,9 +150,9 @@ public final class Lock {
         if (Build.VERSION.SDK_INT < 28) return;
         try {
             android.hardware.biometrics.BiometricPrompt.Builder b = new android.hardware.biometrics.BiometricPrompt.Builder(a)
-                    .setTitle(title)
-                    .setSubtitle("Use your fingerprint or face")
-                    .setNegativeButton("Use PIN", a.getMainExecutor(), (d, w) -> { });
+                    .setTitle(L.t(title))
+                    .setSubtitle(L.t("Use your fingerprint or face"))
+                    .setNegativeButton(L.t("Use PIN"), a.getMainExecutor(), (d, w) -> { });
             if (Build.VERSION.SDK_INT >= 30) {
                 b.setAllowedAuthenticators(android.hardware.biometrics.BiometricManager.Authenticators.BIOMETRIC_WEAK);
             }
@@ -207,14 +207,14 @@ public final class Lock {
         icon.setPadding(ip, ip, ip, ip);
         col.addView(icon, new LinearLayout.LayoutParams((int) (72 * dp), (int) (72 * dp)));
 
-        TextView head = new TextView(a);
+        TextView head = new Ui.T(a);
         head.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
         head.setTypeface(Ui.face(a, Ui.EXTRABOLD));
         head.setTextColor(a.getColor(R.color.text));
         head.setGravity(Gravity.CENTER);
         head.setPadding(0, (int) (18 * dp), 0, (int) (4 * dp));
         col.addView(head);
-        TextView sub = new TextView(a);
+        TextView sub = new Ui.T(a);
         sub.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         sub.setTypeface(Ui.face(a, Ui.REGULAR));
         sub.setGravity(Gravity.CENTER);
@@ -304,11 +304,11 @@ public final class Lock {
                 iv.setImageTintList(android.content.res.ColorStateList.valueOf(a.getColor(R.color.text)));
                 int p = (int) (22 * dp);
                 iv.setPadding(p, p, p, p);
-                iv.setContentDescription(k.equals("bio") ? "Use fingerprint" : "Delete");
+                iv.setContentDescription(L.t(k.equals("bio") ? "Use fingerprint" : "Delete"));
                 iv.setBackground(Ui.ripple(Ui.round(0, 36 * dp)));
                 key = iv;
             } else {
-                TextView t = new TextView(a);
+                TextView t = new Ui.T(a);
                 t.setText(k);
                 t.setGravity(Gravity.CENTER);
                 t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 26);
@@ -336,7 +336,7 @@ public final class Lock {
             });
         }
         if (cancellable) {
-            TextView cancel = new TextView(a);
+            TextView cancel = new Ui.T(a);
             cancel.setText("Cancel");
             cancel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
             cancel.setTypeface(Ui.face(a, Ui.SEMIBOLD));

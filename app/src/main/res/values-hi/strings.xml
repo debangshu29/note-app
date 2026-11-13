@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="w_quick">Note: झटपट बटन</string>
+    <string name="w_quick_desc">एक टैप में नया नोट, चेकलिस्ट, वॉइस नोट या स्कैन</string>
+    <string name="w_today">Note: आज</string>
+    <string name="w_today_desc">आज के रिमाइंडर और बाकी बचे काम</string>
+    <string name="w_checklist">Note: चेकलिस्ट</string>
+    <string name="w_checklist_desc">होम स्क्रीन पर ही टिक करने वाली चेकलिस्ट</string>
+    <string name="w_countdown">Note: उलटी गिनती</string>
+    <string name="w_countdown_desc">किसी रिमाइंडर तक बचे दिन (परीक्षा, यात्रा, जन्मदिन…)</string>
+    <string name="s_note">नया नोट</string>
+    <string name="s_checklist">नई चेकलिस्ट</string>
+    <string name="s_voice">वॉइस नोट</string>
+    <string name="s_scan">डॉक्यूमेंट स्कैन</string>
+    <string name="s_today">आज</string>
+    <string name="tile_label">नया नोट</string>
+</resources>

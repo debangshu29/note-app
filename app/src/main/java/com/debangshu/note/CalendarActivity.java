@@ -92,7 +92,7 @@ public class CalendarActivity extends Screen {
     @Override
     protected void build() {
         body.removeAllViews();
-        setTitles(new SimpleDateFormat("MMMM yyyy", Locale.ENGLISH).format(month.getTime()), "Tap a day to see it");
+        setTitles(L.date("MMMM yyyy", month.getTime()), "Tap a day to see it");
 
         Calendar first = (Calendar) month.clone();
         first.set(Calendar.DAY_OF_MONTH, 1);
@@ -122,7 +122,7 @@ public class CalendarActivity extends Screen {
         TextView next = text("›", 26, Ui.BOLD, Ui.col(this, R.color.accent));
         next.setPadding(px(10), 0, px(10), px(2));
         next.setOnClickListener(v -> { month.add(Calendar.MONTH, 1); build(); Ui.fonts(root); });
-        TextView label = text(new SimpleDateFormat("MMMM yyyy", Locale.ENGLISH).format(month.getTime()), 16, Ui.EXTRABOLD, getColor(R.color.text));
+        TextView label = text(L.date("MMMM yyyy", month.getTime()), 16, Ui.EXTRABOLD, getColor(R.color.text));
         label.setGravity(Gravity.CENTER);
         nav.addView(prev);
         nav.addView(label, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
@@ -198,7 +198,7 @@ public class CalendarActivity extends Screen {
         if (!selInMonth) return;
         List<Item> r = rem.get(selKey);
         List<Note> m = made.get(selKey);
-        String dayTitle = new SimpleDateFormat("EEEE, d MMMM", Locale.ENGLISH).format(selected.getTime());
+        String dayTitle = L.date("EEEE, d MMMM", selected.getTime());
         LinearLayout dc = card("📅", dayTitle, (r == null ? "No reminders" : r.size() + (r.size() == 1 ? " reminder" : " reminders"))
                 + (m == null ? "" : " · " + m.size() + (m.size() == 1 ? " note" : " notes")));
         java.text.DateFormat tf = android.text.format.DateFormat.getTimeFormat(this);

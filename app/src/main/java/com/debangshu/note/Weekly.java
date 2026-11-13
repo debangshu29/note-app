@@ -76,7 +76,7 @@ public final class Weekly {
             if (e.getValue() > m.topAmount) { m.topAmount = e.getValue(); m.topCategory = e.getKey(); }
 
         // reminders: this week's (one-time ones) and the coming week's
-        SimpleDateFormat day = new SimpleDateFormat("EEE d", Locale.ENGLISH);
+        SimpleDateFormat day = new SimpleDateFormat("EEE d", L.dates());
         java.text.DateFormat tf = android.text.format.DateFormat.getTimeFormat(c);
         List<Reminder> next = new ArrayList<>();
         for (Reminder r : s.reminders()) {
@@ -172,8 +172,8 @@ public final class Weekly {
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
         if (Build.VERSION.SDK_INT >= 26 && nm.getNotificationChannel(CHANNEL) == null) {
-            NotificationChannel ch = new NotificationChannel(CHANNEL, "Sunday summary", NotificationManager.IMPORTANCE_LOW);
-            ch.setDescription("Your week in one notification, every Sunday evening");
+            NotificationChannel ch = new NotificationChannel(CHANNEL, L.t("Sunday summary"), NotificationManager.IMPORTANCE_LOW);
+            ch.setDescription(L.t("Your week in one notification, every Sunday evening"));
             nm.createNotificationChannel(ch);
         }
         Intent open = new Intent(c, WeekActivity.class);
@@ -181,9 +181,9 @@ public final class Weekly {
         Notification.Builder b = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(c, CHANNEL) : new Notification.Builder(c);
         b.setSmallIcon(R.drawable.ic_notify)
                 .setColor(Ui.col(c, R.color.accent))
-                .setContentTitle("📊 Your week")
-                .setContentText(l.get(0))
-                .setStyle(new Notification.BigTextStyle().bigText(android.text.TextUtils.join("\n", l)))
+                .setContentTitle(L.t("📊 Your week"))
+                .setContentText(L.t(l.get(0)))
+                .setStyle(new Notification.BigTextStyle().bigText(L.t(android.text.TextUtils.join("\n", l))))
                 .setAutoCancel(true)
                 .setContentIntent(PendingIntent.getActivity(c, REQ, open, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
         nm.notify(NOTIF_ID, b.build());

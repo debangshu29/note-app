@@ -83,7 +83,7 @@ public final class Attachments {
         row.setLayoutParams(lp);
 
         boolean audio = Block.AUDIO.equals(b.type);
-        TextView icon = new TextView(a);
+        TextView icon = new Ui.T(a);
         icon.setText(audio ? "▶" : icon(b));
         icon.setTextSize(TypedValue.COMPLEX_UNIT_SP, audio ? 18 : 22);
         icon.setGravity(Gravity.CENTER);
@@ -94,7 +94,7 @@ public final class Attachments {
         LinearLayout col = new LinearLayout(a);
         col.setOrientation(LinearLayout.VERTICAL);
         col.setPadding((int) (12 * dp), 0, (int) (4 * dp), 0);
-        TextView title = new TextView(a);
+        TextView title = new Ui.T(a);
         title.setText(label(b));
         title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
         title.setTypeface(Ui.face(a, Ui.SEMIBOLD));
@@ -102,13 +102,13 @@ public final class Attachments {
         title.setMaxLines(2);
         title.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
         col.addView(title);
-        TextView sub = new TextView(a);
+        TextView sub = new Ui.T(a);
         sub.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         sub.setTextColor(a.getColor(R.color.text2));
         col.addView(sub);
         row.addView(col, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
 
-        TextView more = new TextView(a);
+        TextView more = new Ui.T(a);
         more.setText("⋮");
         more.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
         more.setTextColor(a.getColor(R.color.text2));
@@ -187,7 +187,7 @@ public final class Attachments {
                 mp.start();
                 h.post(tick);
             } catch (Exception e) {
-                Toast.makeText(c, "Couldn't play the recording", Toast.LENGTH_SHORT).show();
+                Ui.toast(c, "Couldn't play the recording", Toast.LENGTH_SHORT).show();
                 stop();
             }
         }
@@ -238,9 +238,9 @@ public final class Attachments {
             i.setDataAndType(shareUri(a, b), mimeOf(b));
             i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             Lock.leavingForOtherApp();
-            a.startActivity(Intent.createChooser(i, "Open with"));
+            a.startActivity(Intent.createChooser(i, L.t("Open with")));
         } catch (Exception e) {
-            Toast.makeText(a, "No app on this phone can open this file", Toast.LENGTH_LONG).show();
+            Ui.toast(a, "No app on this phone can open this file", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -251,9 +251,9 @@ public final class Attachments {
             i.putExtra(Intent.EXTRA_STREAM, shareUri(a, b));
             i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             Lock.leavingForOtherApp();
-            a.startActivity(Intent.createChooser(i, "Share"));
+            a.startActivity(Intent.createChooser(i, L.t("Share")));
         } catch (Exception e) {
-            Toast.makeText(a, "Couldn't share it", Toast.LENGTH_SHORT).show();
+            Ui.toast(a, "Couldn't share it", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -314,7 +314,7 @@ public final class Attachments {
         } catch (Exception e) {
             rec.release();
             out.delete();
-            Toast.makeText(a, "Couldn't start recording (is another app using the microphone?)", Toast.LENGTH_LONG).show();
+            Ui.toast(a, "Couldn't start recording (is another app using the microphone?)", Toast.LENGTH_LONG).show();
             return;
         }
         float dp = a.getResources().getDisplayMetrics().density;
@@ -322,18 +322,18 @@ public final class Attachments {
         box.setOrientation(LinearLayout.VERTICAL);
         box.setGravity(Gravity.CENTER_HORIZONTAL);
         box.setPadding(0, (int) (10 * dp), 0, (int) (10 * dp));
-        TextView dot = new TextView(a);
+        TextView dot = new Ui.T(a);
         dot.setText("●");
         dot.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
         dot.setTextColor(a.getColor(R.color.danger));
         box.addView(dot);
-        TextView time = new TextView(a);
+        TextView time = new Ui.T(a);
         time.setText("0:00");
         time.setTextSize(TypedValue.COMPLEX_UNIT_SP, 40);
         time.setTypeface(Ui.face(a, Ui.EXTRABOLD));
         time.setTextColor(a.getColor(R.color.text));
         box.addView(time);
-        TextView hint = new TextView(a);
+        TextView hint = new Ui.T(a);
         hint.setText("Recording… keep Note open. Your voice stays on this phone.");
         hint.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         hint.setTextColor(a.getColor(R.color.text2));
@@ -365,7 +365,7 @@ public final class Attachments {
                     finish.run();
                     if (!out.exists() || out.length() < 1000) {
                         out.delete();
-                        Toast.makeText(a, "Nothing was recorded", Toast.LENGTH_SHORT).show();
+                        Ui.toast(a, "Nothing was recorded", Toast.LENGTH_SHORT).show();
                         return;
                     }
                     done.block(Block.audio(file, ms, out.length()));

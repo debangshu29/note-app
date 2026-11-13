@@ -58,7 +58,7 @@ public class MainActivity extends Activity {
         Geo.syncAsync(this);
         ReminderSync.runInBackground(() -> {
             int n = RollOver.run(this);
-            if (n > 0) runOnUiThread(() -> android.widget.Toast.makeText(this,
+            if (n > 0) runOnUiThread(() -> Ui.toast(this,
                     n + (n == 1 ? " unfinished to-do" : " unfinished to-dos") + " moved to " + RollOver.todayTitle(System.currentTimeMillis()),
                     android.widget.Toast.LENGTH_LONG).show());
         }, this::refresh);
@@ -143,7 +143,7 @@ public class MainActivity extends Activity {
         if (q.equals("search")) {
             EditText s = findViewById(R.id.search);
             s.requestFocus();
-            s.setHint("Search notes, words in photos, file names…");
+            s.setHint(L.t("Search notes, words in photos, file names…"));
             s.postDelayed(() -> {
                 android.view.inputmethod.InputMethodManager im = (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
                 if (im != null) im.showSoftInput(s, 0);
@@ -182,6 +182,7 @@ public class MainActivity extends Activity {
     }
 
     private CharSequence tabLabel(String name, int count) {
+        name = L.t(name);
         if (count <= 0) return name;
         android.text.SpannableString s = new android.text.SpannableString(name + "  " + count);
         int at = name.length() + 2;
@@ -273,7 +274,7 @@ public class MainActivity extends Activity {
 
     private View labelChip(String text, String tag, boolean selected) {
         float d = getResources().getDisplayMetrics().density;
-        TextView t = new TextView(this);
+        TextView t = new Ui.T(this);
         t.setText(text);
         t.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
         t.setTypeface(Ui.face(this, Ui.SEMIBOLD));
@@ -335,7 +336,7 @@ public class MainActivity extends Activity {
                     i.addCategory(Intent.CATEGORY_OPENABLE);
                     i.setType(types[which]);
                     try { startActivityForResult(i, REQ_IMPORT); }
-                    catch (Exception e) { Toast.makeText(this, "No file picker found", Toast.LENGTH_SHORT).show(); }
+                    catch (Exception e) { Ui.toast(this, "No file picker found", Toast.LENGTH_SHORT).show(); }
                 })
                 .show();
     }
@@ -384,12 +385,12 @@ public class MainActivity extends Activity {
         @Override
         public boolean onCreateActionMode(android.view.ActionMode mode, android.view.Menu menu) {
             actionMode = mode;
-            menu.add(0, M_SHARE, 0, "Share").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_ALWAYS);
-            menu.add(0, M_PIN, 1, "Pin").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_IF_ROOM);
-            menu.add(0, M_DELETE, 2, "Delete").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_IF_ROOM);
-            menu.add(0, M_ARCHIVE, 2, "Archive").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_IF_ROOM);
-            menu.add(0, M_BAR, 3, "Pin to notification bar").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
-            menu.add(0, M_ALL, 3, "Select all").setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
+            menu.add(0, M_SHARE, 0, L.t("Share")).setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_ALWAYS);
+            menu.add(0, M_PIN, 1, L.t("Pin")).setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_IF_ROOM);
+            menu.add(0, M_DELETE, 2, L.t("Delete")).setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_IF_ROOM);
+            menu.add(0, M_ARCHIVE, 2, L.t("Archive")).setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_IF_ROOM);
+            menu.add(0, M_BAR, 3, L.t("Pin to notification bar")).setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
+            menu.add(0, M_ALL, 3, L.t("Select all")).setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_NEVER);
             return true;
         }
 
@@ -399,17 +400,17 @@ public class MainActivity extends Activity {
         @Override
         public void onItemCheckedStateChanged(android.view.ActionMode mode, int position, long id, boolean checked) {
             List<Note> sel = selectedNotes();
-            mode.setTitle(sel.size() + " selected");
+            mode.setTitle(L.t(sel.size() + " selected"));
             boolean allPinned = !sel.isEmpty();
             for (Note n : sel) if (!n.pinned) allPinned = false;
             android.view.MenuItem pin = mode.getMenu().findItem(M_PIN);
-            if (pin != null) pin.setTitle(allPinned ? "Unpin" : "Pin");
+            if (pin != null) pin.setTitle(L.t(allPinned ? "Unpin" : "Pin"));
             boolean allArch = !sel.isEmpty(), allBar = !sel.isEmpty();
             for (Note n : sel) { if (!n.archived) allArch = false; if (!BarPins.isPinned(MainActivity.this, n.id)) allBar = false; }
             android.view.MenuItem ar = mode.getMenu().findItem(M_ARCHIVE);
-            if (ar != null) ar.setTitle(allArch ? "Unarchive" : "Archive");
+            if (ar != null) ar.setTitle(L.t(allArch ? "Unarchive" : "Archive"));
             android.view.MenuItem bar = mode.getMenu().findItem(M_BAR);
-            if (bar != null) bar.setTitle(allBar ? "Unpin from notification bar" : "Pin to notification bar");
+            if (bar != null) bar.setTitle(L.t(allBar ? "Unpin from notification bar" : "Pin to notification bar"));
         }
 
         @Override
@@ -434,7 +435,7 @@ public class MainActivity extends Activity {
                     boolean allArchived = true;
                     for (Note n : sel) if (!n.archived) allArchived = false;
                     for (Note n : sel) { n.archived = !allArchived; store.saveNote(n); }
-                    Toast.makeText(MainActivity.this, allArchived ? "Back on the home screen"
+                    Ui.toast(MainActivity.this, allArchived ? "Back on the home screen"
                             : (sel.size() == 1 ? "Archived" : sel.size() + " notes archived") + " — see them under 📦 Archived",
                             Toast.LENGTH_SHORT).show();
                     mode.finish();
@@ -446,7 +447,7 @@ public class MainActivity extends Activity {
                     for (Note n : sel) { if (allOn) BarPins.unpin(MainActivity.this, n.id); else BarPins.pin(MainActivity.this, n.id); }
                     if (!allOn && !Notifier.canNotify(MainActivity.this) && android.os.Build.VERSION.SDK_INT >= 33)
                         requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 9);
-                    Toast.makeText(MainActivity.this, allOn ? "Unpinned from the notification bar" : "Pinned to the notification bar",
+                    Ui.toast(MainActivity.this, allOn ? "Unpinned from the notification bar" : "Pinned to the notification bar",
                             Toast.LENGTH_SHORT).show();
                     mode.finish();
                     return true;
@@ -478,7 +479,7 @@ public class MainActivity extends Activity {
                         ReminderSync.syncAsync(this, n.id, null);
                     }
                     if (mode != null) mode.finish();
-                    Toast.makeText(this, notes.size() == 1 ? "Moved to the recycle bin" : notes.size() + " notes moved to the recycle bin",
+                    Ui.toast(this, notes.size() == 1 ? "Moved to the recycle bin" : notes.size() + " notes moved to the recycle bin",
                             Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Cancel", null)

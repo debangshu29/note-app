@@ -64,7 +64,7 @@ public class SettingsActivity extends Activity {
         findViewById(R.id.row_install_with).setOnClickListener(v -> {
             String app = Updater.installWithLabel(this);
             if (app == null) {
-                Toast.makeText(this, "Note will ask which app to use when an update is downloaded", Toast.LENGTH_LONG).show();
+                Ui.toast(this, "Note will ask which app to use when an update is downloaded", Toast.LENGTH_LONG).show();
                 return;
             }
             new Ui.Popup(this).setTitle("Open updates with")
@@ -81,7 +81,7 @@ public class SettingsActivity extends Activity {
         findViewById(R.id.row_backup_now).setOnClickListener(v -> {
             if (!AppFolder.canWrite(this)) { AppFolder.askPermissionIfNeeded(this, REQ_STORAGE); return; }
             ReminderSync.runInBackground(() -> AppFolder.autoBackup(this, true), () -> {
-                Toast.makeText(this, "Backup saved in " + AppFolder.displayPath(AppFolder.BACKUPS), Toast.LENGTH_LONG).show();
+                Ui.toast(this, "Backup saved in " + AppFolder.displayPath(AppFolder.BACKUPS), Toast.LENGTH_LONG).show();
                 updateTexts();
             });
         });
@@ -101,7 +101,7 @@ public class SettingsActivity extends Activity {
                 startActivity(new Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT,
                         Uri.parse("package:" + getPackageName())));
             } catch (Exception e) {
-                Toast.makeText(this, "Not available on this phone", Toast.LENGTH_SHORT).show();
+                Ui.toast(this, "Not available on this phone", Toast.LENGTH_SHORT).show();
             }
         });
         findViewById(R.id.row_export).setOnClickListener(v -> startExport());
@@ -144,6 +144,19 @@ public class SettingsActivity extends Activity {
     // ------------------------------------------------------------------ look & feel
 
     private void setupLook() {
+        findViewById(R.id.row_language).setOnClickListener(v -> {
+            String cur = store.prefs().getString(L.P_LANG, "");
+            int sel = java.util.Arrays.asList(L.CODES).indexOf(cur);
+            // the names stay in their own script, so anyone can find their language
+            CharSequence[] items = new CharSequence[L.NAMES.length];
+            for (int i = 0; i < items.length; i++) items[i] = new android.text.SpannableString((i == sel ? "✓   " : "      ") + L.NAMES[i]);
+            new Ui.Popup(this).setTitle("App language").setItems(items, (dd, w) -> {
+                L.set(this, L.CODES[w]);
+                Widgets.updateAll(this);
+                Ui.themeChanged();
+                recreate();
+            }).show();
+        });
         findViewById(R.id.row_theme).setOnClickListener(v -> pickChoice("Theme", Ui.THEME_NAMES,
                 store.prefs().getInt(Ui.P_THEME, 0), w -> { store.prefs().edit().putInt(Ui.P_THEME, w).apply(); restyle(); }));
         findViewById(R.id.row_text_size).setOnClickListener(v -> {
@@ -164,7 +177,7 @@ public class SettingsActivity extends Activity {
             g.setColor(Ui.ACCENT_PREVIEW[i]);
             if (i == cur) g.setStroke((int) (3 * d), getColor(R.color.text));
             sw.setBackground(Ui.ripple(g));
-            sw.setContentDescription(Ui.ACCENT_NAMES[i]);
+            sw.setContentDescription(L.t(Ui.ACCENT_NAMES[i]));
             Tips.set(sw, Ui.ACCENT_NAMES[i]);
             android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams((int) (36 * d), (int) (36 * d));
             lp.setMargins(0, 0, (int) (10 * d), 0);
@@ -245,14 +258,14 @@ public class SettingsActivity extends Activity {
                 if (Lock.hasPin(this)) {
                     store.prefs().edit().putBoolean(Lock.P_ON, true).apply();
                     Lock.markUnlocked();
-                    Toast.makeText(this, "App lock is on", Toast.LENGTH_SHORT).show();
+                    Ui.toast(this, "App lock is on", Toast.LENGTH_SHORT).show();
                     updateTexts();
                 } else {
                     Lock.showPad(this, Lock.CREATE, "Choose a PIN", ok -> {
                         if (ok) {
                             store.prefs().edit().putBoolean(Lock.P_ON, true).apply();
                             Lock.markUnlocked();
-                            Toast.makeText(this, "App lock is on", Toast.LENGTH_SHORT).show();
+                            Ui.toast(this, "App lock is on", Toast.LENGTH_SHORT).show();
                         } else setSwitch(lockSw, false);
                         updateTexts();
                     });
@@ -277,7 +290,7 @@ public class SettingsActivity extends Activity {
             }
             Lock.showPad(this, Lock.VERIFY, "Enter your current PIN", ok -> {
                 if (ok) Lock.showPad(this, Lock.CREATE, "Choose a new PIN", ok2 -> {
-                    if (ok2) Toast.makeText(this, "PIN changed", Toast.LENGTH_SHORT).show();
+                    if (ok2) Ui.toast(this, "PIN changed", Toast.LENGTH_SHORT).show();
                     updateTexts();
                 });
             });
@@ -317,6 +330,10 @@ public class SettingsActivity extends Activity {
         String installApp = Updater.installWithLabel(this);
         ((TextView) findViewById(R.id.txt_install_with)).setText(installApp == null
                 ? "Ask each time (pick your phone's Files app — not Drive)" : installApp + " · tap to change");
+        int li = Math.max(0, java.util.Arrays.asList(L.CODES).indexOf(store.prefs().getString(L.P_LANG, "")));
+        ((TextView) findViewById(R.id.txt_language)).setText(li == 0
+                ? L.t("Same as my phone") + " (" + (L.english() ? "English" : L.lang().equals("hi") ? "हिन्दी" : "বাংলা") + ")"
+                : L.NAMES[li]);
         ((TextView) findViewById(R.id.txt_theme)).setText(Ui.THEME_NAMES[Math.max(0, Math.min(3, store.prefs().getInt(Ui.P_THEME, 0)))]);
         ((TextView) findViewById(R.id.txt_accent)).setText(Ui.ACCENT_NAMES[Math.max(0, Math.min(Ui.ACCENT_NAMES.length - 1, store.prefs().getInt(Ui.P_ACCENT, 0)))]);
         float sc = store.prefs().getFloat(Ui.P_TEXT, 1f);
@@ -402,7 +419,7 @@ public class SettingsActivity extends Activity {
             need.add(Manifest.permission.READ_CALENDAR);
             need.add(Manifest.permission.WRITE_CALENDAR);
         }
-        if (need.isEmpty()) { Toast.makeText(this, "Everything is already allowed", Toast.LENGTH_SHORT).show(); return; }
+        if (need.isEmpty()) { Ui.toast(this, "Everything is already allowed", Toast.LENGTH_SHORT).show(); return; }
         requestPermissions(need.toArray(new String[0]), REQ_PERMS);
     }
 
@@ -438,7 +455,7 @@ public class SettingsActivity extends Activity {
             startActivity(new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
                     Uri.parse("package:" + getPackageName())));
         } catch (Exception e) {
-            Toast.makeText(this, "Not available on this phone", Toast.LENGTH_SHORT).show();
+            Ui.toast(this, "Not available on this phone", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -469,9 +486,9 @@ public class SettingsActivity extends Activity {
         if (req == REQ_EXPORT) {
             try (OutputStream out = getContentResolver().openOutputStream(uri, "wt")) {
                 store.exportBackup(out);
-                Toast.makeText(this, "Backup saved", Toast.LENGTH_LONG).show();
+                Ui.toast(this, "Backup saved", Toast.LENGTH_LONG).show();
             } catch (Exception e) {
-                Toast.makeText(this, "Could not save backup: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                Ui.toast(this, "Could not save backup: " + e.getMessage(), Toast.LENGTH_LONG).show();
             }
         } else if (req == REQ_IMPORT) {
             try (InputStream in = getContentResolver().openInputStream(uri)) {
@@ -483,7 +500,7 @@ public class SettingsActivity extends Activity {
                 if (BackupCrypt.isEncrypted(bytes)) askBackupPassword(bytes);
                 else restore(bytes);
             } catch (Exception e) {
-                Toast.makeText(this, "That file is not a Note backup", Toast.LENGTH_LONG).show();
+                Ui.toast(this, "That file is not a Note backup", Toast.LENGTH_LONG).show();
             }
         }
     }
@@ -497,29 +514,29 @@ public class SettingsActivity extends Activity {
                 + "if Play Protect warns, tap More details → Install anyway. New versions come inside the app.";
         android.content.ClipboardManager cm = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
         if (cm != null) cm.setPrimaryClip(android.content.ClipData.newPlainText("Note download link", Updater.APK_URL));
-        Toast.makeText(this, "Link copied — pick an app to send it", Toast.LENGTH_SHORT).show();
+        Ui.toast(this, "Link copied — pick an app to send it", Toast.LENGTH_SHORT).show();
         Intent i = new Intent(Intent.ACTION_SEND);
         i.setType("text/plain");
         i.putExtra(Intent.EXTRA_SUBJECT, "Note — a notes app for your phone");
         i.putExtra(Intent.EXTRA_TEXT, msg);
         Lock.leavingForOtherApp();
-        startActivity(Intent.createChooser(i, "Share Note with"));
+        startActivity(Intent.createChooser(i, L.t("Share Note with")));
     }
 
     private void restore(byte[] data) {
         try {
             int added = store.importBackup(data);
             for (Note note : store.notes()) ReminderSync.syncAsync(this, note.id, null);
-            Toast.makeText(this, added + " notes restored", Toast.LENGTH_LONG).show();
+            Ui.toast(this, added + " notes restored", Toast.LENGTH_LONG).show();
             updateTexts();
         } catch (Exception e) {
-            Toast.makeText(this, "That file is not a Note backup", Toast.LENGTH_LONG).show();
+            Ui.toast(this, "That file is not a Note backup", Toast.LENGTH_LONG).show();
         }
     }
 
     private EditText passwordField(String hint) {
         EditText et = new EditText(this);
-        et.setHint(hint);
+        et.setHint(L.t(hint));
         et.setSingleLine(true);
         et.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
         return et;
@@ -535,7 +552,7 @@ public class SettingsActivity extends Activity {
                 .setView(box)
                 .setPositiveButton("Open", (d, w) -> {
                     String p = pw.getText().toString();
-                    Toast.makeText(this, "Opening…", Toast.LENGTH_SHORT).show();
+                    Ui.toast(this, "Opening…", Toast.LENGTH_SHORT).show();
                     new Thread(() -> {
                         byte[] plain = null;
                         String err = null;
@@ -547,9 +564,9 @@ public class SettingsActivity extends Activity {
                         runOnUiThread(() -> {
                             if (pl != null) restore(pl);
                             else if ("Wrong password".equals(er)) {
-                                Toast.makeText(this, "Wrong password — try again", Toast.LENGTH_LONG).show();
+                                Ui.toast(this, "Wrong password — try again", Toast.LENGTH_LONG).show();
                                 askBackupPassword(data);
-                            } else Toast.makeText(this, er, Toast.LENGTH_LONG).show();
+                            } else Ui.toast(this, er, Toast.LENGTH_LONG).show();
                         });
                     }).start();
                 })
@@ -572,21 +589,21 @@ public class SettingsActivity extends Activity {
                 .setView(box)
                 .setPositiveButton("Save", (d, w) -> {
                     String x = a.getText().toString(), y = b.getText().toString();
-                    if (x.length() < 6) { Toast.makeText(this, "Use at least 6 letters or numbers", Toast.LENGTH_LONG).show(); return; }
-                    if (!x.equals(y)) { Toast.makeText(this, "The two passwords are different", Toast.LENGTH_LONG).show(); return; }
+                    if (x.length() < 6) { Ui.toast(this, "Use at least 6 letters or numbers", Toast.LENGTH_LONG).show(); return; }
+                    if (!x.equals(y)) { Ui.toast(this, "The two passwords are different", Toast.LENGTH_LONG).show(); return; }
                     try {
                         store.setBackupPassword(x);
-                        Toast.makeText(this, "Backups are now password-protected", Toast.LENGTH_LONG).show();
+                        Ui.toast(this, "Backups are now password-protected", Toast.LENGTH_LONG).show();
                         ReminderSync.runInBackground(() -> AppFolder.autoBackup(this, true), null);
                     } catch (Exception e) {
-                        Toast.makeText(this, "Couldn't set it: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                        Ui.toast(this, "Couldn't set it: " + e.getMessage(), Toast.LENGTH_LONG).show();
                     }
                     updateTexts();
                 })
                 .setNegativeButton("Cancel", null);
         if (store.backupProtected()) p.setNeutralButton("Turn off", (d, w) -> {
             try { store.setBackupPassword(null); } catch (Exception ignored) { }
-            Toast.makeText(this, "Backups are no longer protected", Toast.LENGTH_SHORT).show();
+            Ui.toast(this, "Backups are no longer protected", Toast.LENGTH_SHORT).show();
             updateTexts();
         });
         p.show();
@@ -600,11 +617,11 @@ public class SettingsActivity extends Activity {
         int pad = (int) (20 * getResources().getDisplayMetrics().density);
         box.setPadding(pad, pad / 2, pad, 0);
         CheckBox alsoCal = new CheckBox(this);
-        alsoCal.setText("Also remove the events this app added to my phone calendar");
+        alsoCal.setText(L.t("Also remove the events this app added to my phone calendar"));
         alsoCal.setChecked(true);
         box.addView(alsoCal);
         CheckBox alsoFolder = new CheckBox(this);
-        alsoFolder.setText("Also delete the backups, exports and imports in " + AppFolder.displayPath(null));
+        alsoFolder.setText(L.t("Also delete the backups, exports and imports in " + AppFolder.displayPath(null)));
         alsoFolder.setChecked(true);
         box.addView(alsoFolder);
 
@@ -621,7 +638,7 @@ public class SettingsActivity extends Activity {
                         store.wipeEverything();
                         store.prefs().edit().putBoolean("welcomed", true).apply();
                     }, () -> {
-                        Toast.makeText(this, "All data deleted", Toast.LENGTH_LONG).show();
+                        Ui.toast(this, "All data deleted", Toast.LENGTH_LONG).show();
                         updateTexts();
                         Intent home = new Intent(this, MainActivity.class);
                         home.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);

@@ -77,8 +77,8 @@ public final class BarPins {
         if (n == null || n.deleted > 0) { unpin(app, id); return; }
         if (!Notifier.canNotify(app)) return;
         if (Build.VERSION.SDK_INT >= 26 && nm.getNotificationChannel(CHANNEL) == null) {
-            NotificationChannel ch = new NotificationChannel(CHANNEL, "Notes pinned to the notification bar", NotificationManager.IMPORTANCE_LOW);
-            ch.setDescription("Notes you pinned, so they're always one swipe away");
+            NotificationChannel ch = new NotificationChannel(CHANNEL, L.t("Notes pinned to the notification bar"), NotificationManager.IMPORTANCE_LOW);
+            ch.setDescription(L.t("Notes you pinned, so they're always one swipe away"));
             ch.setShowBadge(false);
             nm.createNotificationChannel(ch);
         }
@@ -93,7 +93,7 @@ public final class BarPins {
         if (n.locked) {
             preview.append("🔒 Locked note — tap to open");
             RemoteViews row = new RemoteViews(app.getPackageName(), R.layout.bar_pin_row);
-            row.setTextViewText(R.id.bar_row_text, "🔒 Locked note — tap to open");
+            row.setTextViewText(R.id.bar_row_text, L.t("🔒 Locked note — tap to open"));
             big.addView(R.id.bar_rows, row);
         } else {
             List<Checklist.Item> items = Checklist.items(n);
@@ -113,7 +113,7 @@ public final class BarPins {
                     shown++;
                 }
                 int left = open;
-                big.setTextViewText(R.id.bar_sub, left == 0 ? "All done ✓" : left + (left == 1 ? " thing left · tap ☐ to tick" : " things left · tap ☐ to tick"));
+                big.setTextViewText(R.id.bar_sub, L.t(left == 0 ? "All done ✓" : left + (left == 1 ? " thing left · tap ☐ to tick" : " things left · tap ☐ to tick")));
             } else {
                 for (String l : n.body.split("\n")) {
                     if (l.trim().isEmpty()) continue;
@@ -125,14 +125,14 @@ public final class BarPins {
                     preview.append(l.trim());
                     shown++;
                 }
-                big.setTextViewText(R.id.bar_sub, "Pinned note");
+                big.setTextViewText(R.id.bar_sub, L.t("Pinned note"));
             }
         }
         big.setOnClickPendingIntent(R.id.bar_unpin, broadcast(app, ACTION_UNPIN, id, 0, 0, nid(id) * 31 + 29));
 
         RemoteViews small = new RemoteViews(app.getPackageName(), R.layout.bar_pin_small);
         small.setTextViewText(R.id.bar_title, "📌 " + title);
-        small.setTextViewText(R.id.bar_sub, preview.length() == 0 ? "Empty note" : preview.toString());
+        small.setTextViewText(R.id.bar_sub, preview.length() == 0 ? L.t("Empty note") : preview.toString());
 
         Intent open = new Intent(app, EditorActivity.class);
         open.putExtra(EditorActivity.EXTRA_NOTE_ID, id);
@@ -142,7 +142,7 @@ public final class BarPins {
         b.setSmallIcon(R.drawable.ic_notify)
                 .setColor(Ui.col(app, R.color.accent))
                 .setContentTitle("📌 " + title)
-                .setContentText(preview.length() == 0 ? "Empty note" : preview.toString())
+                .setContentText(preview.length() == 0 ? L.t("Empty note") : preview.toString())
                 .setCustomContentView(small)
                 .setCustomBigContentView(big)
                 .setStyle(new Notification.DecoratedCustomViewStyle())
@@ -151,7 +151,7 @@ public final class BarPins {
                 .setShowWhen(false)
                 .setContentIntent(PendingIntent.getActivity(app, nid(id), open, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE))
                 .setDeleteIntent(broadcast(app, ACTION_GONE, id, 0, 0, nid(id) * 31 + 30))
-                .addAction(new Notification.Action.Builder(null, "Unpin", broadcast(app, ACTION_UNPIN, id, 0, 0, nid(id) * 31 + 28)).build());
+                .addAction(new Notification.Action.Builder(null, L.t("Unpin"), broadcast(app, ACTION_UNPIN, id, 0, 0, nid(id) * 31 + 28)).build());
         nm.notify(nid(id), b.build());
     }
 

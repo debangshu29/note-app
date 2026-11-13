@@ -96,8 +96,8 @@ public final class Brief {
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
         if (Build.VERSION.SDK_INT >= 26 && nm.getNotificationChannel(CHANNEL) == null) {
-            NotificationChannel ch = new NotificationChannel(CHANNEL, "Morning brief", NotificationManager.IMPORTANCE_LOW);
-            ch.setDescription("One quiet note each morning with today's plan");
+            NotificationChannel ch = new NotificationChannel(CHANNEL, L.t("Morning brief"), NotificationManager.IMPORTANCE_LOW);
+            ch.setDescription(L.t("One quiet note each morning with today's plan"));
             nm.createNotificationChannel(ch);
         }
         Intent open = new Intent(c, MainActivity.class);
@@ -108,9 +108,9 @@ public final class Brief {
         @SuppressWarnings("deprecation")
         Notification.Builder b = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(c, CHANNEL) : new Notification.Builder(c);
         b.setSmallIcon(R.drawable.ic_notify)
-                .setContentTitle("☀ " + title)
-                .setContentText(text.replace('\n', ' '))
-                .setStyle(new Notification.BigTextStyle().bigText(text))
+                .setContentTitle(L.t("☀ " + title))
+                .setContentText(L.t(text.replace('\n', ' ')))
+                .setStyle(new Notification.BigTextStyle().bigText(L.t(text)))
                 .setContentIntent(p)
                 .setAutoCancel(true)
                 .setOnlyAlertOnce(true)

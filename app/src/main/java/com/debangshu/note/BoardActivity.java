@@ -281,7 +281,7 @@ public class BoardActivity extends Screen {
     private void ask(String title, String start, String hintText, Text then) {
         EditText et = new EditText(this);
         et.setText(start);
-        et.setHint(hintText);
+        et.setHint(L.t(hintText));
         et.setSelection(et.length());
         LinearLayout box = new LinearLayout(this);
         box.setPadding(px(20), px(4), px(20), 0);
@@ -307,7 +307,7 @@ public class BoardActivity extends Screen {
         if (blockIndex < 0 || blockIndex >= blocks.size() || !blocks.get(blockIndex).isText()) return;
         Block b = blocks.get(blockIndex);
         SpannableStringBuilder ssb = RichText.build(b.text, b.spans);
-        if (!ch.apply(ssb)) { Toast.makeText(this, "Couldn't change that", Toast.LENGTH_SHORT).show(); return; }
+        if (!ch.apply(ssb)) { Ui.toast(this, "Couldn't change that", Toast.LENGTH_SHORT).show(); return; }
         b.text = ssb.toString();
         b.spans = RichText.toJson(ssb);
         n.setBlocks(blocks);

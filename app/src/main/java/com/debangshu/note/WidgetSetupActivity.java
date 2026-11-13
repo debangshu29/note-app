@@ -46,13 +46,13 @@ public class WidgetSetupActivity extends Activity {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Ui.col(this, R.color.bg));
         root.setPadding((int) (16 * dp), (int) (20 * dp), (int) (16 * dp), (int) (16 * dp));
-        TextView title = new TextView(this);
+        TextView title = new Ui.T(this);
         title.setText(countdown ? "Count down to…" : "Show which checklist?");
         title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 24);
         title.setTypeface(Ui.face(this, Ui.EXTRABOLD));
         title.setTextColor(getColor(R.color.text));
         root.addView(title);
-        TextView sub = new TextView(this);
+        TextView sub = new Ui.T(this);
         sub.setText(countdown ? "Pick one of your upcoming reminders (exam, trip, birthday…)." : "Pick a note that has ☐ checkboxes. You can tick them on the home screen.");
         sub.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         sub.setTextColor(getColor(R.color.text2));
@@ -72,7 +72,7 @@ public class WidgetSetupActivity extends Activity {
             java.util.Collections.sort(rs, (a, c) -> Long.compare(a.time, c.time));
             for (Reminder r : rs) {
                 int days = Widgets.daysUntil(r.time);
-                String when = DateFormat.format("EEE, d MMM yyyy", new Date(r.time))
+                String when = L.date("EEE, d MMM yyyy", new Date(r.time))
                         + "  ·  " + (days == 0 ? "today" : days == 1 ? "tomorrow" : "in " + days + " days");
                 list.addView(row(dp, ReminderKind.emoji(r.kind) + "  " + r.title, when, () -> done(Widgets.P_COUNTDOWN, r.id)));
                 count++;
@@ -89,7 +89,7 @@ public class WidgetSetupActivity extends Activity {
             }
         }
         if (count == 0) {
-            TextView none = new TextView(this);
+            TextView none = new Ui.T(this);
             none.setText(countdown ? "No upcoming reminders yet.\n\nWrite something like “exam on 15 Dec” in a note, then add this widget again."
                     : "No checklists yet.\n\nIn a note, type [] and a space for a checkbox, then add this widget again.");
             none.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
@@ -107,12 +107,12 @@ public class WidgetSetupActivity extends Activity {
         r.setBackgroundResource(R.drawable.bg_card);
         r.setElevation(dp);
         r.setPadding((int) (16 * dp), (int) (14 * dp), (int) (16 * dp), (int) (14 * dp));
-        TextView t = new TextView(this);
+        TextView t = new Ui.T(this);
         t.setText(title);
         t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
         t.setTypeface(Ui.face(this, Ui.BOLD));
         t.setTextColor(getColor(R.color.text));
-        TextView s = new TextView(this);
+        TextView s = new Ui.T(this);
         s.setText(sub);
         s.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         s.setTypeface(Ui.face(this, Ui.REGULAR));

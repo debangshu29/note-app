@@ -50,7 +50,7 @@ public class TableView extends LinearLayout {
         top.addView(label, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL));
         TextView more = new TextView(ctx);
-        more.setText("⋯  rows & columns");
+        more.setText(L.t("⋯  rows & columns"));
         more.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         more.setTextColor(Ui.col(ctx, R.color.accent));
         more.setPadding((int) (12 * dp), (int) (6 * dp), (int) (4 * dp), (int) (6 * dp));

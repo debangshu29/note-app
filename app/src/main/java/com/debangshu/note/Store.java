@@ -27,6 +27,7 @@ public final class Store {
     private static Store instance;
 
     public static synchronized Store get(Context ctx) {
+        L.init(ctx);
         if (instance == null) instance = new Store(ctx.getApplicationContext());
         return instance;
     }
@@ -365,6 +366,7 @@ public final class Store {
     private void saveNotes() {
         changes++;
         Widgets.changed(app);
+        if (!L.english()) L.keep(this, app);
         try {
             JSONArray arr = new JSONArray();
             for (Note n : notes) arr.put(n.toJson());
@@ -374,6 +376,7 @@ public final class Store {
 
     private void saveReminders() {
         Widgets.changed(app);
+        if (!L.english()) L.keep(this, app);
         try {
             JSONArray arr = new JSONArray();
             for (Reminder r : reminders) arr.put(r.toJson());

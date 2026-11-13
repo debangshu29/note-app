@@ -112,6 +112,12 @@ The `Documents/Note` folder stays even if you uninstall the app, so your backups
 - App lock (fingerprint / PIN)
 - More automatic actions: phone numbers → tap to call, amounts → running total, links → open
 
+## New in 3.8
+- **App language** (Settings → 🌐 App language): English, हिन्दी (Hindi) or বাংলা (Bengali), or *Same as my phone*.
+- Every screen, menu, popup, notification, widget and the help page is translated; month and day names follow the language (digits stay 0–9).
+- Your own notes, titles, list items and reminder text are never translated. The words the smart features understand (“kal subah 7 baje gym”, “gave Rahul 500”, “valid till…”) stay the same.
+- How it works: the app is written in English; `app/src/main/assets/lang/hi.json` and `bn.json` hold each English line and its translation. Lines with `{0}` match text put together in code ("Spent {0} this month"), `{#0}` matches numbers only. See `L.java` and `Words.java`.
+
 ## New in 3.7
 
 - **Pin to the notification bar** (`BarPins`): an ongoing custom notification per note with tappable ☐ rows (`Checklist.toggle`), Unpin action; refreshed with the widgets, restored after restarts; swiping it away also unpins.

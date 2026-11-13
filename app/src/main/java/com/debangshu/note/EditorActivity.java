@@ -236,7 +236,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         LinearLayout row = findViewById(R.id.templates_row);
         row.removeAllViews();
         float d = getResources().getDisplayMetrics().density;
-        TextView lead = new TextView(this);
+        TextView lead = new Ui.T(this);
         lead.setText("Start from");
         lead.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         lead.setTextColor(getColor(R.color.text2));
@@ -245,7 +245,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         row.addView(lead);
         for (int i = 0; i < Templates.NAMES.length; i++) {
             final int k = i;
-            TextView t = new TextView(this);
+            TextView t = new Ui.T(this);
             t.setText(Templates.EMOJI[i] + "  " + Templates.NAMES[i]);
             t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
             t.setTypeface(Ui.face(this, Ui.SEMIBOLD));
@@ -361,12 +361,12 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                     LinearLayout row = new LinearLayout(this);
                     row.setGravity(Gravity.CENTER_VERTICAL);
                     row.setPadding((int) ((lvl - 1) * 16 * d), (int) (6 * d), 0, (int) (6 * d));
-                    TextView arrow = new TextView(this);
+                    TextView arrow = new Ui.T(this);
                     arrow.setText("▾");
                     arrow.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
                     arrow.setTextColor(Ui.col(this, R.color.accent));
                     arrow.setPadding((int) (4 * d), 0, (int) (10 * d), 0);
-                    TextView name = new TextView(this);
+                    TextView name = new Ui.T(this);
                     name.setText(line.replaceFirst("^\\s*#{1,3}\\s+", ""));
                     name.setTextSize(TypedValue.COMPLEX_UNIT_SP, lvl == 1 ? 17 : lvl == 2 ? 15 : 14);
                     name.setTypeface(Ui.face(this, lvl == 1 ? Ui.EXTRABOLD : Ui.BOLD));
@@ -387,7 +387,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                     });
                     name.setOnClickListener(v -> { if (dlg[0] != null) dlg[0].dismiss(); jumpTo(fh, at); });
                 } else if (section != null && !line.trim().isEmpty()) {
-                    TextView l = new TextView(this);
+                    TextView l = new Ui.T(this);
                     l.setText(line.trim());
                     l.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
                     l.setTextColor(getColor(R.color.text2));
@@ -439,7 +439,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         }
         for (String m : SmartLinks.emails(all)) smartChip(inf, "✉ " + m, () -> {
             try { startActivity(new Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:" + m))); }
-            catch (Exception e) { Toast.makeText(this, "No e-mail app found", Toast.LENGTH_SHORT).show(); }
+            catch (Exception e) { Ui.toast(this, "No e-mail app found", Toast.LENGTH_SHORT).show(); }
         });
         for (String t : SmartLinks.links(all)) {
             Note target = findNoteByTitle(t);
@@ -507,7 +507,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                     Intent i = new Intent(Intent.ACTION_SEND);
                     i.setType("text/plain");
                     i.putExtra(Intent.EXTRA_TEXT, Money.settleText(sp).replace("☐ ", "• ").replace("☑ ", "• "));
-                    startActivity(Intent.createChooser(i, "Share"));
+                    startActivity(Intent.createChooser(i, L.t("Share")));
                 })
                 .setNegativeButton("Close", null).show();
     }
@@ -532,7 +532,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             }
             e.replace(ls, end, text);
             onEdited();
-            Toast.makeText(this, "Settle-up updated", Toast.LENGTH_SHORT).show();
+            Ui.toast(this, "Settle-up updated", Toast.LENGTH_SHORT).show();
             return;
         }
         Holder last = null;
@@ -542,7 +542,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         String t = e.toString();
         e.append(t.isEmpty() ? "" : t.endsWith("\n\n") ? "" : t.endsWith("\n") ? "\n" : "\n\n").append(text);
         onEdited();
-        Toast.makeText(this, "Added to the note", Toast.LENGTH_SHORT).show();
+        Ui.toast(this, "Added to the note", Toast.LENGTH_SHORT).show();
     }
 
     private void smartChip(LayoutInflater inf, String text, Runnable onTap) {
@@ -569,12 +569,12 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                     case 4: {
                         android.content.ClipboardManager cm = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
                         if (cm != null) cm.setPrimaryClip(ClipData.newPlainText("phone", phone));
-                        Toast.makeText(this, "Number copied", Toast.LENGTH_SHORT).show();
+                        Ui.toast(this, "Number copied", Toast.LENGTH_SHORT).show();
                         break;
                     }
                 }
             } catch (Exception e) {
-                Toast.makeText(this, "No app on this phone can do that", Toast.LENGTH_SHORT).show();
+                Ui.toast(this, "No app on this phone can do that", Toast.LENGTH_SHORT).show();
             }
         }).show();
     }
@@ -582,7 +582,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     private void openUrl(String u) {
         String url = u.matches("(?i)^https?://.*") ? u : "https://" + u;
         try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))); }
-        catch (Exception e) { Toast.makeText(this, "No browser found", Toast.LENGTH_SHORT).show(); }
+        catch (Exception e) { Ui.toast(this, "No browser found", Toast.LENGTH_SHORT).show(); }
     }
 
     private Note findNoteByTitle(String t) {
@@ -659,7 +659,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     private void newLabelDialog() {
         float d = getResources().getDisplayMetrics().density;
         EditText in = new EditText(this);
-        in.setHint("e.g. work, shopping, ideas");
+        in.setHint(L.t("e.g. work, shopping, ideas"));
         in.setSingleLine(true);
         in.setBackgroundResource(R.drawable.bg_field);
         in.setPadding((int) (14 * d), (int) (12 * d), (int) (14 * d), (int) (12 * d));
@@ -683,7 +683,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         Editable e = last.tc.et.getText();
         String text = e.toString();
         if (Note.tagsIn(text).contains(label.toLowerCase(Locale.ROOT))) {
-            Toast.makeText(this, "Already has #" + label, Toast.LENGTH_SHORT).show();
+            Ui.toast(this, "Already has #" + label, Toast.LENGTH_SHORT).show();
             return;
         }
         int nl = text.lastIndexOf('\n');
@@ -693,7 +693,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         e.append(add);
         onEdited();
         highlightTags();
-        Toast.makeText(this, "Label #" + label + " added", Toast.LENGTH_SHORT).show();
+        Ui.toast(this, "Label #" + label + " added", Toast.LENGTH_SHORT).show();
     }
 
     // ---- locks
@@ -716,18 +716,18 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
     private void toggleNoteLock() {
         saveNow();
-        if (note == null) { Toast.makeText(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
+        if (note == null) { Ui.toast(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
         if (note.locked) {
             note.locked = false;
             store.saveNote(note);
-            Toast.makeText(this, "Lock removed", Toast.LENGTH_SHORT).show();
+            Ui.toast(this, "Lock removed", Toast.LENGTH_SHORT).show();
             return;
         }
         Runnable lockIt = () -> {
             note.locked = true;
             store.saveNote(note);
             Lock.markOpen(note.id);
-            Toast.makeText(this, "Note locked — it needs your PIN or fingerprint to open", Toast.LENGTH_LONG).show();
+            Ui.toast(this, "Note locked — it needs your PIN or fingerprint to open", Toast.LENGTH_LONG).show();
         };
         if (Lock.hasPin(this)) lockIt.run();
         else Lock.showPad(this, Lock.CREATE, "Set a PIN for locked notes", ok -> { if (ok) lockIt.run(); });
@@ -769,7 +769,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         try {
             startActivityForResult(i, REQ_VOICE);
         } catch (Exception e) {
-            Toast.makeText(this, "Voice typing isn't available on this phone (it needs the Google app or Speech Services).",
+            Ui.toast(this, "Voice typing isn't available on this phone (it needs the Google app or Speech Services).",
                     Toast.LENGTH_LONG).show();
         }
     }
@@ -802,12 +802,12 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         saveNow();
         String text = (titleEt.getText().toString().trim() + ".\n" + currentPlain()).trim();
         text = text.replaceAll("[☐☑•]", "").trim();
-        if (text.replace(".", "").trim().isEmpty()) { Toast.makeText(this, "Nothing to read yet", Toast.LENGTH_SHORT).show(); return; }
+        if (text.replace(".", "").trim().isEmpty()) { Ui.toast(this, "Nothing to read yet", Toast.LENGTH_SHORT).show(); return; }
         final String all = text;
         if (tts != null) { speakNow(all); return; }
         tts = new android.speech.tts.TextToSpeech(this, status -> {
             if (status != android.speech.tts.TextToSpeech.SUCCESS) {
-                Toast.makeText(this, "Read aloud isn't available — check Settings → Accessibility → Text-to-speech", Toast.LENGTH_LONG).show();
+                Ui.toast(this, "Read aloud isn't available — check Settings → Accessibility → Text-to-speech", Toast.LENGTH_LONG).show();
                 tts = null;
                 return;
             }
@@ -1148,7 +1148,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             et.setPadding(et.getPaddingLeft(), et.getPaddingTop(), et.getPaddingRight(), (int) ((h == lastText ? 44 : 8) * d));
         }
         if (firstText != null && holders.size() == 1) {
-            firstText.tc.et.setHint("Start writing…\n\nTry: 120+80\nor: call mom tomorrow at 5pm\nor type [] and a space for a checkbox\n\nUse ＋ at the top for photos, scans, drawings, sticky notes and tables");
+            firstText.tc.et.setHint(L.t("Start writing…\n\nTry: 120+80\nor: call mom tomorrow at 5pm\nor type [] and a space for a checkbox\n\nUse ＋ at the top for photos, scans, drawings, sticky notes and tables"));
             firstText.tc.et.setMinHeight((int) (320 * d));
         } else if (firstText != null) {
             firstText.tc.et.setMinHeight(0);
@@ -1358,11 +1358,11 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
     private void togglePin() {
         saveNow();
-        if (note == null) { Toast.makeText(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
+        if (note == null) { Ui.toast(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
         note.pinned = !note.pinned;
         store.saveNote(note);
         updatePin();
-        Toast.makeText(this, note.pinned ? "Pinned to top" : "Unpinned", Toast.LENGTH_SHORT).show();
+        Ui.toast(this, note.pinned ? "Pinned to top" : "Unpinned", Toast.LENGTH_SHORT).show();
     }
 
     private void updatePin() {
@@ -1373,7 +1373,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
     private void share() {
         Note n = workingNote();
-        if (n.isEmpty()) { Toast.makeText(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
+        if (n.isEmpty()) { Ui.toast(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
         List<Note> one = new ArrayList<>();
         one.add(n);
         ShareHelper.show(this, one);
@@ -1392,7 +1392,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             b.setPadding((int) (9 * d), (int) (9 * d), (int) (9 * d), (int) (9 * d));
             v = b;
         } else {
-            TextView t = new TextView(this);
+            TextView t = new Ui.T(this);
             t.setText(label);
             t.setGravity(Gravity.CENTER);
             t.setTextColor(getColor(R.color.text));
@@ -1400,7 +1400,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             v = t;
         }
         v.setBackgroundResource(R.drawable.bg_tool);
-        v.setContentDescription(desc);
+        v.setContentDescription(L.t(desc));
         v.setOnClickListener(l);
         Tips.set(v, desc);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams((int) (42 * d), (int) (42 * d));
@@ -1421,7 +1421,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             iv.setImageTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.text)));
             box.addView(iv, new LinearLayout.LayoutParams((int) (20 * d), (int) (20 * d)));
         } else {
-            TextView t = new TextView(this);
+            TextView t = new Ui.T(this);
             t.setText(label);
             t.setTypeface(null, Typeface.BOLD);
             t.setTextColor(getColor(R.color.text));
@@ -1442,7 +1442,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         box.addView(strip, sl);
         barOut[0] = strip;
         box.setBackgroundResource(R.drawable.bg_tool);
-        box.setContentDescription(desc);
+        box.setContentDescription(L.t(desc));
         box.setOnClickListener(l);
         Tips.set(box, desc);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams((int) (42 * d), (int) (42 * d));
@@ -1554,7 +1554,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         CharSequence[] items = new CharSequence[RichText.SIZES.length + 1];
         for (int i = 0; i < RichText.SIZES.length; i++) {
             int sp = RichText.SIZES[i];
-            String t = sp + (sp == RichText.NORMAL_SIZE ? "   (normal)" : "") + (sp == now ? "   ✓" : "");
+            String t = sp + (sp == RichText.NORMAL_SIZE ? "   (" + L.t("normal") + ")" : "") + (sp == now ? "   ✓" : "");
             SpannableString s = new SpannableString(t);
             s.setSpan(new android.text.style.AbsoluteSizeSpan(Math.min(sp, 30), true), 0, String.valueOf(sp).length(), 0);
             items[i] = s;
@@ -1597,7 +1597,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         int sec = 0;
         for (int i = 0; i < Fonts.IDS.length; i++) {
             if (sec < Fonts.SECTION_AT.length && Fonts.SECTION_AT[sec] == i) {
-                SpannableString h = new SpannableString("— " + Fonts.SECTION_NAMES[sec] + " —");
+                SpannableString h = new SpannableString("— " + L.t(Fonts.SECTION_NAMES[sec]) + " —");
                 h.setSpan(new ForegroundColorSpan(Ui.col(this, R.color.accent)), 0, h.length(), 0);
                 h.setSpan(new android.text.style.RelativeSizeSpan(0.8f), 0, h.length(), 0);
                 items.add(h);
@@ -1719,11 +1719,11 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         i.setType("*/*");
         i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
         try { Lock.leavingForOtherApp(); startActivityForResult(i, REQ_FILE); }
-        catch (Exception e) { Toast.makeText(this, "No file picker found", Toast.LENGTH_SHORT).show(); }
+        catch (Exception e) { Ui.toast(this, "No file picker found", Toast.LENGTH_SHORT).show(); }
     }
 
     private void importFiles(List<Uri> uris) {
-        Toast.makeText(this, uris.size() == 1 ? "Adding the file…" : "Adding " + uris.size() + " files…", Toast.LENGTH_SHORT).show();
+        Ui.toast(this, uris.size() == 1 ? "Adding the file…" : "Adding " + uris.size() + " files…", Toast.LENGTH_SHORT).show();
         new Thread(() -> {
             List<Block> blocks = new ArrayList<>();
             String error = null;
@@ -1734,7 +1734,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             final String err = error;
             runOnUiThread(() -> {
                 if (!blocks.isEmpty()) insertBlocks(blocks);
-                if (err != null) Toast.makeText(this, "Couldn't add a file: " + err, Toast.LENGTH_LONG).show();
+                if (err != null) Ui.toast(this, "Couldn't add a file: " + err, Toast.LENGTH_LONG).show();
             });
         }).start();
     }
@@ -1788,7 +1788,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             i.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
             startActivityForResult(i, REQ_CAMERA);
         } catch (Exception e) {
-            Toast.makeText(this, "No camera app found", Toast.LENGTH_LONG).show();
+            Ui.toast(this, "No camera app found", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -1797,8 +1797,8 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         i.setType("image/*");
         i.addCategory(Intent.CATEGORY_OPENABLE);
         i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-        try { startActivityForResult(Intent.createChooser(i, "Choose photos"), REQ_GALLERY); }
-        catch (Exception e) { Toast.makeText(this, "No gallery app found", Toast.LENGTH_LONG).show(); }
+        try { startActivityForResult(Intent.createChooser(i, L.t("Choose photos")), REQ_GALLERY); }
+        catch (Exception e) { Ui.toast(this, "No gallery app found", Toast.LENGTH_LONG).show(); }
     }
 
     private void pickPdf() {
@@ -1806,7 +1806,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         i.addCategory(Intent.CATEGORY_OPENABLE);
         i.setType("application/pdf");
         try { startActivityForResult(i, REQ_PDF); }
-        catch (Exception e) { Toast.makeText(this, "No file picker found", Toast.LENGTH_LONG).show(); }
+        catch (Exception e) { Ui.toast(this, "No file picker found", Toast.LENGTH_LONG).show(); }
     }
 
     private void openDrawing(String strokes, int index) {
@@ -1900,7 +1900,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
     private void importPictures(List<Uri> uris, String source, Holder replace) {
         final boolean scanned = "scan".equals(source);
-        Toast.makeText(this, uris.size() == 1 ? "Adding the picture…" : "Adding " + uris.size() + " pictures…", Toast.LENGTH_SHORT).show();
+        Ui.toast(this, uris.size() == 1 ? "Adding the picture…" : "Adding " + uris.size() + " pictures…", Toast.LENGTH_SHORT).show();
         new Thread(() -> {
             List<Block> blocks = new ArrayList<>();
             List<String> files = new ArrayList<>();
@@ -1918,7 +1918,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             final String err = error;
             runOnUiThread(() -> {
                 if (blocks.isEmpty()) {
-                    Toast.makeText(this, "Couldn't add the picture" + (err != null ? ": " + err : ""), Toast.LENGTH_LONG).show();
+                    Ui.toast(this, "Couldn't add the picture" + (err != null ? ": " + err : ""), Toast.LENGTH_LONG).show();
                     return;
                 }
                 if (replace != null) {
@@ -1933,7 +1933,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                     ensureTrailingText();
                     refreshBlockDecor();
                     onEdited();
-                    Toast.makeText(this, "Picture replaced", Toast.LENGTH_SHORT).show();
+                    Ui.toast(this, "Picture replaced", Toast.LENGTH_SHORT).show();
                     return;
                 }
                 insertBlocks(blocks);
@@ -1954,7 +1954,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         String pages = count > 30 ? " (first 30 of " + count + " pages)" : count > 0 ? " (" + count + (count == 1 ? " page)" : " pages)") : "";
         String[] items = {"Pages as pictures" + pages, "Text only (editable)", "Both"};
         new Ui.Popup(this).setTitle("Add PDF").setItems(items, (d, w) -> {
-            Toast.makeText(this, "Adding the PDF…", Toast.LENGTH_SHORT).show();
+            Ui.toast(this, "Adding the PDF…", Toast.LENGTH_SHORT).show();
             new Thread(() -> {
                 List<Block> blocks = new ArrayList<>();
                 String error = null;
@@ -1969,7 +1969,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                 }
                 final String err = error;
                 runOnUiThread(() -> {
-                    if (blocks.isEmpty()) Toast.makeText(this, "Couldn't add the PDF" + (err != null ? ": " + err : ""), Toast.LENGTH_LONG).show();
+                    if (blocks.isEmpty()) Ui.toast(this, "Couldn't add the PDF" + (err != null ? ": " + err : ""), Toast.LENGTH_LONG).show();
                     else insertBlocks(blocks);
                 });
             }).start();
@@ -1980,7 +1980,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
     /** Scan a bill: reads the shop bill, writes it as a price list (with its total), then adds the picture. */
     private void readBill(List<Uri> pages) {
-        Toast.makeText(this, "Reading the bill…", Toast.LENGTH_SHORT).show();
+        Ui.toast(this, "Reading the bill…", Toast.LENGTH_SHORT).show();
         new Thread(() -> {
             StringBuilder rows = new StringBuilder();
             String shop = null, error = null;
@@ -2004,15 +2004,15 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                 List<Block> l = new ArrayList<>();
                 if (b.items.isEmpty()) {
                     if (raw.isEmpty()) {
-                        Toast.makeText(this, err != null ? err : "Couldn't read the bill", Toast.LENGTH_LONG).show();
+                        Ui.toast(this, err != null ? err : "Couldn't read the bill", Toast.LENGTH_LONG).show();
                     } else {
                         l.add(Block.text(raw));
-                        Toast.makeText(this, "No prices found — added the text of the bill instead", Toast.LENGTH_LONG).show();
+                        Ui.toast(this, "No prices found — added the text of the bill instead", Toast.LENGTH_LONG).show();
                     }
                 } else {
                     String head = shopName == null ? "" : shopName.length() > 40 ? shopName.substring(0, 40) : shopName;
                     l.add(Block.text(Money.billText(b, head.isEmpty() ? "" : "🧾 " + head)));
-                    Toast.makeText(this, b.items.size() + " items · " + ListTotals.money(b.sum, true), Toast.LENGTH_LONG).show();
+                    Ui.toast(this, b.items.size() + " items · " + ListTotals.money(b.sum, true), Toast.LENGTH_LONG).show();
                 }
                 if (!l.isEmpty()) insertBlocks(l);
                 importPictures(pages, "bill", null);
@@ -2025,7 +2025,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
     /** Reads the text in pictures and puts it right under {@code after} (or at the cursor when null). */
     private void ocrAfter(Holder after, List<String> files) {
-        Toast.makeText(this, "Reading the text…", Toast.LENGTH_SHORT).show();
+        Ui.toast(this, "Reading the text…", Toast.LENGTH_SHORT).show();
         new Thread(() -> {
             StringBuilder sb = new StringBuilder();
             String error = null;
@@ -2040,7 +2040,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             final String err = error;
             runOnUiThread(() -> {
                 if (sb.length() == 0) {
-                    Toast.makeText(this, err != null ? err : "No text found in the picture", Toast.LENGTH_LONG).show();
+                    Ui.toast(this, err != null ? err : "No text found in the picture", Toast.LENGTH_LONG).show();
                     return;
                 }
                 if (after != null && holders.contains(after)) {
@@ -2050,7 +2050,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                     ensureTrailingText();
                     refreshBlockDecor();
                     onEdited();
-                    Toast.makeText(this, "Text added under the picture", Toast.LENGTH_SHORT).show();
+                    Ui.toast(this, "Text added under the picture", Toast.LENGTH_SHORT).show();
                     return;
                 }
                 List<Block> l = new ArrayList<>();
@@ -2170,7 +2170,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             catch (Exception ignored) { }
             final String done = out;
             runOnUiThread(() -> {
-                if (done == null) { Toast.makeText(this, "Couldn't change the picture", Toast.LENGTH_LONG).show(); return; }
+                if (done == null) { Ui.toast(this, "Couldn't change the picture", Toast.LENGTH_LONG).show(); return; }
                 if (blackWhite) h.block.original = file;
                 else {
                     h.block.original = "";
@@ -2195,21 +2195,21 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             i.putExtra(Intent.EXTRA_STREAM, u);
             i.setClipData(ClipData.newRawUri("", u));
             i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            startActivity(Intent.createChooser(i, asPdf ? "Share scan as PDF" : "Share picture"));
+            startActivity(Intent.createChooser(i, L.t(asPdf ? "Share scan as PDF" : "Share picture")));
         } catch (Exception e) {
-            Toast.makeText(this, "Couldn't share: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Ui.toast(this, "Couldn't share: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
     private void saveToGallery(String file) {
         if (!AppFolder.canWrite(this)) {
             AppFolder.askPermissionIfNeeded(this, REQ_PERMS);
-            Toast.makeText(this, "Allow storage, then tap Save again", Toast.LENGTH_LONG).show();
+            Ui.toast(this, "Allow storage, then tap Save again", Toast.LENGTH_LONG).show();
             return;
         }
         new Thread(() -> {
             boolean ok = Media.saveToGallery(this, file);
-            runOnUiThread(() -> Toast.makeText(this, ok ? "Saved to Pictures/Note in your gallery" : "Couldn't save the picture",
+            runOnUiThread(() -> Ui.toast(this, ok ? "Saved to Pictures/Note in your gallery" : "Couldn't save the picture",
                     Toast.LENGTH_LONG).show());
         }).start();
     }
@@ -2325,7 +2325,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                         ensureTrailingText();
                         refreshBlockDecor();
                         onEdited();
-                        Toast.makeText(this, "Text added under the drawing", Toast.LENGTH_SHORT).show();
+                        Ui.toast(this, "Text added under the drawing", Toast.LENGTH_SHORT).show();
                     });
         }).show();
     }
@@ -2336,7 +2336,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         saveNow();
         String text = currentPlain().trim();
         String title = titleEt.getText().toString().trim();
-        if (text.isEmpty() && title.isEmpty()) { Toast.makeText(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
+        if (text.isEmpty() && title.isEmpty()) { Ui.toast(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
         String from = SmartTools.guessLanguage(title + "\n" + text);
         List<String> names = new ArrayList<>();
         List<String> codes = new ArrayList<>();
@@ -2366,7 +2366,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             tBody = nl < 0 ? "" : out.substring(nl + 1);
         }
         final String ft = tTitle, fb = tBody;
-        TextView tv = new TextView(this);
+        TextView tv = new Ui.T(this);
         tv.setText((ft.isEmpty() ? "" : ft + "\n\n") + fb);
         tv.setTextIsSelectable(true);
         tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
@@ -2393,7 +2393,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                     } else {
                         android.content.ClipboardManager cm = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
                         if (cm != null) cm.setPrimaryClip(ClipData.newPlainText("translation", (ft.isEmpty() ? "" : ft + "\n\n") + fb));
-                        Toast.makeText(this, "Copied", Toast.LENGTH_SHORT).show();
+                        Ui.toast(this, "Copied", Toast.LENGTH_SHORT).show();
                     }
                 }).setNegativeButton("Close", null).show();
     }
@@ -2402,35 +2402,35 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
     private void toggleBarPin() {
         saveNow();
-        if (note == null) { Toast.makeText(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
+        if (note == null) { Ui.toast(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
         if (BarPins.isPinned(this, note.id)) {
             BarPins.unpin(this, note.id);
-            Toast.makeText(this, "Unpinned from the notification bar", Toast.LENGTH_SHORT).show();
+            Ui.toast(this, "Unpinned from the notification bar", Toast.LENGTH_SHORT).show();
             return;
         }
         if (!Notifier.canNotify(this) && Build.VERSION.SDK_INT >= 33) {
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQ_PERMS);
         }
         BarPins.pin(this, note.id);
-        Toast.makeText(this, "Pinned to the notification bar — pull it down to see it. Unpin there or here.", Toast.LENGTH_LONG).show();
+        Ui.toast(this, "Pinned to the notification bar — pull it down to see it. Unpin there or here.", Toast.LENGTH_LONG).show();
     }
 
     private void toggleArchive() {
         saveNow();
-        if (note == null) { Toast.makeText(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
+        if (note == null) { Ui.toast(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
         note.archived = !note.archived;
         store.saveNote(note);
         if (note.archived) {
-            Toast.makeText(this, "Archived — find it under 📦 Archived on the home screen, or by search", Toast.LENGTH_LONG).show();
+            Ui.toast(this, "Archived — find it under 📦 Archived on the home screen, or by search", Toast.LENGTH_LONG).show();
             finish();
-        } else Toast.makeText(this, "Back on the home screen", Toast.LENGTH_SHORT).show();
+        } else Ui.toast(this, "Back on the home screen", Toast.LENGTH_SHORT).show();
     }
 
     // ---- document wallet
 
     private void toggleWallet() {
         saveNow();
-        if (note == null) { Toast.makeText(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
+        if (note == null) { Ui.toast(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
         boolean in = note.tags().contains(WalletActivity.TAG);
         Holder last = null;
         for (Holder h : holders) if (h.tc != null) last = h;
@@ -2446,7 +2446,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                 for (int k = cuts.size() - 1; k >= 0; k--) e.delete(cuts.get(k)[0], cuts.get(k)[1]);
             }
             onEdited();
-            Toast.makeText(this, "Back on the home screen (still locked — ⋮ → Remove lock to unlock)", Toast.LENGTH_LONG).show();
+            Ui.toast(this, "Back on the home screen (still locked — ⋮ → Remove lock to unlock)", Toast.LENGTH_LONG).show();
             return;
         }
         Runnable go = () -> {
@@ -2462,7 +2462,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                 store.saveNote(note);
                 Lock.markOpen(note.id);
             }
-            Toast.makeText(this, "In the document wallet (home ⚙ → Document wallet), locked", Toast.LENGTH_LONG).show();
+            Ui.toast(this, "In the document wallet (home ⚙ → Document wallet), locked", Toast.LENGTH_LONG).show();
         };
         if (!Lock.hasPin(this)) Lock.verify(this, "Set a PIN for the wallet", ok -> { if (ok) go.run(); });
         else go.run();
@@ -2470,7 +2470,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
     private void openBoard() {
         saveNow();
-        if (note == null) { Toast.makeText(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
+        if (note == null) { Ui.toast(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
         Intent i = new Intent(this, BoardActivity.class);
         i.putExtra(BoardActivity.EXTRA_NOTE, note.id);
         i.putExtra(BoardActivity.EXTRA_FROM_EDITOR, true);
@@ -2497,7 +2497,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                         long id = note.id;
                         store.trashNote(id);
                         ReminderSync.syncAsync(this, id, null);
-                        Toast.makeText(this, "Moved to the recycle bin", Toast.LENGTH_SHORT).show();
+                        Ui.toast(this, "Moved to the recycle bin", Toast.LENGTH_SHORT).show();
                     }
                     note = null;
                     loading = true;
@@ -2553,7 +2553,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
     private void noteStyleDialog() {
         saveNow();
-        if (note == null) { Toast.makeText(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
+        if (note == null) { Ui.toast(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
         final int oColor = note.color, oCustom = note.customColor, oPaper = note.paper, oLine = note.lineColor;
         final String oFont = note.font;
         final float d = getResources().getDisplayMetrics().density;
@@ -2618,7 +2618,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             View lines = new View(this);
             prev.addView(lines, new android.widget.FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             tile.addView(prev, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (58 * d)));
-            TextView name = new TextView(this);
+            TextView name = new Ui.T(this);
             name.setText(NoteStyle.PAPER_NAMES[kind]);
             name.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
             name.setTextColor(getColor(R.color.text2));
@@ -2654,7 +2654,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         box.addView(lineRow);
         for (int i = 0; i < NoteStyle.LINE_COLORS.length; i++) {
             final int lc = NoteStyle.LINE_COLORS[i];
-            TextView sw = new TextView(this);
+            TextView sw = new Ui.T(this);
             sw.setGravity(Gravity.CENTER);
             sw.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
             if (lc == 0) { sw.setText("A"); sw.setTextColor(getColor(R.color.text2)); }
@@ -2685,7 +2685,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             chip.setOrientation(LinearLayout.VERTICAL);
             chip.setGravity(Gravity.CENTER);
             chip.setPadding((int) (10 * d), (int) (8 * d), (int) (10 * d), (int) (8 * d));
-            TextView aa = new TextView(this);
+            TextView aa = new Ui.T(this);
             aa.setText("Aa");
             aa.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
             aa.setTextColor(getColor(R.color.text));
@@ -2693,7 +2693,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             probe.font = id;
             aa.setTypeface(NoteStyle.font(this, probe, false));
             aa.setTag(Ui.KEEP_FONT);
-            TextView nm = new TextView(this);
+            TextView nm = new Ui.T(this);
             nm.setText(NoteStyle.FONT_NAMES[i].replace(" (default)", ""));
             nm.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
             nm.setTextColor(getColor(R.color.text2));
@@ -2735,7 +2735,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     }
 
     private TextView styleLabel(LinearLayout box, String text) {
-        TextView t = new TextView(this);
+        TextView t = new Ui.T(this);
         t.setText(text);
         t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         t.setTextColor(getColor(R.color.text));
@@ -2746,6 +2746,8 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     }
 
     private CharSequence styleHeading(String name, String value) {
+        name = L.t(name);
+        value = L.t(value);
         SpannableStringBuilder b = new SpannableStringBuilder(name);
         b.setSpan(new android.text.style.StyleSpan(Typeface.BOLD), 0, name.length(), 0);
         int at = b.length();
@@ -2772,7 +2774,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
 
     private void pageSettingsDialog() {
         saveNow();
-        if (note == null) { Toast.makeText(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
+        if (note == null) { Ui.toast(this, "Write something first", Toast.LENGTH_SHORT).show(); return; }
         float d = getResources().getDisplayMetrics().density;
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
@@ -2788,7 +2790,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         box.addView(label("Margins"));
         RadioGroup margins = group(new String[]{"Narrow", "Normal", "Wide"}, note.margins);
         box.addView(margins);
-        TextView tip = new TextView(this);
+        TextView tip = new Ui.T(this);
         tip.setText("Tip: ＋ → New page starts a new page. ⋮ → Page sorter reorders pages.");
         tip.setTextColor(getColor(R.color.text2));
         tip.setPadding(0, (int) (12 * d), 0, 0);
@@ -2801,7 +2803,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                     note.landscape = checked(orient) == 1;
                     note.margins = checked(margins);
                     store.saveNote(note);
-                    Toast.makeText(this, "Saved — used when you share as PDF", Toast.LENGTH_SHORT).show();
+                    Ui.toast(this, "Saved — used when you share as PDF", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Cancel", null).show();
     }
@@ -2833,7 +2835,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                 LinearLayout row = new LinearLayout(EditorActivity.this);
                 row.setGravity(Gravity.CENTER_VERTICAL);
                 row.setPadding((int) (20 * dp), (int) (8 * dp), (int) (8 * dp), (int) (8 * dp));
-                TextView t = new TextView(EditorActivity.this);
+                TextView t = new Ui.T(EditorActivity.this);
                 t.setText("Page " + (pos + 1) + "\n" + preview(pages.get(pos)));
                 t.setTextColor(getColor(R.color.text));
                 t.setMaxLines(3);
@@ -2869,7 +2871,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         b.setImageResource(icon);
         b.setImageTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.text)));
         b.setBackgroundResource(R.drawable.bg_round_ripple);
-        b.setContentDescription(desc);
+        b.setContentDescription(L.t(desc));
         b.setOnClickListener(l);
         b.setLayoutParams(new LinearLayout.LayoutParams((int) (42 * d), (int) (42 * d)));
         return b;
@@ -2917,7 +2919,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
     // ---- small dialog helpers
 
     private TextView label(String s) {
-        TextView t = new TextView(this);
+        TextView t = new Ui.T(this);
         t.setText(s);
         t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         t.setTextColor(Ui.col(this, R.color.accent));
@@ -2930,7 +2932,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         for (int i = 0; i < options.length; i++) {
             RadioButton b = new RadioButton(this);
             b.setId(View.generateViewId());
-            b.setText(options[i]);
+            b.setText(L.cs(options[i]));
             b.setTag(i);
             g.addView(b);
             if (i == checked) b.setChecked(true);
@@ -3073,7 +3075,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             m.et.getText().replace(m.s, m.e, rep);
         }
         runFind(false);
-        Toast.makeText(this, n == 1 ? "Replaced 1" : "Replaced " + n, Toast.LENGTH_SHORT).show();
+        Ui.toast(this, n == 1 ? "Replaced 1" : "Replaced " + n, Toast.LENGTH_SHORT).show();
     }
 
     // ======================================================================================= reminder chips
@@ -3147,7 +3149,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
             saveNow();
             handler.removeCallbacks(syncTask);
             if (note != null) ReminderSync.syncAsync(this, note.id, this::refreshChips);
-            Toast.makeText(this, ReminderKind.label(f.kind) + " set for "
+            Ui.toast(this, ReminderKind.label(f.kind) + " set for "
                     + friendlyWhen(f.result.timeMillis, f.result.hasTime), Toast.LENGTH_SHORT).show();
             return;
         }
@@ -3175,7 +3177,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
                     if (pick.equals(CAL)) {
                         Uri uri = ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, r.calendarEventId);
                         try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); }
-                        catch (Exception e) { Toast.makeText(this, "No calendar app found", Toast.LENGTH_SHORT).show(); }
+                        catch (Exception e) { Ui.toast(this, "No calendar app found", Toast.LENGTH_SHORT).show(); }
                         return;
                     }
                     int newKind = -1;
@@ -3223,7 +3225,7 @@ public class EditorActivity extends Activity implements TextBlockController.Host
         super.onRequestPermissionsResult(code, perms, results);
         if (code == Attachments.REQ_MIC) {
             if (Attachments.hasMic(this)) recordAudio();
-            else Toast.makeText(this, "Note needs the microphone to record", Toast.LENGTH_LONG).show();
+            else Ui.toast(this, "Note needs the microphone to record", Toast.LENGTH_LONG).show();
             return;
         }
         if (code != REQ_PERMS) return;

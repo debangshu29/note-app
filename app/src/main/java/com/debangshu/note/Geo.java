@@ -241,8 +241,8 @@ public final class Geo {
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
         if (Build.VERSION.SDK_INT >= 26 && nm.getNotificationChannel(CHANNEL) == null) {
-            NotificationChannel ch = new NotificationChannel(CHANNEL, "Place reminders", NotificationManager.IMPORTANCE_HIGH);
-            ch.setDescription("“When I reach office…” reminders");
+            NotificationChannel ch = new NotificationChannel(CHANNEL, L.t("Place reminders"), NotificationManager.IMPORTANCE_HIGH);
+            ch.setDescription(L.t("“When I reach office…” reminders"));
             nm.createNotificationChannel(ch);
         }
         int nid = 770000 + (it.key().hashCode() & 0xFFFF);
@@ -253,19 +253,20 @@ public final class Geo {
         done.setAction(ACTION_DONE);
         done.putExtra("key", it.key());
         done.putExtra("nid", nid);
-        String where = (it.leaving ? "Leaving " : "At ") + it.place;
+        String place = it.place.isEmpty() ? it.place : it.place.substring(0, 1).toUpperCase(Locale.ROOT) + it.place.substring(1);
+        String where = L.f(it.leaving ? "Leaving {0}" : "At {0}", place);
         Notification.Builder b = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(c, CHANNEL)
                 : new Notification.Builder(c).setDefaults(Notification.DEFAULT_ALL).setPriority(Notification.PRIORITY_HIGH);
         b.setSmallIcon(R.drawable.ic_notify)
                 .setContentTitle("📍 " + it.task)
-                .setContentText(where.substring(0, 1).toUpperCase(Locale.ROOT) + where.substring(1))
+                .setContentText(where)
                 .setColor(Ui.col(c, R.color.accent))
                 .setAutoCancel(true)
                 .setContentIntent(PendingIntent.getActivity(c, nid, open, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE))
-                .addAction(new Notification.Action.Builder(null, "Done ✓",
+                .addAction(new Notification.Action.Builder(null, L.t("Done ✓"),
                         PendingIntent.getBroadcast(c, nid + 1, done, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE)).build());
         PendingIntent call = Notifier.callIntent(c, fake(it));
-        if (call != null) b.addAction(new Notification.Action.Builder(null, "📞 Call", call).build());
+        if (call != null) b.addAction(new Notification.Action.Builder(null, L.t("📞 Call"), call).build());
         nm.notify(nid, b.build());
     }
 

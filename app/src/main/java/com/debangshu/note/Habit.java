@@ -80,14 +80,14 @@ public final class Habit {
     }
 
     public String daysText() {
-        if (days == 127) return "Every day";
-        if (days == 0b0111110) return "Weekdays";
-        if (days == 0b1000001) return "Weekends";
+        if (days == 127) return L.t("Every day");
+        if (days == 0b0111110) return L.t("Weekdays");
+        if (days == 0b1000001) return L.t("Weekends");
         String[] n = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
         StringBuilder sb = new StringBuilder();
         for (int i = 1; i <= 7; i++) {
             int d = i % 7;
-            if ((days & (1 << d)) != 0) sb.append(sb.length() > 0 ? ", " : "").append(n[d]);
+            if ((days & (1 << d)) != 0) sb.append(sb.length() > 0 ? ", " : "").append(L.t(n[d]));
         }
         return sb.toString();
     }

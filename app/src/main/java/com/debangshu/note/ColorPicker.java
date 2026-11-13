@@ -73,7 +73,7 @@ public final class ColorPicker {
             if (dlg[0] != null) dlg[0].dismiss();
         };
 
-        TextView none = new TextView(a);
+        TextView none = new Ui.T(a);
         none.setText(highlight ? "⊘   No highlight" : "A   Automatic (normal text colour)");
         none.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
         none.setTextColor(a.getColor(R.color.text));
@@ -115,7 +115,7 @@ public final class ColorPicker {
             addRows(a, box, r, current, pick, 10);
         }
 
-        TextView more = new TextView(a);
+        TextView more = new Ui.T(a);
         more.setText("🎨   More colours…");
         more.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
         more.setTextColor(Ui.col(a, R.color.accent));
@@ -130,7 +130,7 @@ public final class ColorPicker {
     }
 
     private static TextView label(Activity a, String s) {
-        TextView t = new TextView(a);
+        TextView t = new Ui.T(a);
         t.setText(s);
         t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         t.setTextColor(a.getColor(R.color.text2));
@@ -178,7 +178,7 @@ public final class ColorPicker {
         box.addView(preview, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (int) (56 * dp)));
         EditText hex = new EditText(a);
         hex.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS);
-        hex.setHint("#RRGGBB");
+        hex.setHint(L.t("#RRGGBB"));
         SeekBar h = bar(a, box, "Colour (hue)", 360, (int) hsv[0]);
         SeekBar s = bar(a, box, "Strength (saturation)", 100, (int) (hsv[1] * 100));
         SeekBar v = bar(a, box, "Brightness", 100, (int) (hsv[2] * 100));

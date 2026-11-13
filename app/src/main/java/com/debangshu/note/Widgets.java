@@ -134,21 +134,26 @@ public final class Widgets {
     // ------------------------------------------------------------------ the widgets
 
     static RemoteViews quick(Context c) {
+        L.init(c);
         RemoteViews v = new RemoteViews(c.getPackageName(), R.layout.widget_quick);
         v.setOnClickPendingIntent(R.id.w_new, quickAction(c, "note", 9101));
         v.setOnClickPendingIntent(R.id.w_check, quickAction(c, "checklist", 9102));
         v.setOnClickPendingIntent(R.id.w_voice, quickAction(c, "voice", 9103));
         v.setOnClickPendingIntent(R.id.w_scan, quickAction(c, "scan", 9104));
+        v.setTextViewText(R.id.w_new_t, L.t("Note"));
+        v.setTextViewText(R.id.w_check_t, L.t("List"));
+        v.setTextViewText(R.id.w_voice_t, L.t("Voice"));
+        v.setTextViewText(R.id.w_scan_t, L.t("Scan"));
         return v;
     }
 
     private static RemoteViews locked(Context c, String title) {
         RemoteViews v = new RemoteViews(c.getPackageName(), R.layout.widget_list);
-        v.setTextViewText(R.id.w_title, title);
-        v.setTextViewText(R.id.w_sub, "🔒 App lock is on");
+        v.setTextViewText(R.id.w_title, L.t(title));
+        v.setTextViewText(R.id.w_sub, L.t("🔒 App lock is on"));
         v.removeAllViews(R.id.w_rows);
         v.setViewVisibility(R.id.w_empty, View.VISIBLE);
-        v.setTextViewText(R.id.w_empty, "Open Note to see it");
+        v.setTextViewText(R.id.w_empty, L.t("Open Note to see it"));
         v.setOnClickPendingIntent(R.id.w_root, quickAction(c, "today", 9110));
         v.setOnClickPendingIntent(R.id.w_add, quickAction(c, "note", 9111));
         return v;
@@ -165,17 +170,18 @@ public final class Widgets {
     }
 
     static RemoteViews today(Context c, int id) {
+        L.init(c);
         if (Lock.appLockOn(c)) return locked(c, "Today");
         Store s = Store.get(c);
         RemoteViews v = new RemoteViews(c.getPackageName(), R.layout.widget_list);
-        v.setTextViewText(R.id.w_title, "Today");
-        String day = new java.text.SimpleDateFormat("EEE, d MMM", Locale.getDefault()).format(new Date());
+        v.setTextViewText(R.id.w_title, L.t("Today"));
+        String day = L.date("EEE, d MMM", new Date());
         List<Reminder> rem = Today.remindersToday(s);
         List<Checklist.Item> todo = Checklist.open(s);
         String sub = day;
         if (!rem.isEmpty()) sub += " · " + rem.size() + (rem.size() == 1 ? " reminder" : " reminders");
         if (!todo.isEmpty()) sub += " · " + todo.size() + " to do";
-        v.setTextViewText(R.id.w_sub, sub);
+        v.setTextViewText(R.id.w_sub, L.t(sub));
         v.setOnClickPendingIntent(R.id.w_head, quickAction(c, "today", 9120));
         v.setOnClickPendingIntent(R.id.w_add, quickAction(c, "note", 9121));
         v.removeAllViews(R.id.w_rows);
@@ -184,7 +190,7 @@ public final class Widgets {
         for (Reminder r : rem) {
             if (n >= max) break;
             RemoteViews row = new RemoteViews(c.getPackageName(), R.layout.widget_row);
-            row.setTextViewText(R.id.w_lead, ReminderKind.emoji(r.kind));
+            row.setTextViewText(R.id.w_lead, L.t(ReminderKind.emoji(r.kind)));
             row.setTextViewText(R.id.w_text, (r.hasTime ? tf.format(new Date(r.time)) + "  " : "") + r.title);
             row.setOnClickPendingIntent(R.id.w_row, openNote(c, r.noteId, 20000 + id * 40 + n));
             v.addView(R.id.w_rows, row);
@@ -193,7 +199,7 @@ public final class Widgets {
         for (Checklist.Item it : todo) {
             if (n >= max) break;
             RemoteViews row = new RemoteViews(c.getPackageName(), R.layout.widget_row);
-            row.setTextViewText(R.id.w_lead, "☐");
+            row.setTextViewText(R.id.w_lead, L.t("☐"));
             row.setTextViewText(R.id.w_text, it.text);
             row.setOnClickPendingIntent(R.id.w_row, toggle(c, it, 20000 + id * 40 + n));
             v.addView(R.id.w_rows, row);
@@ -201,11 +207,12 @@ public final class Widgets {
         }
         boolean empty = rem.isEmpty() && todo.isEmpty();
         v.setViewVisibility(R.id.w_empty, empty ? View.VISIBLE : View.GONE);
-        v.setTextViewText(R.id.w_empty, "Nothing planned for today ✨");
+        v.setTextViewText(R.id.w_empty, L.t("Nothing planned for today ✨"));
         return v;
     }
 
     static RemoteViews checklist(Context c, int id) {
+        L.init(c);
         if (Lock.appLockOn(c)) return locked(c, "Checklist");
         Store s = Store.get(c);
         RemoteViews v = new RemoteViews(c.getPackageName(), R.layout.widget_list);
@@ -214,10 +221,10 @@ public final class Widgets {
         v.removeAllViews(R.id.w_rows);
         v.setViewVisibility(R.id.w_add, View.GONE);
         if (note == null || note.deleted > 0 || note.locked) {
-            v.setTextViewText(R.id.w_title, "Checklist");
-            v.setTextViewText(R.id.w_sub, "");
+            v.setTextViewText(R.id.w_title, L.t("Checklist"));
+            v.setTextViewText(R.id.w_sub, L.t(""));
             v.setViewVisibility(R.id.w_empty, View.VISIBLE);
-            v.setTextViewText(R.id.w_empty, note != null && note.locked ? "That note is locked" : "Tap to pick a checklist");
+            v.setTextViewText(R.id.w_empty, L.t(note != null && note.locked ? "That note is locked" : "Tap to pick a checklist"));
             Intent pick = new Intent(c, WidgetSetupActivity.class);
             pick.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id);
             pick.setAction("note.pick." + id);
@@ -228,7 +235,7 @@ public final class Widgets {
         int left = 0;
         for (Checklist.Item it : items) if (!it.done) left++;
         v.setTextViewText(R.id.w_title, note.displayTitle());
-        v.setTextViewText(R.id.w_sub, items.isEmpty() ? "No checkboxes yet" : left == 0 ? "All done ✓" : left + " of " + items.size() + " left");
+        v.setTextViewText(R.id.w_sub, L.t(items.isEmpty() ? "No checkboxes yet" : left == 0 ? "All done ✓" : left + " of " + items.size() + " left"));
         v.setOnClickPendingIntent(R.id.w_head, openNote(c, note.id, 30000 + id));
         // unticked first, then ticked
         List<Checklist.Item> order = new ArrayList<>();
@@ -238,7 +245,7 @@ public final class Widgets {
         for (Checklist.Item it : order) {
             if (n >= max) break;
             RemoteViews row = new RemoteViews(c.getPackageName(), R.layout.widget_row);
-            row.setTextViewText(R.id.w_lead, it.done ? "☑" : "☐");
+            row.setTextViewText(R.id.w_lead, L.t(it.done ? "☑" : "☐"));
             row.setTextViewText(R.id.w_text, it.text);
             if (it.done) row.setTextColor(R.id.w_text, c.getColor(R.color.hint));
             row.setOnClickPendingIntent(R.id.w_row, toggle(c, it, 30000 + id * 40 + n + 1));
@@ -246,27 +253,28 @@ public final class Widgets {
             n++;
         }
         v.setViewVisibility(R.id.w_empty, items.isEmpty() ? View.VISIBLE : View.GONE);
-        v.setTextViewText(R.id.w_empty, "Add ☐ items to this note");
+        v.setTextViewText(R.id.w_empty, L.t("Add ☐ items to this note"));
         return v;
     }
 
     static RemoteViews countdown(Context c, int id) {
+        L.init(c);
         RemoteViews v = new RemoteViews(c.getPackageName(), R.layout.widget_countdown);
         long remId = prefs(c).getLong(P_COUNTDOWN + id, -1);
         Reminder r = remId == -1 ? null : Store.get(c).reminder(remId);
         if (Lock.appLockOn(c)) {
-            v.setTextViewText(R.id.w_days, "🔒");
-            v.setTextViewText(R.id.w_unit, "");
-            v.setTextViewText(R.id.w_title, "Note is locked");
-            v.setTextViewText(R.id.w_date, "");
+            v.setTextViewText(R.id.w_days, L.t("🔒"));
+            v.setTextViewText(R.id.w_unit, L.t(""));
+            v.setTextViewText(R.id.w_title, L.t("Note is locked"));
+            v.setTextViewText(R.id.w_date, L.t(""));
             v.setOnClickPendingIntent(R.id.w_root, quickAction(c, "today", 9140));
             return v;
         }
         if (r == null) {
-            v.setTextViewText(R.id.w_days, "⏳");
-            v.setTextViewText(R.id.w_unit, "");
-            v.setTextViewText(R.id.w_title, "Tap to pick a date");
-            v.setTextViewText(R.id.w_date, "from your reminders");
+            v.setTextViewText(R.id.w_days, L.t("⏳"));
+            v.setTextViewText(R.id.w_unit, L.t(""));
+            v.setTextViewText(R.id.w_title, L.t("Tap to pick a date"));
+            v.setTextViewText(R.id.w_date, L.t("from your reminders"));
             Intent pick = new Intent(c, WidgetSetupActivity.class);
             pick.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id);
             pick.setAction("note.pick." + id);
@@ -274,11 +282,11 @@ public final class Widgets {
             return v;
         }
         int days = daysUntil(r.time);
-        if (days < 0) { v.setTextViewText(R.id.w_days, "✓"); v.setTextViewText(R.id.w_unit, "done"); }
-        else if (days == 0) { v.setTextViewText(R.id.w_days, "Today"); v.setTextViewText(R.id.w_unit, ""); }
-        else { v.setTextViewText(R.id.w_days, String.valueOf(days)); v.setTextViewText(R.id.w_unit, days == 1 ? "day to go" : "days to go"); }
+        if (days < 0) { v.setTextViewText(R.id.w_days, L.t("✓")); v.setTextViewText(R.id.w_unit, L.t("done")); }
+        else if (days == 0) { v.setTextViewText(R.id.w_days, L.t("Today")); v.setTextViewText(R.id.w_unit, L.t("")); }
+        else { v.setTextViewText(R.id.w_days, L.t(String.valueOf(days))); v.setTextViewText(R.id.w_unit, L.t(days == 1 ? "day to go" : "days to go")); }
         v.setTextViewText(R.id.w_title, r.title);
-        v.setTextViewText(R.id.w_date, new java.text.SimpleDateFormat("EEE, d MMM yyyy", Locale.getDefault()).format(new Date(r.time)));
+        v.setTextViewText(R.id.w_date, L.date("EEE, d MMM yyyy", new Date(r.time)));
         v.setOnClickPendingIntent(R.id.w_root, openNote(c, r.noteId, 40000 + id));
         return v;
     }

@@ -186,8 +186,8 @@ public final class Updater {
         NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
         if (Build.VERSION.SDK_INT >= 26 && nm.getNotificationChannel(CHANNEL) == null) {
-            NotificationChannel ch = new NotificationChannel(CHANNEL, "App updates", NotificationManager.IMPORTANCE_DEFAULT);
-            ch.setDescription("Tells you when a new version of Note is ready");
+            NotificationChannel ch = new NotificationChannel(CHANNEL, L.t("App updates"), NotificationManager.IMPORTANCE_DEFAULT);
+            ch.setDescription(L.t("Tells you when a new version of Note is ready"));
             nm.createNotificationChannel(ch);
         }
         Info latest = remembered(ctx);
@@ -201,8 +201,8 @@ public final class Updater {
                 ? new android.app.Notification.Builder(ctx, CHANNEL)
                 : new android.app.Notification.Builder(ctx);
         b.setSmallIcon(R.drawable.ic_notify)
-                .setContentTitle("Note" + (latest == null ? "" : " " + latest.versionName) + " is downloaded")
-                .setContentText("Tap to install the update")
+                .setContentTitle(L.t("Note" + (latest == null ? "" : " " + latest.versionName) + " is downloaded"))
+                .setContentText(L.t("Tap to install the update"))
                 .setContentIntent(pi)
                 .setAutoCancel(true)
                 .setColor(Ui.col(ctx, R.color.accent));
@@ -214,8 +214,8 @@ public final class Updater {
         NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
         if (Build.VERSION.SDK_INT >= 26 && nm.getNotificationChannel(CHANNEL) == null) {
-            NotificationChannel ch = new NotificationChannel(CHANNEL, "App updates", NotificationManager.IMPORTANCE_DEFAULT);
-            ch.setDescription("Tells you when a new version of Note is ready");
+            NotificationChannel ch = new NotificationChannel(CHANNEL, L.t("App updates"), NotificationManager.IMPORTANCE_DEFAULT);
+            ch.setDescription(L.t("Tells you when a new version of Note is ready"));
             nm.createNotificationChannel(ch);
         }
         Intent open = new Intent(ctx, MainActivity.class);
@@ -228,8 +228,8 @@ public final class Updater {
                 ? new android.app.Notification.Builder(ctx, CHANNEL)
                 : new android.app.Notification.Builder(ctx);
         b.setSmallIcon(R.drawable.ic_notify)
-                .setContentTitle("Note " + i.versionName + " is ready")
-                .setContentText("Tap to update — your notes stay as they are")
+                .setContentTitle(L.t("Note " + i.versionName + " is ready"))
+                .setContentText(L.t("Tap to update — your notes stay as they are"))
                 .setContentIntent(pi)
                 .setAutoCancel(true)
                 .setColor(Ui.col(ctx, R.color.accent));
@@ -251,18 +251,18 @@ public final class Updater {
         long last = prefs(a).getLong("lastCheck", 0);
         if (!force && System.currentTimeMillis() - last < CHECK_EVERY) return;
         prefs(a).edit().putLong("lastCheck", System.currentTimeMillis()).apply();
-        if (force) Toast.makeText(a, "Checking for updates…", Toast.LENGTH_SHORT).show();
+        if (force) Ui.toast(a, "Checking for updates…", Toast.LENGTH_SHORT).show();
         new Thread(() -> {
             Info i = fetchLatest();
             if (i != null) remember(a, i);
             a.runOnUiThread(() -> {
                 if (a.isFinishing()) return;
                 if (i == null) {
-                    if (force) Toast.makeText(a, "Couldn't check — are you online? Try again in a minute.", Toast.LENGTH_LONG).show();
+                    if (force) Ui.toast(a, "Couldn't check — are you online? Try again in a minute.", Toast.LENGTH_LONG).show();
                 } else if (i.versionCode > currentVersionCode(a)) {
                     showPopup(a, i, force);
                 } else if (force) {
-                    Toast.makeText(a, "You have the latest version (" + currentVersionName(a) + ")", Toast.LENGTH_LONG).show();
+                    Ui.toast(a, "You have the latest version (" + currentVersionName(a) + ")", Toast.LENGTH_LONG).show();
                 }
             });
         }).start();
@@ -329,7 +329,7 @@ public final class Updater {
     public static void copyLink(Activity a) {
         android.content.ClipboardManager cm = (android.content.ClipboardManager) a.getSystemService(Context.CLIPBOARD_SERVICE);
         if (cm != null) cm.setPrimaryClip(android.content.ClipData.newPlainText("Note download link", APK_URL));
-        Toast.makeText(a, "Link copied", Toast.LENGTH_SHORT).show();
+        Ui.toast(a, "Link copied", Toast.LENGTH_SHORT).show();
     }
 
     // ------------------------------------------------------------------ download (browser) + clean-up
@@ -343,9 +343,9 @@ public final class Updater {
             Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(APK_URL + "?v=" + target));
             i.addCategory(Intent.CATEGORY_BROWSABLE);
             a.startActivity(i);
-            Toast.makeText(a, "When the download finishes, tap Note.apk and choose Update", Toast.LENGTH_LONG).show();
+            Ui.toast(a, "When the download finishes, tap Note.apk and choose Update", Toast.LENGTH_LONG).show();
         } catch (Exception e) {
-            Toast.makeText(a, "No browser found — use Copy link", Toast.LENGTH_LONG).show();
+            Ui.toast(a, "No browser found — use Copy link", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -386,8 +386,8 @@ public final class Updater {
         try {
             String name = latest == null ? "" : " " + latest.versionName;
             DownloadManager.Request r = new DownloadManager.Request(Uri.parse(APK_URL + "?v=" + target))
-                    .setTitle("Note" + name + " update")
-                    .setDescription("Tap to install")
+                    .setTitle(L.t("Note" + name + " update"))
+                    .setDescription(L.t("Tap to install"))
                     .setMimeType("application/vnd.android.package-archive")
                     // progress only: when it's done Note shows its own "tap to install" (the phone's
                     // "download complete" notification may open the file in Drive, where it can't install)
@@ -414,7 +414,7 @@ public final class Updater {
         ProgressBar bar = new ProgressBar(a, null, android.R.attr.progressBarStyleHorizontal);
         bar.setMax(100);
         bar.setIndeterminate(true);
-        TextView label = new TextView(a);
+        TextView label = new Ui.T(a);
         label.setText("Starting…");
         label.setPadding(0, (int) (8 * dp), 0, 0);
         box.addView(bar);
@@ -576,7 +576,7 @@ public final class Updater {
         LinearLayout box = new LinearLayout(a);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding((int) (12 * dp), 0, (int) (12 * dp), (int) (4 * dp));
-        TextView hint = new TextView(a);
+        TextView hint = new Ui.T(a);
         hint.setText("Pick your phone's Files app. Then tap “" + UPDATE_FILE + "” (if it doesn't open by itself) and choose Update.");
         hint.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 13);
         hint.setTextColor(a.getColor(R.color.text2));
@@ -600,12 +600,12 @@ public final class Updater {
             LinearLayout col = new LinearLayout(a);
             col.setOrientation(LinearLayout.VERTICAL);
             col.setPadding((int) (14 * dp), 0, 0, 0);
-            TextView name = new TextView(a);
+            TextView name = new Ui.T(a);
             name.setText(o.label);
             name.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15);
             name.setTextColor(a.getColor(R.color.text));
             name.setTypeface(Ui.face(a, Ui.SEMIBOLD));
-            TextView sub = new TextView(a);
+            TextView sub = new Ui.T(a);
             sub.setText(o.component != null ? "Opens the update directly" : "Opens the app — go to Downloads");
             sub.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
             sub.setTextColor(a.getColor(R.color.text2));
@@ -654,7 +654,7 @@ public final class Updater {
                 i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 try {
                     a.startActivity(i);
-                    Toast.makeText(a, "Tap " + UPDATE_FILE + ", then Update", Toast.LENGTH_LONG).show();
+                    Ui.toast(a, "Tap " + UPDATE_FILE + ", then Update", Toast.LENGTH_LONG).show();
                     return true;
                 } catch (Exception ignored) { }
             }
@@ -662,7 +662,7 @@ public final class Updater {
             if (launch == null) return false;
             launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             a.startActivity(launch);
-            Toast.makeText(a, "Open Downloads → tap " + UPDATE_FILE + " → Update", Toast.LENGTH_LONG).show();
+            Ui.toast(a, "Open Downloads → tap " + UPDATE_FILE + " → Update", Toast.LENGTH_LONG).show();
             return true;
         } catch (Exception e) {
             return false;
@@ -702,7 +702,7 @@ public final class Updater {
                 i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 if (pkg != null) i.setPackage(pkg);
                 a.startActivity(i);
-                Toast.makeText(a, "Tap " + UPDATE_FILE + ", then Update", Toast.LENGTH_LONG).show();
+                Ui.toast(a, "Tap " + UPDATE_FILE + ", then Update", Toast.LENGTH_LONG).show();
                 return;
             } catch (Exception ignored) { }
         }
@@ -753,9 +753,9 @@ public final class Updater {
         }
         try {
             a.startActivityForResult(i, REQ_CLEANUP);
-            Toast.makeText(a, "Long-press to select every old Note….apk, then tap Select", Toast.LENGTH_LONG).show();
+            Ui.toast(a, "Long-press to select every old Note….apk, then tap Select", Toast.LENGTH_LONG).show();
         } catch (Exception e) {
-            Toast.makeText(a, "Open the Files app → Downloads and delete the Note.apk files", Toast.LENGTH_LONG).show();
+            Ui.toast(a, "Open the Files app → Downloads and delete the Note.apk files", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -780,7 +780,7 @@ public final class Updater {
         prefs(a).edit().remove("cleanupFor").apply();
         String msg = deleted == 1 ? "1 file deleted" : deleted + " files deleted";
         if (failed > 0) msg += " · " + failed + " couldn't be deleted — remove them in the Files app";
-        Toast.makeText(a, msg, Toast.LENGTH_LONG).show();
+        Ui.toast(a, msg, Toast.LENGTH_LONG).show();
     }
 
     /**

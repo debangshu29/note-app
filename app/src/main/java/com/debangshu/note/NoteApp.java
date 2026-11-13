@@ -12,6 +12,7 @@ public class NoteApp extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        try { L.init(this); } catch (Exception ignored) { }   // the app language, for notifications and widgets too
         registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
             @Override public void onActivityStarted(Activity a) {
                 if (started++ == 0) Lock.cameToFront();

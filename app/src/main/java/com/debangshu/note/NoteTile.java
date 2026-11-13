@@ -14,7 +14,8 @@ public class NoteTile extends TileService {
         Tile t = getQsTile();
         if (t == null) return;
         t.setState(Tile.STATE_INACTIVE);
-        t.setLabel("New note");
+        L.init(this);
+        t.setLabel(L.t("New note"));
         t.updateTile();
     }
 

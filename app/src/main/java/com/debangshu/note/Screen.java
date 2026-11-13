@@ -45,7 +45,7 @@ public abstract class Screen extends Activity {
         back.setImageTintList(android.content.res.ColorStateList.valueOf(getColor(R.color.text)));
         back.setPadding(px(11), px(11), px(11), px(11));
         back.setElevation(dp);
-        back.setContentDescription("Back");
+        back.setContentDescription(L.t("Back"));
         back.setOnClickListener(v -> onBackPressed());
         topBar.addView(back, new LinearLayout.LayoutParams(px(44), px(44)));
         LinearLayout titles = new LinearLayout(this);
@@ -104,7 +104,7 @@ public abstract class Screen extends Activity {
         t.setGravity(Gravity.CENTER);
         t.setBackgroundResource(accent ? R.drawable.bg_circle_accent : R.drawable.bg_circle);
         t.setElevation((accent ? 3 : 1) * dp);
-        t.setContentDescription(description);
+        t.setContentDescription(L.t(description));
         t.setOnClickListener(l);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(px(44), px(44));
         lp.leftMargin = px(8);
@@ -184,7 +184,7 @@ public abstract class Screen extends Activity {
     }
 
     protected TextView text(String s, int sp, int weight, int color) {
-        TextView t = new TextView(this);
+        TextView t = new Ui.T(this);
         t.setText(s);
         t.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
         t.setTypeface(Ui.face(this, weight));

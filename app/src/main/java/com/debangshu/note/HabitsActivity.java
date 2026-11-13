@@ -47,7 +47,7 @@ public class HabitsActivity extends Screen {
                     h.id = System.currentTimeMillis();
                     h.created = h.id;
                     h.emoji = idea[0];
-                    h.name = idea[1];
+                    h.name = L.t(idea[1]);
                     Habits.save(this, h);
                     build();
                     Ui.fonts(root);
@@ -94,7 +94,7 @@ public class HabitsActivity extends Screen {
         // the last 7 days; tap any of them
         LinearLayout week = new LinearLayout(this);
         week.setPadding(0, px(12), 0, px(4));
-        SimpleDateFormat dn = new SimpleDateFormat("EEE", Locale.ENGLISH);
+        SimpleDateFormat dn = new SimpleDateFormat("EEE", L.dates());
         for (int i = 6; i >= 0; i--) {
             Calendar d = (Calendar) today.clone();
             d.add(Calendar.DAY_OF_MONTH, -i);
@@ -115,7 +115,7 @@ public class HabitsActivity extends Screen {
             cell.setOnClickListener(v -> {
                 boolean now = Habits.toggle(this, h.id, day);
                 if (now && i0(day, today) && h.streak(today) > 1) {
-                    Toast.makeText(this, "🔥 " + h.streak(today) + " days in a row!", Toast.LENGTH_SHORT).show();
+                    Ui.toast(this, "🔥 " + h.streak(today) + " days in a row!", Toast.LENGTH_SHORT).show();
                 }
                 build();
                 Ui.fonts(root);
@@ -142,7 +142,7 @@ public class HabitsActivity extends Screen {
         box.setPadding(px(20), px(4), px(20), 0);
 
         EditText name = new EditText(this);
-        name.setHint("What do you want to do? (e.g. Read 10 pages)");
+        name.setHint(L.t("What do you want to do? (e.g. Read 10 pages)"));
         name.setText(h.name);
         name.setSingleLine(true);
         box.addView(name);
@@ -174,7 +174,9 @@ public class HabitsActivity extends Screen {
         final int[] days = {h.days};
         LinearLayout dr = new LinearLayout(this);
         dr.setPadding(0, px(6), 0, px(6));
-        String[] dn = {"S", "M", "T", "W", "T", "F", "S"};
+        String[] dn = L.lang().equals("hi") ? new String[]{"र", "सो", "मं", "बु", "गु", "शु", "श"}
+                : L.lang().equals("bn") ? new String[]{"র", "সো", "ম", "বু", "বৃ", "শু", "শ"}
+                : new String[]{"S", "M", "T", "W", "T", "F", "S"};
         int[] order = {1, 2, 3, 4, 5, 6, 0};   // Monday first
         TextView[] dv = new TextView[7];
         for (int k = 0; k < 7; k++) {
@@ -218,7 +220,7 @@ public class HabitsActivity extends Screen {
         p.sheet().setTitle(existing == null ? "New habit" : "Edit habit").setView(box)
                 .setPositiveButton(existing == null ? "Add" : "Save", (d, w) -> {
                     String n = name.getText().toString().trim();
-                    if (n.isEmpty()) { Toast.makeText(this, "Give it a name", Toast.LENGTH_SHORT).show(); return; }
+                    if (n.isEmpty()) { Ui.toast(this, "Give it a name", Toast.LENGTH_SHORT).show(); return; }
                     if (days[0] == 0) days[0] = 127;
                     h.name = n;
                     h.emoji = emoji[0];

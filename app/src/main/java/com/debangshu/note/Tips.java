@@ -11,13 +11,14 @@ public final class Tips {
 
     private Tips() {}
 
-    public static void set(View v, CharSequence text) {
-        if (text == null || text.length() == 0) return;
+    public static void set(View v, CharSequence raw) {
+        if (raw == null || raw.length() == 0) return;
+        final CharSequence text = L.cs(raw);
         if (Build.VERSION.SDK_INT >= 26) {
             v.setTooltipText(text);
         } else {
             v.setOnLongClickListener(x -> {
-                Toast.makeText(x.getContext(), text, Toast.LENGTH_SHORT).show();
+                Ui.toast(x.getContext(), text, Toast.LENGTH_SHORT).show();
                 return true;
             });
         }

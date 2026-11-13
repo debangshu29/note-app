@@ -84,7 +84,7 @@ public class PlacesActivity extends Screen {
                 if (w == 3) x.radius = 500;
                 if (w == 4) {
                     try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("geo:" + x.lat + "," + x.lng + "?q=" + x.lat + "," + x.lng))); }
-                    catch (Exception e) { Toast.makeText(this, "No maps app found", Toast.LENGTH_SHORT).show(); }
+                    catch (Exception e) { Ui.toast(this, "No maps app found", Toast.LENGTH_SHORT).show(); }
                     return;
                 }
             }
@@ -97,7 +97,7 @@ public class PlacesActivity extends Screen {
 
     private void askName(String suggestion) {
         EditText et = new EditText(this);
-        et.setHint("Name (e.g. office)");
+        et.setHint(L.t("Name (e.g. office)"));
         if (suggestion != null) et.setText(suggestion);
         et.setSingleLine(true);
         LinearLayout box = new LinearLayout(this);
@@ -132,10 +132,10 @@ public class PlacesActivity extends Screen {
 
     private void saveHere(String name) {
         if (!Geo.hasLocation(this)) { askPermissions(); return; }
-        Toast.makeText(this, "Finding where you are…", Toast.LENGTH_SHORT).show();
+        Ui.toast(this, "Finding where you are…", Toast.LENGTH_SHORT).show();
         Geo.here(this, loc -> {
             if (loc == null) {
-                Toast.makeText(this, "Couldn't find the location. Turn on Location (GPS) and try again.", Toast.LENGTH_LONG).show();
+                Ui.toast(this, "Couldn't find the location. Turn on Location (GPS) and try again.", Toast.LENGTH_LONG).show();
                 return;
             }
             List<Geo.Place> all = Geo.places(this);
@@ -148,7 +148,7 @@ public class PlacesActivity extends Screen {
             all.add(p);
             Geo.savePlaces(this, all);
             pendingName = null;
-            Toast.makeText(this, "Saved “" + name + "”", Toast.LENGTH_SHORT).show();
+            Ui.toast(this, "Saved “" + name + "”", Toast.LENGTH_SHORT).show();
             if (!Geo.hasBackground(this)) askPermissions();
             build();
             Ui.fonts(root);

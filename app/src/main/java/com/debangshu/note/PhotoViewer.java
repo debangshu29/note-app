@@ -40,7 +40,7 @@ public final class PhotoViewer {
         close.setTextColor(Color.WHITE);
         close.setTextSize(22);
         close.setGravity(Gravity.CENTER);
-        close.setContentDescription("Close");
+        close.setContentDescription(L.t("Close"));
         close.setBackgroundColor(0x55000000);
         close.setOnClickListener(v -> d.dismiss());
         FrameLayout.LayoutParams cl = new FrameLayout.LayoutParams((int) (48 * dp), (int) (48 * dp), Gravity.TOP | Gravity.END);
@@ -48,7 +48,7 @@ public final class PhotoViewer {
         root.addView(close, cl);
 
         TextView hint = new TextView(a);
-        hint.setText("Pinch or double-tap to zoom · swipe down to close");
+        hint.setText(L.t("Pinch or double-tap to zoom · swipe down to close"));
         hint.setTextColor(0xAAFFFFFF);
         hint.setTextSize(13);
         FrameLayout.LayoutParams hl = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,

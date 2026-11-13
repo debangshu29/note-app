@@ -76,7 +76,7 @@ public class TrashActivity extends Activity {
             if (w == 0) {
                 store.restoreNote(n.id);
                 ReminderSync.syncAsync(this, n.id, null);
-                Toast.makeText(this, "Restored", Toast.LENGTH_SHORT).show();
+                Ui.toast(this, "Restored", Toast.LENGTH_SHORT).show();
                 refresh();
             } else {
                 new Ui.Popup(this).setTitle("Delete forever?")

@@ -130,7 +130,7 @@ public class WalletActivity extends Screen {
             n.id = store.newId();
             n.created = System.currentTimeMillis();
             n.updated = n.created;
-            n.title = KINDS[w][1].replace(" / certificate", "");
+            n.title = L.t(KINDS[w][1].replace(" / certificate", ""));
             n.locked = true;
             List<Block> blocks = new ArrayList<>();
             blocks.add(Block.text("Number: \nName on it: \nValid till: \n\n#wallet"));

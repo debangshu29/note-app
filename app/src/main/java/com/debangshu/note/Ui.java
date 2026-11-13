@@ -131,6 +131,7 @@ public final class Ui {
 
     /** Call in onCreate before setContentView: every screen and popup made from XML gets the app font. */
     public static void install(Activity a) {
+        L.init(a);
         bars(a, Ui.col(a, R.color.bg), !NoteStyle.dark(a));
         LayoutInflater li = a.getLayoutInflater();
         if (li.getFactory2() != null || li.getFactory() != null) return;
@@ -144,11 +145,32 @@ public final class Ui {
         });
     }
 
+    /**
+     * A TextView that shows the app's own words in the chosen language (Settings → App language).
+     * Every TextView in the app is one of these; text you typed in a note is never changed.
+     */
+    public static class T extends TextView {
+        public T(Context c) { super(c); }
+        public T(Context c, AttributeSet a) { super(c, a); }
+        @Override public void setText(CharSequence text, BufferType type) { super.setText(L.cs(text), type); }
+    }
+
+    /** Toast.makeText, in the chosen language. */
+    public static android.widget.Toast toast(Context c, CharSequence text, int length) {
+        return android.widget.Toast.makeText(c, L.cs(text), length);
+    }
+
+    /** Where your own words show (note titles and previews on the home screen): never translated. */
+    private static boolean rawText(AttributeSet attrs) {
+        int id = attrs.getAttributeResourceValue("http://schemas.android.com/apk/res/android", "id", 0);
+        return id == R.id.note_title || id == R.id.note_preview;
+    }
+
     private static View make(String name, Context ctx, AttributeSet attrs) {
         TextView v;
         try {
             switch (name) {
-                case "TextView": v = new TextView(ctx, attrs); break;
+                case "TextView": v = rawText(attrs) ? new TextView(ctx, attrs) : new T(ctx, attrs); break;
                 case "EditText": v = new EditText(ctx, attrs); break;
                 case "Button": v = new Button(ctx, attrs); break;
                 case "CheckBox": v = new CheckBox(ctx, attrs); break;
@@ -161,6 +183,11 @@ public final class Ui {
             return null;
         }
         if (!skip(v)) applyFont(v);
+        if (!L.english()) {
+            if (!(v instanceof EditText) && !(v instanceof T)) v.setText(L.cs(v.getText() == null ? null : v.getText().toString()));
+            if (v.getHint() != null) v.setHint(L.cs(v.getHint().toString()));
+            if (v.getContentDescription() != null) v.setContentDescription(L.cs(v.getContentDescription().toString()));
+        }
         return v;
     }
 
@@ -187,8 +214,10 @@ public final class Ui {
         android.content.SharedPreferences p = prefs(base);
         int mode = p.getInt(P_THEME, 0);
         float scale = p.getFloat(P_TEXT, 1f);
-        if (mode == 0 && scale == 1f) return base;
+        java.util.Locale loc = L.locale(base);
+        if (mode == 0 && scale == 1f && loc == null) return base;
         android.content.res.Configuration c = new android.content.res.Configuration(base.getResources().getConfiguration());
+        if (loc != null) c.setLocale(loc);   // dates and times in the chosen language (numbers in code stay as they are)
         int night = android.content.res.Configuration.UI_MODE_NIGHT_MASK;
         if (mode == 1) c.uiMode = (c.uiMode & ~night) | android.content.res.Configuration.UI_MODE_NIGHT_NO;
         else if (mode >= 2) c.uiMode = (c.uiMode & ~night) | android.content.res.Configuration.UI_MODE_NIGHT_YES;
@@ -280,15 +309,28 @@ public final class Ui {
         /** Show as a sheet from the bottom even with a custom view (the screen above stays visible). */
         public Popup sheet() { forceSheet = true; return this; }
 
-        @Override public AlertDialog.Builder setTitle(CharSequence t) { title = t; return this; }
+        private boolean danger;
+
+        @Override public AlertDialog.Builder setTitle(CharSequence t) { title = L.cs(t); return this; }
         @Override public AlertDialog.Builder setTitle(int id) { title = getContext().getText(id); return this; }
-        @Override public AlertDialog.Builder setMessage(CharSequence m) { message = m != null; return super.setMessage(m); }
+        @Override public AlertDialog.Builder setMessage(CharSequence m) { message = m != null; return super.setMessage(L.cs(m)); }
+        @Override public AlertDialog.Builder setPositiveButton(CharSequence t, DialogInterface.OnClickListener l) {
+            String e = t == null ? "" : t.toString().toLowerCase(java.util.Locale.ROOT);
+            danger = e.contains("delete") || e.contains("erase") || e.contains("remove");
+            return super.setPositiveButton(L.cs(t), l);
+        }
+        @Override public AlertDialog.Builder setNegativeButton(CharSequence t, DialogInterface.OnClickListener l) {
+            return super.setNegativeButton(L.cs(t), l);
+        }
+        @Override public AlertDialog.Builder setNeutralButton(CharSequence t, DialogInterface.OnClickListener l) {
+            return super.setNeutralButton(L.cs(t), l);
+        }
         @Override public AlertDialog.Builder setMessage(int id) { message = true; return super.setMessage(id); }
         @Override public AlertDialog.Builder setView(View v) { view = true; return super.setView(v); }
         @Override public AlertDialog.Builder setView(int id) { view = true; return super.setView(id); }
 
         @Override public AlertDialog.Builder setItems(CharSequence[] i, DialogInterface.OnClickListener l) {
-            items = true; return super.setItems(i, l);
+            items = true; return super.setItems(L.all(i), l);
         }
         @Override public AlertDialog.Builder setItems(int id, DialogInterface.OnClickListener l) {
             items = true; return super.setItems(id, l);
@@ -297,14 +339,14 @@ public final class Ui {
             items = true; return super.setAdapter(a, l);
         }
         @Override public AlertDialog.Builder setSingleChoiceItems(CharSequence[] i, int c, DialogInterface.OnClickListener l) {
-            items = true; return super.setSingleChoiceItems(i, c, l);
+            items = true; return super.setSingleChoiceItems(L.all(i), c, l);
         }
         @Override public AlertDialog.Builder setSingleChoiceItems(ListAdapter a, int c, DialogInterface.OnClickListener l) {
             items = true; return super.setSingleChoiceItems(a, c, l);
         }
         @Override public AlertDialog.Builder setMultiChoiceItems(CharSequence[] i, boolean[] c,
                                                                 DialogInterface.OnMultiChoiceClickListener l) {
-            items = true; return super.setMultiChoiceItems(i, c, l);
+            items = true; return super.setMultiChoiceItems(L.all(i), c, l);
         }
 
         @Override
@@ -319,7 +361,8 @@ public final class Ui {
                 w.setBackgroundDrawable(c.getDrawable(R.drawable.bg_sheet));
                 w.setWindowAnimations(R.style.SheetAnim);
             }
-            d.setOnShowListener(x -> style(d, sheet));
+            final boolean red = danger;
+            d.setOnShowListener(x -> style(d, sheet, red));
             return d;
         }
     }
@@ -349,7 +392,9 @@ public final class Ui {
     }
 
     /** Fonts, colours, pill buttons and sheet size for a popup that is showing. */
-    public static void style(AlertDialog d, boolean sheet) {
+    public static void style(AlertDialog d, boolean sheet) { style(d, sheet, false); }
+
+    public static void style(AlertDialog d, boolean sheet, boolean redButton) {
         Window w = d.getWindow();
         if (w == null) return;
         Context c = d.getContext();
@@ -377,7 +422,7 @@ public final class Ui {
         Button neu = d.getButton(DialogInterface.BUTTON_NEUTRAL);
         if (pos != null) {
             String label = pos.getText() == null ? "" : pos.getText().toString().toLowerCase(java.util.Locale.ROOT);
-            boolean danger = label.contains("delete") || label.contains("erase") || label.contains("remove");
+            boolean danger = redButton || label.contains("delete") || label.contains("erase") || label.contains("remove");
             pill(pos, danger ? c.getColor(R.color.danger) : Ui.col(c, R.color.accent), c.getColor(R.color.on_accent));
         }
         if (neg != null) pill(neg, Ui.col(c, R.color.surface2), c.getColor(R.color.text));

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="w_quick">Note: চটজলদি বোতাম</string>
+    <string name="w_quick_desc">এক ট্যাপে নতুন নোট, চেকলিস্ট, ভয়েস নোট বা স্ক্যান</string>
+    <string name="w_today">Note: আজ</string>
+    <string name="w_today_desc">আজকের রিমাইন্ডার আর বাকি থাকা কাজ</string>
+    <string name="w_checklist">Note: চেকলিস্ট</string>
+    <string name="w_checklist_desc">হোম স্ক্রিনেই টিক দেওয়া যায় এমন চেকলিস্ট</string>
+    <string name="w_countdown">Note: কাউন্টডাউন</string>
+    <string name="w_countdown_desc">কোনো রিমাইন্ডার আসতে কত দিন বাকি (পরীক্ষা, বেড়ানো, জন্মদিন…)</string>
+    <string name="s_note">নতুন নোট</string>
+    <string name="s_checklist">নতুন চেকলিস্ট</string>
+    <string name="s_voice">ভয়েস নোট</string>
+    <string name="s_scan">ডকুমেন্ট স্ক্যান</string>
+    <string name="s_today">আজ</string>
+    <string name="tile_label">নতুন নোট</string>
+</resources>

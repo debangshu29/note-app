@@ -77,7 +77,7 @@ public final class ShareHelper {
     }
 
     private static TextView label(Activity a, String s) {
-        TextView t = new TextView(a);
+        TextView t = new Ui.T(a);
         t.setText(s);
         t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         t.setTextColor(Ui.col(a, R.color.accent));
@@ -90,7 +90,7 @@ public final class ShareHelper {
         for (int i = 0; i < options.length; i++) {
             RadioButton b = new RadioButton(a);
             b.setId(View.generateViewId());
-            b.setText(options[i]);
+            b.setText(L.cs(options[i]));
             b.setTag(i);
             g.addView(b);
             if (i == checked) b.setChecked(true);
@@ -114,7 +114,7 @@ public final class ShareHelper {
             pages.add(new NoteRenderer.Page(title, body));
         }
         if (pages.isEmpty()) {
-            Toast.makeText(a, mode == NoteFilter.LEFT ? "Nothing left to buy 🎉" : "Nothing ticked yet", Toast.LENGTH_LONG).show();
+            Ui.toast(a, mode == NoteFilter.LEFT ? "Nothing left to buy 🎉" : "Nothing ticked yet", Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -128,11 +128,11 @@ public final class ShareHelper {
             i.setType("text/plain");
             i.putExtra(Intent.EXTRA_TEXT, sb.toString());
             if (pages.size() == 1 && !pages.get(0).title.trim().isEmpty()) i.putExtra(Intent.EXTRA_SUBJECT, pages.get(0).title.trim());
-            a.startActivity(Intent.createChooser(i, "Share"));
+            a.startActivity(Intent.createChooser(i, L.t("Share")));
             return;
         }
 
-        Toast.makeText(a, format == PDF ? "Making PDF…" : "Making image…", Toast.LENGTH_SHORT).show();
+        Ui.toast(a, format == PDF ? "Making PDF…" : "Making image…", Toast.LENGTH_SHORT).show();
         // "All items": the notes as they look (formatting, pictures, tables, pages).
         // "Only left / only bought": the filtered list as plain text.
         final List<Note> rich = new ArrayList<>();
@@ -184,7 +184,7 @@ public final class ShareHelper {
                 final boolean switched = tooLong;
                 a.runOnUiThread(() -> send(a, uris, m, switched));
             } catch (Exception e) {
-                a.runOnUiThread(() -> Toast.makeText(a, "Couldn't make the file: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                a.runOnUiThread(() -> Ui.toast(a, "Couldn't make the file: " + e.getMessage(), Toast.LENGTH_LONG).show());
             }
         }).start();
     }
@@ -197,7 +197,7 @@ public final class ShareHelper {
     }
 
     private static void send(Activity a, ArrayList<Uri> uris, String mime, boolean switchedToPdf) {
-        if (switchedToPdf) Toast.makeText(a, "Note is very long — sharing it as a PDF", Toast.LENGTH_LONG).show();
+        if (switchedToPdf) Ui.toast(a, "Note is very long — sharing it as a PDF", Toast.LENGTH_LONG).show();
         Intent i;
         if (uris.size() == 1) {
             i = new Intent(Intent.ACTION_SEND);
@@ -211,6 +211,6 @@ public final class ShareHelper {
         for (int k = 1; k < uris.size(); k++) clip.addItem(new ClipData.Item(uris.get(k)));
         i.setClipData(clip);
         i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        a.startActivity(Intent.createChooser(i, "Share"));
+        a.startActivity(Intent.createChooser(i, L.t("Share")));
     }
 }

@@ -225,7 +225,7 @@ public class FeaturesActivity extends Screen {
     /** A new note with examples in it, so you see the feature work. Kept only if you change something. */
     private void example(String title, String body) {
         Intent i = new Intent(this, EditorActivity.class);
-        i.putExtra(EditorActivity.EXTRA_NEW_BODY, title + " — try these:\n\n" + body);
+        i.putExtra(EditorActivity.EXTRA_NEW_BODY, L.t(title) + " — " + L.t("try these") + ":\n\n" + body);
         startActivity(i);
     }
 

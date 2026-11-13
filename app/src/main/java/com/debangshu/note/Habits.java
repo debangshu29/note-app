@@ -212,8 +212,8 @@ public final class Habits {
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
         if (Build.VERSION.SDK_INT >= 26 && nm.getNotificationChannel(CHANNEL) == null) {
-            NotificationChannel ch = new NotificationChannel(CHANNEL, "Habits", NotificationManager.IMPORTANCE_DEFAULT);
-            ch.setDescription("A nudge at the time you chose for a habit");
+            NotificationChannel ch = new NotificationChannel(CHANNEL, L.t("Habits"), NotificationManager.IMPORTANCE_DEFAULT);
+            ch.setDescription(L.t("A nudge at the time you chose for a habit"));
             nm.createNotificationChannel(ch);
         }
         int streak = h.streak(today);
@@ -224,12 +224,12 @@ public final class Habits {
         done.putExtra(EXTRA_ID, h.id);
         Notification.Builder b = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(c, CHANNEL) : new Notification.Builder(c);
         b.setSmallIcon(R.drawable.ic_notify)
-                .setContentTitle(h.emoji + "  " + h.name)
-                .setContentText(streak > 0 ? "🔥 " + streak + "-day streak — keep it going" : "Time for it today")
+                .setContentTitle(L.t(h.emoji + "  " + h.name))
+                .setContentText(L.t(streak > 0 ? "🔥 " + streak + "-day streak — keep it going" : "Time for it today"))
                 .setColor(Ui.col(c, R.color.accent))
                 .setAutoCancel(true)
                 .setContentIntent(PendingIntent.getActivity(c, notifyId(h.id), open, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE))
-                .addAction(new Notification.Action.Builder(null, "Done ✓",
+                .addAction(new Notification.Action.Builder(null, L.t("Done ✓"),
                         PendingIntent.getBroadcast(c, notifyId(h.id) + 1, done, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE)).build());
         nm.notify(notifyId(h.id), b.build());
     }

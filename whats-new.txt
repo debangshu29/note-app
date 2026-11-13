@@ -1,4 +1,4 @@
-• 📌 Pin a note to the notification bar (⋮ in a note): tick ☐ items right there; unpin from the notification or the note
-• 📦 Archive: hide finished notes without deleting — they wait under 📦 Archived at the top of your notes, and search finds them
-• ⭐ Important reminders: tap a reminder chip → Important (or write !!) — it reminds every 10 minutes until you tap Done
-• 📊 Sunday summary: your week in one notification — spending, reminders, habits, next week's bills
+• 🌐 Note now speaks your language: Settings → App language → English, हिन्दी (Hindi) or বাংলা (Bengali)
+• Every screen, button, popup, notification, widget and the help page is translated — month and day names too
+• Your own notes, titles and lists are never changed, and smart writing (“kal subah 7 baje gym”, “gave Rahul 500”) works the same
+• “Same as my phone” picks Hindi or Bengali by itself if your phone is set to it

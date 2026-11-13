@@ -13,6 +13,8 @@ public final class HelpDialog {
     private HelpDialog() {}
 
     private static final String[][] TOPICS = {
+            {"🌐", "App language",
+                    "Settings → App language: English, हिन्दी or বাংলা. Your own notes stay exactly as you wrote them."},
             {"📌", "Pin to the notification bar",
                     "⋮ → Pin to notification bar keeps the note one swipe away; tick ☐ items right in the notification. "
                     + "Unpin with the button on the notification or ⋮ → Unpin."},
@@ -152,7 +154,7 @@ public final class HelpDialog {
         LinearLayout box = new LinearLayout(ctx);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding((int) (16 * d), (int) (4 * d), (int) (16 * d), (int) (8 * d));
-        TextView intro = new TextView(ctx);
+        TextView intro = new Ui.T(ctx);
         intro.setText("Your notes, math, lists and reminders — all in one place. Here's what Note can do:");
         intro.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         intro.setTextColor(ctx.getColor(R.color.text2));
@@ -164,7 +166,7 @@ public final class HelpDialog {
             row.setOrientation(LinearLayout.HORIZONTAL);
             row.setPadding((int) (12 * d), (int) (12 * d), (int) (12 * d), (int) (12 * d));
             row.setBackground(Ui.round(Ui.col(ctx, R.color.surface2), 18 * d));
-            TextView icon = new TextView(ctx);
+            TextView icon = new Ui.T(ctx);
             icon.setText(t[0]);
             icon.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
             icon.setGravity(Gravity.CENTER);
@@ -173,12 +175,12 @@ public final class HelpDialog {
             LinearLayout col = new LinearLayout(ctx);
             col.setOrientation(LinearLayout.VERTICAL);
             col.setPadding((int) (12 * d), 0, 0, 0);
-            TextView title = new TextView(ctx);
+            TextView title = new Ui.T(ctx);
             title.setText(t[1]);
             title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
             title.setTextColor(ctx.getColor(R.color.text));
             title.setTypeface(Ui.face(ctx, Ui.BOLD));
-            TextView body = new TextView(ctx);
+            TextView body = new Ui.T(ctx);
             body.setText(t[2]);
             body.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
             body.setTextColor(ctx.getColor(R.color.text2));
